@@ -7,6 +7,8 @@
   --text: #f2f2ee;
   --muted: #b8c2cc;
   --max: 1180px;
+  --font-body: "Space Grotesk", sans-serif;
+  --font-heading: "Oswald", sans-serif;
 }
 
 * {
@@ -15,7 +17,7 @@
 
 body {
   margin: 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-body);
   background:
     radial-gradient(circle at 10% 0%, #203847 0%, transparent 40%),
     radial-gradient(circle at 90% 20%, #3b2622 0%, transparent 38%),
@@ -52,7 +54,7 @@ img {
 .brand {
   color: var(--text);
   text-decoration: none;
-  font-family: "Oswald", sans-serif;
+  font-family: var(--font-heading);
   letter-spacing: 0.1em;
   font-size: 1.5rem;
 }
@@ -129,7 +131,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Oswald", sans-serif;
+  font-family: var(--font-heading);
   margin-top: 0;
 }
 
@@ -230,6 +232,15 @@ h1 {
 
 .card-body {
   padding: 1rem;
+}
+
+.card-body h3 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meta {
