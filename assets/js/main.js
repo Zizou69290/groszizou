@@ -48,8 +48,7 @@ function mediaRow(data = { type: "image", url: "", caption: "" }) {
       <option value="video-embed">video-embed</option>
       <option value="audio">audio</option>
     </select>
-    <input class="media-url" type="url" placeholder="URL (optionnel)" />
-    <input class="media-file" type="file" accept="image/*,video/*,audio/*" />
+    <input class="media-url" type="url" placeholder="URL" />
     <input class="media-caption" type="text" placeholder="Caption" />
     <button type="button" class="delete-media">X</button>
   `;
@@ -64,25 +63,13 @@ function mediaRow(data = { type: "image", url: "", caption: "" }) {
 async function readMediaRows() {
   if (!mediaList) return [];
   const rows = [...mediaList.querySelectorAll(".media-row")];
-  const result = [];
-
-  for (const row of rows) {
-    const type = row.querySelector(".media-type").value;
-    const urlInput = row.querySelector(".media-url").value.trim();
-    const file = row.querySelector(".media-file").files?.[0];
-    const caption = row.querySelector(".media-caption").value.trim();
-
-    let url = urlInput;
-    if (!url && file) {
-      url = await window.ReviewsStore.uploadFile(file);
-    }
-
-    if (url) {
-      result.push({ type, url, caption });
-    }
-  }
-
-  return result;
+  return rows
+    .map((row) => ({
+      type: row.querySelector(".media-type").value,
+      url: row.querySelector(".media-url").value.trim(),
+      caption: row.querySelector(".media-caption").value.trim()
+    }))
+    .filter((item) => item.url);
 }
 
 function setMediaRows(media) {
@@ -199,7 +186,6 @@ function openForm(item = null) {
   form.elements.date.value = item?.date || "";
   form.elements.score.value = Number.isFinite(item?.score) ? String(item.score) : "";
   form.elements.cover.value = item?.cover || "";
-  form.elements.coverFile.value = "";
   form.elements.accent.value = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
   form.elements.body.value = item?.body || "";
@@ -222,25 +208,6 @@ if (form) {
 
     const title = form.elements.title.value.trim() || "Sans titre";
     const nextId = editingId || window.ReviewsStore.slugify(title);
-    const coverFile = form.elements.coverFile.files?.[0];
-
-    let cover = form.elements.cover.value.trim();
-    if (!cover && coverFile) {
-      try {
-        cover = await window.ReviewsStore.uploadFile(coverFile);
-      } catch (error) {
-        window.alert(`Upload cover impossible: ${error.message}`);
-        return;
-      }
-    }
-
-    let media = [];
-    try {
-      media = await readMediaRows();
-    } catch (error) {
-      window.alert(`Upload media impossible: ${error.message}`);
-      return;
-    }
 
     const payload = {
       id: nextId,
@@ -248,7 +215,7 @@ if (form) {
       category: form.elements.category.value || "jeu",
       date: form.elements.date.value,
       score: form.elements.score.value === "" ? null : Number(form.elements.score.value),
-      cover,
+      cover: form.elements.cover.value.trim(),
       accent: form.elements.accent.value.trim(),
       summary: form.elements.summary.value.trim(),
       body: form.elements.body.value.trim(),
@@ -256,7 +223,7 @@ if (form) {
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
-      media
+      media: await readMediaRows()
     };
 
     try {

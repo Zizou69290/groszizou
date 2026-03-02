@@ -55,3 +55,8 @@ service firebase.storage {
 
 ## 6) Remarque
 - Les anciens fichiers API Vercel (`/api/*`) peuvent rester dans le repo, mais le site n'en depend plus.
+
+## 7) Mode 100% gratuit
+- Sans Firebase Storage, les medias doivent etre en URL.
+- Exemples: image URL, YouTube embed URL, lien audio URL.
+

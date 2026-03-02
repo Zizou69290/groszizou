@@ -71,9 +71,6 @@
           <label>Date<input name="date" type="date" /></label>
           <label>Note (/10)<input name="score" type="number" min="0" max="10" step="0.1" /></label>
           <label>Image de couverture (URL)<input name="cover" type="url" /></label>
-          <label>Image de couverture (fichier)
-            <input name="coverFile" type="file" accept="image/*" />
-          </label>
           <label>Couleur accent (hex)
             <input name="accent" type="text" placeholder="#f25f29" />
           </label>
@@ -93,7 +90,7 @@
           <h4>Medias (image / video / video-embed / audio)</h4>
           <button type="button" id="add-media" class="action-btn secondary">Ajouter un media</button>
         </div>
-        <p class="media-note">Tu peux utiliser une URL, ou choisir un fichier local depuis ton ordinateur.</p>
+        <p class="media-note">Mode gratuit: utilise des URLs uniquement (images/videos/audio).</p>
         <div id="media-list" class="media-list"></div>
 
         <div class="form-actions">
@@ -107,14 +104,13 @@
   <footer class="footer">
     <div class="container footer-content">
       <p>GROSZIZOU Reviews</p>
-      <p>Mode online: Firebase</p>
+      <p>Mode online: Firebase (gratuit)</p>
     </div>
   </footer>
 
   <script src="assets/js/firebase-config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="assets/js/reviews.js"></script>
   <script src="assets/js/main.js"></script>

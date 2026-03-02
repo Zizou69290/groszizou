@@ -10,7 +10,6 @@
   const collectionName = "reviews";
   let firebaseReady = false;
   let db;
-  let storage;
   let auth;
 
   function ensureFirebase() {
@@ -30,7 +29,6 @@
     }
 
     db = firebase.firestore();
-    storage = firebase.storage();
     auth = firebase.auth();
     firebaseReady = true;
   }
@@ -113,15 +111,6 @@
     return count;
   }
 
-  async function uploadFile(file) {
-    requireAuth();
-    const safeName = String(file.name || "media.bin").replace(/[^a-zA-Z0-9._-]/g, "-");
-    const path = `reviews/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
-    const ref = storage.ref(path);
-    await ref.put(file, { contentType: file.type || "application/octet-stream" });
-    return ref.getDownloadURL();
-  }
-
   async function signIn(email, password) {
     ensureFirebase();
     return auth.signInWithEmailAndPassword(email, password);
@@ -137,11 +126,6 @@
     return auth.onAuthStateChanged(callback);
   }
 
-  function getCurrentUser() {
-    ensureFirebase();
-    return auth.currentUser;
-  }
-
   return {
     categories,
     slugify,
@@ -151,10 +135,8 @@
     remove,
     exportJson,
     importJson,
-    uploadFile,
     signIn,
     signOut,
-    onAuthChanged,
-    getCurrentUser
+    onAuthChanged
   };
 })();
