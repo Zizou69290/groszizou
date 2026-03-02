@@ -14,8 +14,8 @@ const form = document.getElementById("review-form");
 const formTitle = document.getElementById("form-title");
 const addBtn = document.getElementById("new-review");
 const cancelBtn = document.getElementById("cancel-form");
-const addMediaBtn = document.getElementById("add-media");
-const mediaList = document.getElementById("media-list");
+const blocksList = document.getElementById("blocks-list");
+const addBlockButtons = document.querySelectorAll("[data-add-block]");
 const exportBtn = document.getElementById("export-json");
 const importInput = document.getElementById("import-json");
 const filterButtons = document.querySelectorAll(".filter-btn");
@@ -36,50 +36,10 @@ const fmtDate = (iso) => {
   return `${day}/${month}/${year}`;
 };
 
-const formatScore = (score) => (Number.isFinite(score) ? `${score}/10` : "-");
-
-function mediaRow(data = { type: "image", url: "", caption: "" }) {
-  const row = document.createElement("div");
-  row.className = "media-row";
-  row.innerHTML = `
-    <select class="media-type">
-      <option value="image">image</option>
-      <option value="video">video</option>
-      <option value="video-embed">video-embed</option>
-      <option value="audio">audio</option>
-    </select>
-    <input class="media-url" type="url" placeholder="URL" />
-    <input class="media-caption" type="text" placeholder="Caption" />
-    <button type="button" class="delete-media">X</button>
-  `;
-
-  row.querySelector(".media-type").value = data.type || "image";
-  row.querySelector(".media-url").value = data.url || "";
-  row.querySelector(".media-caption").value = data.caption || "";
-  row.querySelector(".delete-media").addEventListener("click", () => row.remove());
-  return row;
-}
-
-async function readMediaRows() {
-  if (!mediaList) return [];
-  const rows = [...mediaList.querySelectorAll(".media-row")];
-  return rows
-    .map((row) => ({
-      type: row.querySelector(".media-type").value,
-      url: row.querySelector(".media-url").value.trim(),
-      caption: row.querySelector(".media-caption").value.trim()
-    }))
-    .filter((item) => item.url);
-}
-
-function setMediaRows(media) {
-  if (!mediaList) return;
-  mediaList.innerHTML = "";
-  if (!media.length) {
-    mediaList.appendChild(mediaRow());
-    return;
-  }
-  media.forEach((item) => mediaList.appendChild(mediaRow(item)));
+function scoreToStars(score) {
+  if (!Number.isFinite(score)) return "☆☆☆☆☆";
+  const full = Math.max(0, Math.min(5, Math.round(score / 2)));
+  return "★".repeat(full) + "☆".repeat(5 - full);
 }
 
 function reviewCard(item) {
@@ -96,9 +56,9 @@ function reviewCard(item) {
     <div class="card-body">
       <p class="meta">${window.ReviewsStore.categories[item.category] || item.category} · ${fmtDate(item.date)}</p>
       <h3>${item.title || "Sans titre"}</h3>
-      <p>${item.summary || "Aucun resume."}</p>
+      <p>${item.summary || "Aucun résumé."}</p>
       <div class="card-footer">
-        <span class="score" style="color:${accent}">${formatScore(item.score)}</span>
+        <span class="score" style="color:${accent}">${scoreToStars(item.score)}${Number.isFinite(item.score) ? ` (${item.score}/10)` : ""}</span>
         <span class="read-hint">Lire</span>
       </div>
     </div>
@@ -127,7 +87,7 @@ function managerRow(item) {
       <span>${window.ReviewsStore.categories[item.category] || item.category} · ${fmtDate(item.date)}</span>
     </div>
     <div class="row-actions">
-      <button class="action-btn secondary" data-action="edit">Editer</button>
+      <button class="action-btn secondary" data-action="edit">Éditer</button>
       <button class="action-btn danger" data-action="delete">Supprimer</button>
     </div>
   `;
@@ -142,11 +102,123 @@ function managerRow(item) {
       await window.ReviewsStore.remove(item.id);
       await renderAll();
     } catch (error) {
-      window.alert(`Suppression impossible: ${error.message}`);
+      window.alert(`Suppression impossible : ${error.message}`);
     }
   });
 
   return row;
+}
+
+function updateBlockIndex() {
+  if (!blocksList) return;
+  [...blocksList.querySelectorAll(".block-item")].forEach((row, idx) => {
+    const index = row.querySelector(".block-index");
+    if (index) index.textContent = `Bloc ${idx + 1}`;
+  });
+}
+
+function getBlockFieldsHtml(type, block) {
+  if (type === "text") {
+    return `<textarea class="block-content" rows="5" placeholder="Ton texte...">${block.content || ""}</textarea>`;
+  }
+  return `
+    <input class="block-url" type="url" placeholder="URL" value="${block.url || ""}" />
+    <input class="block-caption" type="text" placeholder="Légende (optionnel)" value="${block.caption || ""}" />
+  `;
+}
+
+function createBlockRow(block = { type: "text", content: "", url: "", caption: "" }) {
+  const row = document.createElement("div");
+  row.className = "block-item";
+  row.innerHTML = `
+    <div class="block-head">
+      <strong class="block-index">Bloc</strong>
+      <select class="block-type">
+        <option value="text">Texte</option>
+        <option value="image">Image</option>
+        <option value="video">Vidéo</option>
+        <option value="video-embed">Vidéo embed</option>
+        <option value="audio">Audio</option>
+      </select>
+      <div class="row-actions">
+        <button type="button" class="action-btn secondary block-up">↑</button>
+        <button type="button" class="action-btn secondary block-down">↓</button>
+        <button type="button" class="action-btn danger block-delete">Supprimer</button>
+      </div>
+    </div>
+    <div class="block-fields"></div>
+  `;
+
+  const typeSelect = row.querySelector(".block-type");
+  const fields = row.querySelector(".block-fields");
+
+  const renderFields = () => {
+    fields.innerHTML = getBlockFieldsHtml(typeSelect.value, block);
+  };
+
+  typeSelect.value = block.type || "text";
+  renderFields();
+
+  typeSelect.addEventListener("change", () => {
+    block.type = typeSelect.value;
+    renderFields();
+  });
+
+  row.querySelector(".block-delete").addEventListener("click", () => {
+    row.remove();
+    updateBlockIndex();
+  });
+
+  row.querySelector(".block-up").addEventListener("click", () => {
+    const prev = row.previousElementSibling;
+    if (prev) {
+      blocksList.insertBefore(row, prev);
+      updateBlockIndex();
+    }
+  });
+
+  row.querySelector(".block-down").addEventListener("click", () => {
+    const next = row.nextElementSibling;
+    if (next) {
+      blocksList.insertBefore(next, row);
+      updateBlockIndex();
+    }
+  });
+
+  return row;
+}
+
+function setBlocks(blocks) {
+  if (!blocksList) return;
+  blocksList.innerHTML = "";
+  if (!Array.isArray(blocks) || !blocks.length) {
+    blocksList.appendChild(createBlockRow({ type: "text", content: "" }));
+    updateBlockIndex();
+    return;
+  }
+  blocks.forEach((block) => blocksList.appendChild(createBlockRow(block)));
+  updateBlockIndex();
+}
+
+function readBlocks() {
+  if (!blocksList) return [];
+  const rows = [...blocksList.querySelectorAll(".block-item")];
+  const blocks = [];
+
+  rows.forEach((row) => {
+    const type = row.querySelector(".block-type").value;
+    if (type === "text") {
+      const content = row.querySelector(".block-content")?.value.trim() || "";
+      if (content) blocks.push({ type, content, url: "", caption: "" });
+      return;
+    }
+
+    const url = row.querySelector(".block-url")?.value.trim() || "";
+    const caption = row.querySelector(".block-caption")?.value.trim() || "";
+    if (url) blocks.push({ type, content: "", url, caption });
+  });
+
+  return blocks;
 }
 
 async function renderAll() {
@@ -156,7 +228,7 @@ async function renderAll() {
     reviews = await window.ReviewsStore.getAll();
   } catch (error) {
     console.error(error);
-    window.alert(`Impossible de charger les reviews: ${error.message}`);
+    window.alert(`Impossible de charger les reviews : ${error.message}`);
     return;
   }
 
@@ -188,9 +260,8 @@ function openForm(item = null) {
   form.elements.cover.value = item?.cover || "";
   form.elements.accent.value = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
-  form.elements.body.value = item?.body || "";
-  form.elements.tags.value = (item?.tags || []).join(", ");
-  setMediaRows(item?.media || []);
+  setBlocks(item?.blocks || []);
+
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -199,7 +270,7 @@ function closeForm() {
   editingId = null;
   form.reset();
   form.classList.add("hidden");
-  if (mediaList) mediaList.innerHTML = "";
+  if (blocksList) blocksList.innerHTML = "";
 }
 
 if (form) {
@@ -218,18 +289,13 @@ if (form) {
       cover: form.elements.cover.value.trim(),
       accent: form.elements.accent.value.trim(),
       summary: form.elements.summary.value.trim(),
-      body: form.elements.body.value.trim(),
-      tags: form.elements.tags.value
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      media: await readMediaRows()
+      blocks: readBlocks()
     };
 
     try {
       await window.ReviewsStore.upsert(payload);
     } catch (error) {
-      window.alert(`Sauvegarde impossible: ${error.message}`);
+      window.alert(`Sauvegarde impossible : ${error.message}`);
       return;
     }
 
@@ -240,7 +306,14 @@ if (form) {
 
 if (addBtn) addBtn.addEventListener("click", () => openForm());
 if (cancelBtn) cancelBtn.addEventListener("click", closeForm);
-if (addMediaBtn && mediaList) addMediaBtn.addEventListener("click", () => mediaList.appendChild(mediaRow()));
+
+addBlockButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (!blocksList) return;
+    blocksList.appendChild(createBlockRow({ type: btn.dataset.addBlock || "text" }));
+    updateBlockIndex();
+  });
+});
 
 filterButtons.forEach((button) => {
   button.addEventListener("click", async () => {
@@ -264,7 +337,7 @@ if (exportBtn) {
       link.remove();
       URL.revokeObjectURL(link.href);
     } catch (error) {
-      window.alert(`Export impossible: ${error.message}`);
+      window.alert(`Export impossible : ${error.message}`);
     }
   });
 }
@@ -277,10 +350,10 @@ if (importInput) {
     try {
       const text = await file.text();
       const count = await window.ReviewsStore.importJson(text);
-      window.alert(`Import termine: ${count} review(s).`);
+      window.alert(`Import terminé : ${count} review(s).`);
       await renderAll();
     } catch (error) {
-      window.alert(`Import impossible: ${error.message}`);
+      window.alert(`Import impossible : ${error.message}`);
     } finally {
       importInput.value = "";
     }
@@ -290,7 +363,7 @@ if (importInput) {
 if (window.ReviewsStore.onAuthChanged && authStatus) {
   window.ReviewsStore.onAuthChanged((user) => {
     const unlocked = Boolean(user);
-    authStatus.textContent = unlocked ? "Debloque" : "Verrouille";
+    authStatus.textContent = unlocked ? "Débloqué" : "Verrouillé";
     if (managerSection) {
       managerSection.classList.toggle("hidden", !unlocked);
     }
@@ -302,9 +375,9 @@ if (loginBtn && adminPassword) {
     try {
       await window.ReviewsStore.unlockWithPassword(adminPassword.value);
       adminPassword.value = "";
-      window.alert("Debloque");
+      window.alert("Débloqué");
     } catch (error) {
-      window.alert(`Mot de passe invalide: ${error.message}`);
+      window.alert(`Mot de passe invalide : ${error.message}`);
     }
   });
 }
@@ -313,12 +386,12 @@ if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
     try {
       await window.ReviewsStore.signOut();
-      window.alert("Verrouille");
+      window.alert("Verrouillé");
     } catch (error) {
-      window.alert(`Erreur: ${error.message}`);
+      window.alert(`Erreur : ${error.message}`);
     }
   });
 }
 
-if (mediaList) setMediaRows([]);
+if (blocksList) setBlocks([]);
 renderAll();

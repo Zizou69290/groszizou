@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Modifier - GROSZIZOU Reviews</title>
-  <meta name="description" content="Modifier les reviews de GROSZIZOU." />
+  <title>Ajouter / Modifier - GROSZIZOU Reviews</title>
+  <meta name="description" content="Ajouter ou modifier les reviews de GROSZIZOU." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -18,7 +18,7 @@
       <a class="brand" href="index.html">GROSZIZOU</a>
       <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
       <ul id="menu" class="menu">
-        <li><a href="modifier.html">Modifier</a></li>
+        <li><a href="modifier.html">Ajouter / Modifier</a></li>
       </ul>
     </nav>
   </header>
@@ -29,9 +29,9 @@
         <label>Mot de passe
           <input id="admin-password" type="password" placeholder="Mot de passe admin" />
         </label>
-        <p id="auth-status" class="media-note">Verrouille</p>
+        <p id="auth-status" class="media-note">Verrouillé</p>
         <div class="row-actions">
-          <button id="admin-login" class="action-btn">Debloquer</button>
+          <button id="admin-login" class="action-btn">Débloquer</button>
           <button id="admin-logout" class="action-btn secondary">Verrouiller</button>
         </div>
       </div>
@@ -55,11 +55,11 @@
 
         <div class="form-grid">
           <label>Titre<input name="title" /></label>
-          <label>Categorie
+          <label>Catégorie
             <select name="category">
-              <option value="jeu">Jeu</option>
+              <option value="jeu">Jeu-vidéo</option>
               <option value="film">Film</option>
-              <option value="serie">Serie</option>
+              <option value="serie">Série</option>
               <option value="musique">Musique</option>
               <option value="livre">Livre</option>
             </select>
@@ -67,27 +67,27 @@
           <label>Date<input name="date" type="date" /></label>
           <label>Note (/10)<input name="score" type="number" min="0" max="10" step="0.1" /></label>
           <label>Image de couverture (URL)<input name="cover" type="url" /></label>
-          <label>Couleur accent (hex)
+          <label>Couleur d'accent (hex)
             <input name="accent" type="text" placeholder="#f25f29" />
           </label>
         </div>
 
-        <label>Resume
+        <label>Résumé
           <textarea name="summary" rows="2"></textarea>
-        </label>
-        <label>Texte complet
-          <textarea name="body" rows="7"></textarea>
-        </label>
-        <label>Tags (separes par des virgules)
-          <input name="tags" placeholder="arcade, cyberpunk, solo" />
         </label>
 
         <div class="media-head">
-          <h4>Medias (image / video / video-embed / audio)</h4>
-          <button type="button" id="add-media" class="action-btn secondary">Ajouter un media</button>
+          <h4>Blocs de contenu (ordre libre)</h4>
+          <div class="manager-actions">
+            <button type="button" class="action-btn secondary" data-add-block="text">+ Texte</button>
+            <button type="button" class="action-btn secondary" data-add-block="image">+ Image</button>
+            <button type="button" class="action-btn secondary" data-add-block="video">+ Vidéo</button>
+            <button type="button" class="action-btn secondary" data-add-block="video-embed">+ Vidéo embed</button>
+            <button type="button" class="action-btn secondary" data-add-block="audio">+ Audio</button>
+          </div>
         </div>
-        <p class="media-note">Mode gratuit: utilise des URLs uniquement (images/videos/audio).</p>
-        <div id="media-list" class="media-list"></div>
+        <p class="media-note">Tu peux mélanger comme tu veux: texte, image, texte, vidéo, etc. (URLs uniquement).</p>
+        <div id="blocks-list" class="blocks-list"></div>
 
         <div class="form-actions">
           <button type="submit" class="action-btn">Enregistrer</button>
@@ -96,12 +96,6 @@
       </form>
     </section>
   </main>
-
-  <footer class="footer">
-    <div class="container footer-content">
-      <p>GROSZIZOU Reviews</p>
-    </div>
-  </footer>
 
   <script src="assets/js/firebase-config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>

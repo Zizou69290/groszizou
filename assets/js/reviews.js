@@ -1,8 +1,8 @@
 ﻿window.ReviewsStore = (() => {
   const categories = {
-    jeu: "Jeu video",
+    jeu: "Jeu-vidéo",
     film: "Film",
-    serie: "Serie",
+    serie: "Série",
     musique: "Musique",
     livre: "Livre"
   };
@@ -17,7 +17,7 @@
     if (firebaseReady) return;
 
     if (!window.firebase) {
-      throw new Error("Firebase SDK non charge");
+      throw new Error("Firebase SDK non chargé");
     }
 
     cfg = window.GROSZIZOU_FIREBASE_CONFIG || {};
@@ -44,7 +44,35 @@
     return result || `review-${Date.now()}`;
   }
 
+  function normalizeBlock(raw) {
+    if (!raw || !raw.type) return null;
+    const block = {
+      type: raw.type,
+      content: raw.content || "",
+      url: raw.url || "",
+      caption: raw.caption || ""
+    };
+    return block;
+  }
+
   function normalize(review) {
+    let blocks = Array.isArray(review.blocks)
+      ? review.blocks.map(normalizeBlock).filter(Boolean)
+      : [];
+
+    if (!blocks.length) {
+      if (review.body) {
+        blocks.push({ type: "text", content: review.body, url: "", caption: "" });
+      }
+      if (Array.isArray(review.media)) {
+        review.media.forEach((m) => {
+          if (m?.type && m?.url) {
+            blocks.push({ type: m.type, content: "", url: m.url, caption: m.caption || "" });
+          }
+        });
+      }
+    }
+
     return {
       id: review.id || slugify(review.title),
       title: review.title || "Sans titre",
@@ -54,10 +82,8 @@
       cover: review.cover || "",
       accent: review.accent || "",
       summary: review.summary || "",
-      body: review.body || "",
-      tags: Array.isArray(review.tags) ? review.tags : [],
-      media: Array.isArray(review.media) ? review.media : [],
-      updatedAt: Date.now()
+      blocks,
+      updatedAt: typeof review.updatedAt === "number" ? review.updatedAt : Date.now()
     };
   }
 

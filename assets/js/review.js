@@ -8,15 +8,57 @@ const summary = document.getElementById("review-summary");
 const date = document.getElementById("review-date");
 const score = document.getElementById("review-score");
 const cover = document.getElementById("review-cover");
-const body = document.getElementById("review-body");
+const content = document.getElementById("review-content");
 const tags = document.getElementById("review-tags");
-const media = document.getElementById("review-media");
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
   const [year, month, day] = iso.split("-");
   return `${day}/${month}/${year}`;
 };
+
+function scoreToStars(value) {
+  if (!Number.isFinite(value)) return "☆☆☆☆☆";
+  const full = Math.max(0, Math.min(5, Math.round(value / 2)));
+  return "★".repeat(full) + "☆".repeat(5 - full);
+}
+
+function renderBlock(block) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "media-item";
+
+  if (block.type === "text") {
+    wrapper.className = "review-text-block";
+    const p = document.createElement("p");
+    p.textContent = block.content || "";
+    wrapper.appendChild(p);
+    return block.content ? wrapper : null;
+  }
+
+  if (block.type === "image") {
+    wrapper.innerHTML = `<img src="${block.url}" alt="${block.caption || "image"}" />`;
+  }
+
+  if (block.type === "video") {
+    wrapper.innerHTML = `<video controls src="${block.url}"></video>`;
+  }
+
+  if (block.type === "video-embed") {
+    wrapper.innerHTML = `<div class="video-wrap"><iframe src="${block.url}" title="video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+  }
+
+  if (block.type === "audio") {
+    wrapper.innerHTML = `<audio controls src="${block.url}"></audio>`;
+  }
+
+  if (block.caption && block.type !== "text") {
+    const cap = document.createElement("figcaption");
+    cap.textContent = block.caption;
+    wrapper.appendChild(cap);
+  }
+
+  return wrapper.innerHTML ? wrapper : null;
+}
 
 async function loadReview() {
   if (!id) {
@@ -35,21 +77,23 @@ async function loadReview() {
   document.title = `Review - ${item.title || "Sans titre"}`;
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
-  summary.textContent = item.summary || "Aucun resume.";
-  date.textContent = `Publie le ${fmtDate(item.date)}`;
-  score.textContent = Number.isFinite(item.score) ? `Note: ${item.score}/10` : "Note: -";
+  summary.textContent = item.summary || "Aucun résumé.";
+  date.textContent = `Publié le ${fmtDate(item.date)}`;
+  score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
   cover.src = item.cover || DEFAULT_COVER;
   cover.alt = item.title || "Review";
 
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");
 
-  body.innerHTML = (item.body || "")
-    .split("\n\n")
-    .filter(Boolean)
-    .map((paragraph) => `<p>${paragraph}</p>`)
-    .join("");
-  if (!body.innerHTML) {
-    body.innerHTML = "<p>Aucun texte detaille.</p>";
+  content.innerHTML = "";
+  const blocks = Array.isArray(item.blocks) ? item.blocks : [];
+  if (!blocks.length) {
+    content.innerHTML = "<p>Aucun contenu détaillé.</p>";
+  } else {
+    blocks.forEach((block) => {
+      const node = renderBlock(block);
+      if (node) content.appendChild(node);
+    });
   }
 
   tags.innerHTML = "";
@@ -62,38 +106,6 @@ async function loadReview() {
   if (!tags.innerHTML) {
     tags.innerHTML = "<span class='tag'>sans-tag</span>";
   }
-
-  media.innerHTML = "";
-  (item.media || []).forEach((entry) => {
-    const wrap = document.createElement("figure");
-    wrap.className = "media-item";
-
-    if (entry.type === "image") {
-      wrap.innerHTML = `<img src="${entry.url}" alt="${entry.caption || item.title || "media"}" />`;
-    }
-
-    if (entry.type === "video") {
-      wrap.innerHTML = `<video controls src="${entry.url}"></video>`;
-    }
-
-    if (entry.type === "video-embed") {
-      wrap.innerHTML = `<div class="video-wrap"><iframe src="${entry.url}" title="video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-    }
-
-    if (entry.type === "audio") {
-      wrap.innerHTML = `<audio controls src="${entry.url}"></audio>`;
-    }
-
-    if (entry.caption) {
-      const cap = document.createElement("figcaption");
-      cap.textContent = entry.caption;
-      wrap.appendChild(cap);
-    }
-
-    if (wrap.innerHTML) {
-      media.appendChild(wrap);
-    }
-  });
 }
 
 loadReview();
