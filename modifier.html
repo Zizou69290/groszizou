@@ -1,0 +1,113 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modifier - GROSZIZOU Reviews</title>
+  <meta name="description" content="Modifier les reviews de GROSZIZOU." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="hero">
+    <nav class="topbar container">
+      <a class="brand" href="index.html">GROSZIZOU</a>
+      <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
+      <ul id="menu" class="menu">
+        <li><a href="index.html">Reviews</a></li>
+        <li><a href="modifier.html">Modifier</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="container manager-section">
+      <div class="token-box">
+        <label>Token admin
+          <input id="admin-token" type="password" placeholder="Ton token ADMIN_TOKEN" />
+        </label>
+        <div class="row-actions">
+          <button id="save-admin-token" class="action-btn">Enregistrer</button>
+          <button id="clear-admin-token" class="action-btn secondary">Effacer</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="manager" class="container manager-section">
+      <div class="section-head">
+        <h2>Gestion des reviews</h2>
+        <div class="manager-actions">
+          <button id="new-review" class="action-btn">Nouvelle review</button>
+          <button id="export-json" class="action-btn secondary">Exporter JSON</button>
+          <label class="import-label" for="import-json">Importer JSON</label>
+          <input id="import-json" type="file" accept="application/json" />
+        </div>
+      </div>
+
+      <div id="manager-list" class="manager-list"></div>
+
+      <form id="review-form" class="review-form hidden">
+        <h3 id="form-title">Ajouter une review</h3>
+
+        <div class="form-grid">
+          <label>Titre<input name="title" /></label>
+          <label>Categorie
+            <select name="category">
+              <option value="jeu">Jeu</option>
+              <option value="film">Film</option>
+              <option value="serie">Serie</option>
+              <option value="musique">Musique</option>
+              <option value="livre">Livre</option>
+            </select>
+          </label>
+          <label>Date<input name="date" type="date" /></label>
+          <label>Note (/10)<input name="score" type="number" min="0" max="10" step="0.1" /></label>
+          <label>Image de couverture (URL)<input name="cover" type="url" /></label>
+          <label>Image de couverture (fichier)
+            <input name="coverFile" type="file" accept="image/*" />
+          </label>
+          <label>Couleur accent (hex)
+            <input name="accent" type="text" placeholder="#f25f29" />
+          </label>
+        </div>
+
+        <label>Resume
+          <textarea name="summary" rows="2"></textarea>
+        </label>
+        <label>Texte complet
+          <textarea name="body" rows="7"></textarea>
+        </label>
+        <label>Tags (separes par des virgules)
+          <input name="tags" placeholder="arcade, cyberpunk, solo" />
+        </label>
+
+        <div class="media-head">
+          <h4>Medias (image / video / video-embed / audio)</h4>
+          <button type="button" id="add-media" class="action-btn secondary">Ajouter un media</button>
+        </div>
+        <p class="media-note">Tu peux utiliser une URL, ou choisir un fichier local depuis ton ordinateur.</p>
+        <div id="media-list" class="media-list"></div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">Enregistrer</button>
+          <button type="button" id="cancel-form" class="action-btn secondary">Annuler</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>GROSZIZOU Reviews</p>
+      <p>Mode online: base SQL + blob storage</p>
+    </div>
+  </footer>
+
+  <script src="assets/js/reviews.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

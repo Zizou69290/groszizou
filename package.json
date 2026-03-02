@@ -1,0 +1,10 @@
+﻿{
+  "name": "groszizou-reviews",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GROSZIZOU Reviews - static frontend + Vercel API",
+  "dependencies": {
+    "@vercel/blob": "^0.27.0",
+    "pg": "^8.16.3"
+  }
+}
