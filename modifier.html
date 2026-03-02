@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ajouter / Modifier - GROSZIZOU Reviews</title>
+  <title>Admin - GROSZIZOU Reviews</title>
   <meta name="description" content="Ajouter ou modifier les reviews et tops de GROSZIZOU." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,7 +21,7 @@
         <li><a href="index.html">Reviews</a></li>
         <li><a href="tops.html">Tops</a></li>
         <li class="menu-sep" aria-hidden="true">|</li>
-        <li><a href="modifier.html">Ajouter / Modifier</a></li>
+        <li><a href="modifier.html">Admin</a></li>
       </ul>
     </nav>
   </header>
@@ -29,13 +29,13 @@
   <main>
     <section class="container manager-section">
       <div class="token-box">
-        <label>Mot de passe
+        <label>Mot de passe</label>
+        <div class="admin-auth-row">
           <input id="admin-password" type="password" placeholder="Mot de passe admin" />
-        </label>
-        <p id="auth-status" class="media-note">Verrouillé</p>
+          <button id="admin-login" class="enter-btn" title="Entrer" aria-label="Entrer">↵</button>
+        </div>
         <div class="row-actions">
-          <button id="admin-login" class="action-btn">Débloquer</button>
-          <button id="admin-logout" class="action-btn secondary">Verrouiller</button>
+          <button id="admin-logout" class="action-btn secondary hidden">Verrouiller</button>
         </div>
       </div>
     </section>
@@ -45,9 +45,6 @@
         <h2>Gestion des reviews</h2>
         <div class="manager-actions">
           <button id="new-review" class="action-btn">Nouvelle review</button>
-          <button id="export-json" class="action-btn secondary">Exporter JSON</button>
-          <label class="import-label" for="import-json">Importer JSON</label>
-          <input id="import-json" type="file" accept="application/json" />
         </div>
       </div>
 
@@ -93,6 +90,27 @@
           </div>
         </div>
         <p class="media-note">Tu peux mélanger comme tu veux : texte, image, texte, vidéo, etc. (URLs uniquement).</p>
+        <div class="text-tools">
+          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="b"><strong>B</strong></button>
+          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="i"><em>I</em></button>
+          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="u"><span class="u-text">U</span></button>
+          <label class="tool-inline">Couleur
+            <input id="tool-color" type="color" value="#f2f2ee" />
+          </label>
+          <button type="button" id="tool-color-apply" class="action-btn secondary tool-btn">Appliquer couleur</button>
+          <label class="tool-inline">Taille
+            <select id="tool-size">
+              <option value="14">14</option>
+              <option value="16" selected>16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+              <option value="28">28</option>
+            </select>
+          </label>
+          <button type="button" id="tool-size-apply" class="action-btn secondary tool-btn">Appliquer taille</button>
+          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="spoiler">Spoiler</button>
+        </div>
         <div id="blocks-list" class="blocks-list"></div>
 
         <h4>Prévisualisation live</h4>
@@ -129,6 +147,7 @@
             </select>
           </label>
           <label>Année / période<input name="year" placeholder="2025" /></label>
+          <label>Image de couverture (URL)<input name="cover" type="url" /></label>
         </div>
 
         <label>Sous-titre
