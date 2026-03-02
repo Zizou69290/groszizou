@@ -1,4 +1,4 @@
-﻿const menuToggle = document.getElementById("menu-toggle");
+const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 
 if (menuToggle && menu) {
@@ -16,19 +16,33 @@ const addBtn = document.getElementById("new-review");
 const cancelBtn = document.getElementById("cancel-form");
 const blocksList = document.getElementById("blocks-list");
 const addBlockButtons = document.querySelectorAll("[data-add-block]");
+const previewBox = document.getElementById("review-preview");
 const exportBtn = document.getElementById("export-json");
 const importInput = document.getElementById("import-json");
 const filterButtons = document.querySelectorAll(".filter-btn");
+
+const topList = document.getElementById("tops-manager-list");
+const topForm = document.getElementById("top-form");
+const topFormTitle = document.getElementById("top-form-title");
+const newTopBtn = document.getElementById("new-top");
+const cancelTopBtn = document.getElementById("cancel-top-form");
+const addTopItemBtn = document.getElementById("add-top-item");
+const topItemsList = document.getElementById("top-items-list");
 
 const adminPassword = document.getElementById("admin-password");
 const loginBtn = document.getElementById("admin-login");
 const logoutBtn = document.getElementById("admin-logout");
 const authStatus = document.getElementById("auth-status");
 
-const DEFAULT_COVER = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>");
+const DEFAULT_COVER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>"
+  );
 
 let selectedFilter = "all";
 let editingId = null;
+let editingTopId = null;
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -95,12 +109,40 @@ function managerRow(item) {
   row.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(item));
   row.querySelector('[data-action="delete"]').addEventListener("click", async (event) => {
     event.stopPropagation();
-    const ok = window.confirm(`Supprimer \"${item.title || "Sans titre"}\" ?`);
+    const ok = window.confirm(`Supprimer "${item.title || "Sans titre"}" ?`);
     if (!ok) return;
-
     try {
       await window.ReviewsStore.remove(item.id);
       await renderAll();
+    } catch (error) {
+      window.alert(`Suppression impossible : ${error.message}`);
+    }
+  });
+
+  return row;
+}
+
+function topRow(item) {
+  const row = document.createElement("div");
+  row.className = "manager-row";
+  row.innerHTML = `
+    <div>
+      <strong>${item.title || "Sans titre"}</strong>
+      <span>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}</span>
+    </div>
+    <div class="row-actions">
+      <button class="action-btn secondary" data-action="edit-top">Éditer</button>
+      <button class="action-btn danger" data-action="delete-top">Supprimer</button>
+    </div>
+  `;
+
+  row.querySelector('[data-action="edit-top"]').addEventListener("click", () => openTopForm(item));
+  row.querySelector('[data-action="delete-top"]').addEventListener("click", async () => {
+    const ok = window.confirm(`Supprimer le top "${item.title || "Sans titre"}" ?`);
+    if (!ok) return;
+    try {
+      await window.ReviewsStore.removeTop(item.id);
+      await renderTopsManager();
     } catch (error) {
       window.alert(`Suppression impossible : ${error.message}`);
     }
@@ -125,6 +167,74 @@ function getBlockFieldsHtml(type, block) {
     <input class="block-url" type="url" placeholder="URL" value="${block.url || ""}" />
     <input class="block-caption" type="text" placeholder="Légende (optionnel)" value="${block.caption || ""}" />
   `;
+}
+
+function readBlocks() {
+  if (!blocksList) return [];
+  const rows = [...blocksList.querySelectorAll(".block-item")];
+  const blocks = [];
+
+  rows.forEach((row) => {
+    const type = row.querySelector(".block-type").value;
+    if (type === "text") {
+      const content = row.querySelector(".block-content")?.value.trim() || "";
+      if (content) blocks.push({ type, content, url: "", caption: "" });
+      return;
+    }
+    const url = row.querySelector(".block-url")?.value.trim() || "";
+    const caption = row.querySelector(".block-caption")?.value.trim() || "";
+    if (url) blocks.push({ type, content: "", url, caption });
+  });
+
+  return blocks;
+}
+
+function renderPreview() {
+  if (!previewBox || !form) return;
+
+  const title = form.elements.title.value.trim() || "Sans titre";
+  const summary = form.elements.summary.value.trim() || "Aucun résumé.";
+  const score = form.elements.score.value === "" ? null : Number(form.elements.score.value);
+  const blocks = readBlocks();
+
+  previewBox.innerHTML = "";
+
+  const head = document.createElement("div");
+  head.className = "preview-head";
+  head.innerHTML = `<strong>${title}</strong><span>${scoreToStars(score)}${Number.isFinite(score) ? ` (${score}/10)` : ""}</span>`;
+  previewBox.appendChild(head);
+
+  const summaryNode = document.createElement("p");
+  summaryNode.className = "media-note";
+  summaryNode.textContent = summary;
+  previewBox.appendChild(summaryNode);
+
+  const flow = document.createElement("div");
+  flow.className = "preview-flow";
+  blocks.forEach((block) => {
+    const node = document.createElement("div");
+    node.className = "preview-block";
+    if (block.type === "text") {
+      node.textContent = block.content;
+    } else {
+      node.textContent = `${block.type.toUpperCase()} · ${block.url}`;
+      if (block.caption) {
+        const cap = document.createElement("small");
+        cap.textContent = ` (${block.caption})`;
+        node.appendChild(cap);
+      }
+    }
+    flow.appendChild(node);
+  });
+
+  if (!blocks.length) {
+    const empty = document.createElement("p");
+    empty.className = "media-note";
+    empty.textContent = "Ajoute des blocs pour voir le rendu.";
+    flow.appendChild(empty);
+  }
+
+  previewBox.appendChild(flow);
 }
 
 function createBlockRow(block = { type: "text", content: "", url: "", caption: "" }) {
@@ -154,6 +264,9 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
 
   const renderFields = () => {
     fields.innerHTML = getBlockFieldsHtml(typeSelect.value, block);
+    fields.querySelectorAll("input,textarea").forEach((el) => {
+      el.addEventListener("input", renderPreview);
+    });
   };
 
   typeSelect.value = block.type || "text";
@@ -162,26 +275,30 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
   typeSelect.addEventListener("change", () => {
     block.type = typeSelect.value;
     renderFields();
+    renderPreview();
   });
 
   row.querySelector(".block-delete").addEventListener("click", () => {
     row.remove();
     updateBlockIndex();
+    renderPreview();
   });
 
   row.querySelector(".block-up").addEventListener("click", () => {
     const prev = row.previousElementSibling;
-    if (prev) {
+    if (prev && blocksList) {
       blocksList.insertBefore(row, prev);
       updateBlockIndex();
+      renderPreview();
     }
   });
 
   row.querySelector(".block-down").addEventListener("click", () => {
     const next = row.nextElementSibling;
-    if (next) {
+    if (next && blocksList) {
       blocksList.insertBefore(next, row);
       updateBlockIndex();
+      renderPreview();
     }
   });
 
@@ -193,32 +310,83 @@ function setBlocks(blocks) {
   blocksList.innerHTML = "";
   if (!Array.isArray(blocks) || !blocks.length) {
     blocksList.appendChild(createBlockRow({ type: "text", content: "" }));
-    updateBlockIndex();
-    return;
+  } else {
+    blocks.forEach((block) => blocksList.appendChild(createBlockRow(block)));
   }
-  blocks.forEach((block) => blocksList.appendChild(createBlockRow(block)));
   updateBlockIndex();
+  renderPreview();
 }
 
-function readBlocks() {
-  if (!blocksList) return [];
-  const rows = [...blocksList.querySelectorAll(".block-item")];
-  const blocks = [];
+function createTopItemRow(item = { title: "", comment: "" }) {
+  const row = document.createElement("div");
+  row.className = "block-item";
+  row.innerHTML = `
+    <div class="block-head">
+      <strong class="block-index">Item</strong>
+      <div class="row-actions">
+        <button type="button" class="action-btn secondary top-up">↑</button>
+        <button type="button" class="action-btn secondary top-down">↓</button>
+        <button type="button" class="action-btn danger top-delete">Supprimer</button>
+      </div>
+    </div>
+    <div class="block-fields">
+      <input class="top-title" type="text" placeholder="Titre" value="${item.title || ""}" />
+      <input class="top-comment" type="text" placeholder="Commentaire (optionnel)" value="${item.comment || ""}" />
+    </div>
+  `;
 
-  rows.forEach((row) => {
-    const type = row.querySelector(".block-type").value;
-    if (type === "text") {
-      const content = row.querySelector(".block-content")?.value.trim() || "";
-      if (content) blocks.push({ type, content, url: "", caption: "" });
-      return;
-    }
-
-    const url = row.querySelector(".block-url")?.value.trim() || "";
-    const caption = row.querySelector(".block-caption")?.value.trim() || "";
-    if (url) blocks.push({ type, content: "", url, caption });
+  row.querySelector(".top-delete").addEventListener("click", () => {
+    row.remove();
+    updateTopItemIndex();
   });
 
-  return blocks;
+  row.querySelector(".top-up").addEventListener("click", () => {
+    const prev = row.previousElementSibling;
+    if (prev && topItemsList) {
+      topItemsList.insertBefore(row, prev);
+      updateTopItemIndex();
+    }
+  });
+
+  row.querySelector(".top-down").addEventListener("click", () => {
+    const next = row.nextElementSibling;
+    if (next && topItemsList) {
+      topItemsList.insertBefore(next, row);
+      updateTopItemIndex();
+    }
+  });
+
+  return row;
+}
+
+function updateTopItemIndex() {
+  if (!topItemsList) return;
+  [...topItemsList.querySelectorAll(".block-item")].forEach((row, idx) => {
+    const index = row.querySelector(".block-index");
+    if (index) index.textContent = `Item ${idx + 1}`;
+  });
+}
+
+function setTopItems(items) {
+  if (!topItemsList) return;
+  topItemsList.innerHTML = "";
+  if (!items || !items.length) {
+    topItemsList.appendChild(createTopItemRow());
+  } else {
+    items.forEach((item) => topItemsList.appendChild(createTopItemRow(item)));
+  }
+  updateTopItemIndex();
+}
+
+function readTopItems() {
+  if (!topItemsList) return [];
+  const rows = [...topItemsList.querySelectorAll(".block-item")];
+  return rows
+    .map((row) => ({
+      title: row.querySelector(".top-title")?.value.trim() || "",
+      comment: row.querySelector(".top-comment")?.value.trim() || ""
+    }))
+    .filter((item) => item.title);
 }
 
 async function renderAll() {
@@ -228,7 +396,9 @@ async function renderAll() {
     reviews = await window.ReviewsStore.getAll();
   } catch (error) {
     console.error(error);
-    window.alert(`Impossible de charger les reviews : ${error.message}`);
+    if (reviewsGrid || managerList) {
+      window.alert(`Impossible de charger les reviews : ${error.message}`);
+    }
     return;
   }
 
@@ -247,6 +417,17 @@ async function renderAll() {
   }
 }
 
+async function renderTopsManager() {
+  if (!topList) return;
+  try {
+    const tops = await window.ReviewsStore.getAllTops();
+    topList.innerHTML = "";
+    tops.forEach((item) => topList.appendChild(topRow(item)));
+  } catch (error) {
+    window.alert(`Impossible de charger les tops : ${error.message}`);
+  }
+}
+
 function openForm(item = null) {
   if (!form) return;
   editingId = item ? item.id : null;
@@ -260,8 +441,8 @@ function openForm(item = null) {
   form.elements.cover.value = item?.cover || "";
   form.elements.accent.value = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
-  setBlocks(item?.blocks || []);
 
+  setBlocks(item?.blocks || []);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -271,15 +452,41 @@ function closeForm() {
   form.reset();
   form.classList.add("hidden");
   if (blocksList) blocksList.innerHTML = "";
+  renderPreview();
+}
+
+function openTopForm(item = null) {
+  if (!topForm) return;
+  editingTopId = item ? item.id : null;
+  topForm.classList.remove("hidden");
+  topFormTitle.textContent = item ? "Modifier un top" : "Ajouter un top";
+
+  topForm.elements.title.value = item?.title || "";
+  topForm.elements.category.value = item?.category || "autre";
+  topForm.elements.year.value = item?.year || "";
+  topForm.elements.subtitle.value = item?.subtitle || "";
+  setTopItems(item?.items || []);
+  topForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function closeTopForm() {
+  if (!topForm) return;
+  editingTopId = null;
+  topForm.reset();
+  topForm.classList.add("hidden");
+  if (topItemsList) topItemsList.innerHTML = "";
 }
 
 if (form) {
+  form.elements.title.addEventListener("input", renderPreview);
+  form.elements.score.addEventListener("input", renderPreview);
+  form.elements.summary.addEventListener("input", renderPreview);
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const title = form.elements.title.value.trim() || "Sans titre";
     const nextId = editingId || window.ReviewsStore.slugify(title);
-
     const payload = {
       id: nextId,
       title,
@@ -304,6 +511,33 @@ if (form) {
   });
 }
 
+if (topForm) {
+  topForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const title = topForm.elements.title.value.trim() || "Sans titre";
+    const nextId = editingTopId || window.ReviewsStore.slugify(title);
+    const payload = {
+      id: nextId,
+      title,
+      category: topForm.elements.category.value || "autre",
+      year: topForm.elements.year.value.trim(),
+      subtitle: topForm.elements.subtitle.value.trim(),
+      items: readTopItems()
+    };
+
+    try {
+      await window.ReviewsStore.upsertTop(payload);
+    } catch (error) {
+      window.alert(`Sauvegarde top impossible : ${error.message}`);
+      return;
+    }
+
+    closeTopForm();
+    await renderTopsManager();
+  });
+}
+
 if (addBtn) addBtn.addEventListener("click", () => openForm());
 if (cancelBtn) cancelBtn.addEventListener("click", closeForm);
 
@@ -312,8 +546,19 @@ addBlockButtons.forEach((btn) => {
     if (!blocksList) return;
     blocksList.appendChild(createBlockRow({ type: btn.dataset.addBlock || "text" }));
     updateBlockIndex();
+    renderPreview();
   });
 });
+
+if (newTopBtn) newTopBtn.addEventListener("click", () => openTopForm());
+if (cancelTopBtn) cancelTopBtn.addEventListener("click", closeTopForm);
+if (addTopItemBtn) {
+  addTopItemBtn.addEventListener("click", () => {
+    if (!topItemsList) return;
+    topItemsList.appendChild(createTopItemRow());
+    updateTopItemIndex();
+  });
+}
 
 filterButtons.forEach((button) => {
   button.addEventListener("click", async () => {
@@ -361,11 +606,15 @@ if (importInput) {
 }
 
 if (window.ReviewsStore.onAuthChanged && authStatus) {
-  window.ReviewsStore.onAuthChanged((user) => {
+  window.ReviewsStore.onAuthChanged(async (user) => {
     const unlocked = Boolean(user);
     authStatus.textContent = unlocked ? "Débloqué" : "Verrouillé";
     if (managerSection) {
       managerSection.classList.toggle("hidden", !unlocked);
+    }
+    if (unlocked) {
+      await renderAll();
+      await renderTopsManager();
     }
   });
 }
@@ -394,4 +643,5 @@ if (logoutBtn) {
 }
 
 if (blocksList) setBlocks([]);
+if (topItemsList) setTopItems([]);
 renderAll();

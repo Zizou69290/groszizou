@@ -4,10 +4,12 @@
     film: "Film",
     serie: "Série",
     musique: "Musique",
-    livre: "Livre"
+    livre: "Livre",
+    autre: "Autre"
   };
 
-  const collectionName = "reviews";
+  const reviewCollection = "reviews";
+  const topCollection = "tops";
   let firebaseReady = false;
   let db;
   let auth;
@@ -35,43 +37,29 @@
   }
 
   function slugify(value) {
-    const result = String(value || "review")
+    const result = String(value || "item")
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
-    return result || `review-${Date.now()}`;
+    return result || `${Date.now()}`;
   }
 
   function normalizeBlock(raw) {
     if (!raw || !raw.type) return null;
-    const block = {
+    return {
       type: raw.type,
       content: raw.content || "",
       url: raw.url || "",
       caption: raw.caption || ""
     };
-    return block;
   }
 
-  function normalize(review) {
-    let blocks = Array.isArray(review.blocks)
+  function normalizeReview(review) {
+    const blocks = Array.isArray(review.blocks)
       ? review.blocks.map(normalizeBlock).filter(Boolean)
       : [];
-
-    if (!blocks.length) {
-      if (review.body) {
-        blocks.push({ type: "text", content: review.body, url: "", caption: "" });
-      }
-      if (Array.isArray(review.media)) {
-        review.media.forEach((m) => {
-          if (m?.type && m?.url) {
-            blocks.push({ type: m.type, content: "", url: m.url, caption: m.caption || "" });
-          }
-        });
-      }
-    }
 
     return {
       id: review.id || slugify(review.title),
@@ -87,17 +75,28 @@
     };
   }
 
-  async function getAll() {
-    ensureFirebase();
-    const snap = await db.collection(collectionName).orderBy("updatedAt", "desc").get();
-    return snap.docs.map((doc) => normalize({ id: doc.id, ...doc.data() }));
+  function normalizeTopItem(item) {
+    if (!item || !item.title) return null;
+    return {
+      title: item.title,
+      comment: item.comment || ""
+    };
   }
 
-  async function getById(id) {
-    ensureFirebase();
-    const doc = await db.collection(collectionName).doc(id).get();
-    if (!doc.exists) throw new Error("Not found");
-    return normalize({ id: doc.id, ...doc.data() });
+  function normalizeTop(top) {
+    const items = Array.isArray(top.items)
+      ? top.items.map(normalizeTopItem).filter(Boolean)
+      : [];
+
+    return {
+      id: top.id || slugify(top.title),
+      title: top.title || "Sans titre",
+      subtitle: top.subtitle || "",
+      category: top.category || "autre",
+      year: top.year || "",
+      items,
+      updatedAt: typeof top.updatedAt === "number" ? top.updatedAt : Date.now()
+    };
   }
 
   function requireAuth() {
@@ -107,16 +106,55 @@
     }
   }
 
+  async function getAll() {
+    ensureFirebase();
+    const snap = await db.collection(reviewCollection).orderBy("updatedAt", "desc").get();
+    return snap.docs.map((doc) => normalizeReview({ id: doc.id, ...doc.data() }));
+  }
+
+  async function getById(id) {
+    ensureFirebase();
+    const doc = await db.collection(reviewCollection).doc(id).get();
+    if (!doc.exists) throw new Error("Not found");
+    return normalizeReview({ id: doc.id, ...doc.data() });
+  }
+
   async function upsert(review) {
     requireAuth();
-    const normalized = normalize(review);
-    await db.collection(collectionName).doc(normalized.id).set(normalized, { merge: true });
+    const normalized = normalizeReview(review);
+    await db.collection(reviewCollection).doc(normalized.id).set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
 
   async function remove(id) {
     requireAuth();
-    await db.collection(collectionName).doc(id).delete();
+    await db.collection(reviewCollection).doc(id).delete();
+    return { ok: true };
+  }
+
+  async function getAllTops() {
+    ensureFirebase();
+    const snap = await db.collection(topCollection).orderBy("updatedAt", "desc").get();
+    return snap.docs.map((doc) => normalizeTop({ id: doc.id, ...doc.data() }));
+  }
+
+  async function getTopById(id) {
+    ensureFirebase();
+    const doc = await db.collection(topCollection).doc(id).get();
+    if (!doc.exists) throw new Error("Not found");
+    return normalizeTop({ id: doc.id, ...doc.data() });
+  }
+
+  async function upsertTop(top) {
+    requireAuth();
+    const normalized = normalizeTop(top);
+    await db.collection(topCollection).doc(normalized.id).set(normalized, { merge: true });
+    return { ok: true, id: normalized.id };
+  }
+
+  async function removeTop(id) {
+    requireAuth();
+    await db.collection(topCollection).doc(id).delete();
     return { ok: true };
   }
 
@@ -163,6 +201,10 @@
     getById,
     upsert,
     remove,
+    getAllTops,
+    getTopById,
+    upsertTop,
+    removeTop,
     exportJson,
     importJson,
     unlockWithPassword,
