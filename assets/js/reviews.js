@@ -7,7 +7,33 @@
     livre: "Livre"
   };
 
-  const adminTokenKey = "groszizou_admin_token";
+  const collectionName = "reviews";
+  let firebaseReady = false;
+  let db;
+  let storage;
+  let auth;
+
+  function ensureFirebase() {
+    if (firebaseReady) return;
+
+    if (!window.firebase) {
+      throw new Error("Firebase SDK non charge");
+    }
+
+    const cfg = window.GROSZIZOU_FIREBASE_CONFIG || {};
+    if (!cfg.apiKey || !cfg.projectId) {
+      throw new Error("Config Firebase manquante (assets/js/firebase-config.js)");
+    }
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(cfg);
+    }
+
+    db = firebase.firestore();
+    storage = firebase.storage();
+    auth = firebase.auth();
+    firebaseReady = true;
+  }
 
   function slugify(value) {
     const result = String(value || "review")
@@ -19,68 +45,54 @@
     return result || `review-${Date.now()}`;
   }
 
-  function getAdminToken() {
-    return localStorage.getItem(adminTokenKey) || "";
-  }
-
-  function setAdminToken(token) {
-    if (!token) {
-      localStorage.removeItem(adminTokenKey);
-      return;
-    }
-    localStorage.setItem(adminTokenKey, token);
-  }
-
-  async function request(path, options = {}) {
-    const response = await fetch(path, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      },
-      ...options
-    });
-
-    if (!response.ok) {
-      let message = `HTTP ${response.status}`;
-      try {
-        const payload = await response.json();
-        if (payload?.error) message = payload.error;
-      } catch {
-        // ignore
-      }
-      throw new Error(message);
-    }
-
-    return response.json();
+  function normalize(review) {
+    return {
+      id: review.id || slugify(review.title),
+      title: review.title || "Sans titre",
+      category: review.category || "jeu",
+      date: review.date || "",
+      score: Number.isFinite(Number(review.score)) ? Number(review.score) : null,
+      cover: review.cover || "",
+      accent: review.accent || "",
+      summary: review.summary || "",
+      body: review.body || "",
+      tags: Array.isArray(review.tags) ? review.tags : [],
+      media: Array.isArray(review.media) ? review.media : [],
+      updatedAt: Date.now()
+    };
   }
 
   async function getAll() {
-    return request("/api/reviews");
+    ensureFirebase();
+    const snap = await db.collection(collectionName).orderBy("updatedAt", "desc").get();
+    return snap.docs.map((doc) => normalize({ id: doc.id, ...doc.data() }));
   }
 
   async function getById(id) {
-    return request(`/api/reviews/${encodeURIComponent(id)}`);
+    ensureFirebase();
+    const doc = await db.collection(collectionName).doc(id).get();
+    if (!doc.exists) throw new Error("Not found");
+    return normalize({ id: doc.id, ...doc.data() });
+  }
+
+  function requireAuth() {
+    ensureFirebase();
+    if (!auth.currentUser) {
+      throw new Error("Connecte-toi sur la page Modifier pour ecrire");
+    }
   }
 
   async function upsert(review) {
-    const token = getAdminToken();
-    if (!token) throw new Error("Missing admin token");
-
-    return request("/api/reviews", {
-      method: "POST",
-      headers: { "x-admin-token": token },
-      body: JSON.stringify(review)
-    });
+    requireAuth();
+    const normalized = normalize(review);
+    await db.collection(collectionName).doc(normalized.id).set(normalized, { merge: true });
+    return { ok: true, id: normalized.id };
   }
 
   async function remove(id) {
-    const token = getAdminToken();
-    if (!token) throw new Error("Missing admin token");
-
-    return request(`/api/reviews/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-      headers: { "x-admin-token": token }
-    });
+    requireAuth();
+    await db.collection(collectionName).doc(id).delete();
+    return { ok: true };
   }
 
   async function exportJson() {
@@ -91,51 +103,43 @@
   async function importJson(text) {
     const parsed = JSON.parse(text);
     if (!Array.isArray(parsed)) throw new Error("JSON must be an array");
+    requireAuth();
 
     let count = 0;
     for (const item of parsed) {
-      const review = {
-        id: item.id || slugify(item.title),
-        title: item.title || "Sans titre",
-        category: item.category || "jeu",
-        date: item.date || "",
-        score: Number.isFinite(Number(item.score)) ? Number(item.score) : null,
-        cover: item.cover || "",
-        accent: item.accent || "",
-        summary: item.summary || "",
-        body: item.body || "",
-        tags: Array.isArray(item.tags) ? item.tags : [],
-        media: Array.isArray(item.media) ? item.media : []
-      };
-      await upsert(review);
+      await upsert(item);
       count += 1;
     }
-
     return count;
   }
 
   async function uploadFile(file) {
-    const token = getAdminToken();
-    if (!token) throw new Error("Missing admin token");
+    requireAuth();
+    const safeName = String(file.name || "media.bin").replace(/[^a-zA-Z0-9._-]/g, "-");
+    const path = `reviews/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+    const ref = storage.ref(path);
+    await ref.put(file, { contentType: file.type || "application/octet-stream" });
+    return ref.getDownloadURL();
+  }
 
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("File read failed"));
-      reader.readAsDataURL(file);
-    });
+  async function signIn(email, password) {
+    ensureFirebase();
+    return auth.signInWithEmailAndPassword(email, password);
+  }
 
-    const payload = await request("/api/upload", {
-      method: "POST",
-      headers: { "x-admin-token": token },
-      body: JSON.stringify({
-        filename: file.name,
-        contentType: file.type,
-        dataUrl
-      })
-    });
+  async function signOut() {
+    ensureFirebase();
+    return auth.signOut();
+  }
 
-    return payload.url;
+  function onAuthChanged(callback) {
+    ensureFirebase();
+    return auth.onAuthStateChanged(callback);
+  }
+
+  function getCurrentUser() {
+    ensureFirebase();
+    return auth.currentUser;
   }
 
   return {
@@ -148,7 +152,9 @@
     exportJson,
     importJson,
     uploadFile,
-    getAdminToken,
-    setAdminToken
+    signIn,
+    signOut,
+    onAuthChanged,
+    getCurrentUser
   };
 })();

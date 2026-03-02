@@ -18,9 +18,12 @@ const mediaList = document.getElementById("media-list");
 const exportBtn = document.getElementById("export-json");
 const importInput = document.getElementById("import-json");
 const filterButtons = document.querySelectorAll(".filter-btn");
-const tokenInput = document.getElementById("admin-token");
-const tokenSaveBtn = document.getElementById("save-admin-token");
-const tokenClearBtn = document.getElementById("clear-admin-token");
+
+const adminEmail = document.getElementById("admin-email");
+const adminPassword = document.getElementById("admin-password");
+const loginBtn = document.getElementById("admin-login");
+const logoutBtn = document.getElementById("admin-logout");
+const authStatus = document.getElementById("auth-status");
 
 const DEFAULT_COVER = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>");
 
@@ -166,7 +169,7 @@ async function renderAll() {
     reviews = await window.ReviewsStore.getAll();
   } catch (error) {
     console.error(error);
-    window.alert("Impossible de charger les reviews depuis le serveur.");
+    window.alert(`Impossible de charger les reviews: ${error.message}`);
     return;
   }
 
@@ -317,22 +320,31 @@ if (importInput) {
   });
 }
 
-if (tokenInput) {
-  tokenInput.value = window.ReviewsStore.getAdminToken();
-}
-
-if (tokenSaveBtn && tokenInput) {
-  tokenSaveBtn.addEventListener("click", () => {
-    window.ReviewsStore.setAdminToken(tokenInput.value.trim());
-    window.alert("Token admin enregistre.");
+if (window.ReviewsStore.onAuthChanged && authStatus) {
+  window.ReviewsStore.onAuthChanged((user) => {
+    authStatus.textContent = user ? `Connecte: ${user.email || "utilisateur"}` : "Non connecte";
   });
 }
 
-if (tokenClearBtn && tokenInput) {
-  tokenClearBtn.addEventListener("click", () => {
-    window.ReviewsStore.setAdminToken("");
-    tokenInput.value = "";
-    window.alert("Token admin supprime.");
+if (loginBtn && adminEmail && adminPassword) {
+  loginBtn.addEventListener("click", async () => {
+    try {
+      await window.ReviewsStore.signIn(adminEmail.value.trim(), adminPassword.value);
+      window.alert("Connexion OK");
+    } catch (error) {
+      window.alert(`Connexion impossible: ${error.message}`);
+    }
+  });
+}
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      await window.ReviewsStore.signOut();
+      window.alert("Deconnexion OK");
+    } catch (error) {
+      window.alert(`Deconnexion impossible: ${error.message}`);
+    }
   });
 }
 

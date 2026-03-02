@@ -27,12 +27,16 @@
   <main>
     <section class="container manager-section">
       <div class="token-box">
-        <label>Token admin
-          <input id="admin-token" type="password" placeholder="Ton token ADMIN_TOKEN" />
+        <label>Email admin
+          <input id="admin-email" type="email" placeholder="admin@exemple.com" />
         </label>
+        <label>Mot de passe admin
+          <input id="admin-password" type="password" placeholder="Mot de passe Firebase Auth" />
+        </label>
+        <p id="auth-status" class="media-note">Non connecte</p>
         <div class="row-actions">
-          <button id="save-admin-token" class="action-btn">Enregistrer</button>
-          <button id="clear-admin-token" class="action-btn secondary">Effacer</button>
+          <button id="admin-login" class="action-btn">Se connecter</button>
+          <button id="admin-logout" class="action-btn secondary">Se deconnecter</button>
         </div>
       </div>
     </section>
@@ -103,10 +107,15 @@
   <footer class="footer">
     <div class="container footer-content">
       <p>GROSZIZOU Reviews</p>
-      <p>Mode online: base SQL + blob storage</p>
+      <p>Mode online: Firebase</p>
     </div>
   </footer>
 
+  <script src="assets/js/firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="assets/js/reviews.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
