@@ -21,7 +21,6 @@ const date = document.getElementById("review-date");
 const score = document.getElementById("review-score");
 const cover = document.getElementById("review-cover");
 const content = document.getElementById("review-content");
-const tags = document.getElementById("review-tags");
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -29,10 +28,49 @@ const fmtDate = (iso) => {
   return `${day}/${month}/${year}`;
 };
 
+const escapeHtml = (text) =>
+  String(text || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+
 function scoreToStars(value) {
-  if (!Number.isFinite(value)) return "\u2606\u2606\u2606\u2606\u2606";
+  if (!Number.isFinite(value)) return "☆☆☆☆☆";
   const full = Math.max(0, Math.min(5, Math.round(value / 2)));
-  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
+  return "★".repeat(full) + "☆".repeat(5 - full);
+}
+
+function renderRichText(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
+  html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
+  html = html.replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<span class="u-text">$1</span>');
+  html = html.replace(/\[color=(#[0-9a-f]{3,8})\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
+  html = html.replace(/\[size=(\d{1,2})\]([\s\S]*?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>');
+  html = html.replace(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, '<button class="spoiler-text" type="button">$1</button>');
+  return html.replace(/\n/g, "<br>");
+}
+
+function bindSpoilers(root) {
+  root.querySelectorAll(".spoiler-text").forEach((btn) => {
+    btn.addEventListener("click", () => btn.classList.toggle("revealed"));
+  });
+}
+
+function normalizeYouTubeEmbed(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
+      return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
+    }
+    if (u.hostname.includes("youtu.be")) {
+      return `https://www.youtube.com/embed/${u.pathname.replace("/", "")}`;
+    }
+  } catch {
+    return url;
+  }
+  return url;
 }
 
 function renderBlock(block) {
@@ -42,33 +80,24 @@ function renderBlock(block) {
   if (block.type === "text") {
     wrapper.className = "review-text-block";
     const p = document.createElement("p");
-    p.textContent = block.content || "";
+    p.innerHTML = renderRichText(block.content || "");
+    bindSpoilers(p);
     wrapper.appendChild(p);
     return block.content ? wrapper : null;
   }
-
-  if (block.type === "image") {
-    wrapper.innerHTML = `<img src="${block.url}" alt="${block.caption || "image"}" />`;
-  }
-
-  if (block.type === "video") {
-    wrapper.innerHTML = `<video controls src="${block.url}"></video>`;
-  }
-
+  if (block.type === "image") wrapper.innerHTML = `<img src="${block.url}" alt="${escapeHtml(block.caption || "image")}" />`;
+  if (block.type === "video") wrapper.innerHTML = `<video controls src="${block.url}"></video>`;
   if (block.type === "video-embed") {
-    wrapper.innerHTML = `<div class="video-wrap"><iframe src="${block.url}" title="video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    const embedUrl = normalizeYouTubeEmbed(block.url || "");
+    wrapper.innerHTML = `<div class="video-wrap"><iframe src="${embedUrl}" title="video" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
   }
-
-  if (block.type === "audio") {
-    wrapper.innerHTML = `<audio controls src="${block.url}"></audio>`;
-  }
+  if (block.type === "audio") wrapper.innerHTML = `<audio controls src="${block.url}"></audio>`;
 
   if (block.caption && block.type !== "text") {
     const cap = document.createElement("figcaption");
     cap.textContent = block.caption;
     wrapper.appendChild(cap);
   }
-
   return wrapper.innerHTML ? wrapper : null;
 }
 
@@ -91,10 +120,9 @@ async function loadReview() {
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
   summary.textContent = item.summary || "Aucun résumé.";
   date.textContent = `Publié le ${fmtDate(item.date)}`;
-  score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "\u2606\u2606\u2606\u2606\u2606";
+  score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
   cover.src = item.cover || DEFAULT_COVER;
   cover.alt = item.title || "Review";
-
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");
 
   content.innerHTML = "";
@@ -106,17 +134,6 @@ async function loadReview() {
       const node = renderBlock(block);
       if (node) content.appendChild(node);
     });
-  }
-
-  tags.innerHTML = "";
-  (item.tags || []).forEach((tag) => {
-    const span = document.createElement("span");
-    span.className = "tag";
-    span.textContent = tag;
-    tags.appendChild(span);
-  });
-  if (!tags.innerHTML) {
-    tags.innerHTML = "<span class='tag'>sans-tag</span>";
   }
 }
 

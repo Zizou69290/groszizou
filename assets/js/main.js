@@ -17,9 +17,7 @@ const cancelBtn = document.getElementById("cancel-form");
 const blocksList = document.getElementById("blocks-list");
 const addBlockButtons = document.querySelectorAll("[data-add-block]");
 const previewBox = document.getElementById("review-preview");
-const exportBtn = document.getElementById("export-json");
-const importInput = document.getElementById("import-json");
-const filterButtons = document.querySelectorAll(".filter-btn");
+const filterButtonsHost = document.querySelector(".filters");
 
 const topList = document.getElementById("tops-manager-list");
 const topForm = document.getElementById("top-form");
@@ -32,7 +30,12 @@ const topItemsList = document.getElementById("top-items-list");
 const adminPassword = document.getElementById("admin-password");
 const loginBtn = document.getElementById("admin-login");
 const logoutBtn = document.getElementById("admin-logout");
-const authStatus = document.getElementById("auth-status");
+
+const toolColor = document.getElementById("tool-color");
+const toolColorApply = document.getElementById("tool-color-apply");
+const toolSize = document.getElementById("tool-size");
+const toolSizeApply = document.getElementById("tool-size-apply");
+const wrapToolButtons = document.querySelectorAll("[data-wrap-tag]");
 
 const DEFAULT_COVER =
   "data:image/svg+xml;utf8," +
@@ -44,6 +47,7 @@ let selectedFilter = "all";
 let editingId = null;
 let editingTopId = null;
 let cachedReviews = [];
+let activeTextArea = null;
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -51,10 +55,50 @@ const fmtDate = (iso) => {
   return `${day}/${month}/${year}`;
 };
 
+const escapeHtml = (text) =>
+  String(text || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+
+function renderRichText(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
+  html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
+  html = html.replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<span class="u-text">$1</span>');
+  html = html.replace(/\[color=(#[0-9a-f]{3,8})\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
+  html = html.replace(/\[size=(\d{1,2})\]([\s\S]*?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>');
+  html = html.replace(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, '<button class="spoiler-text" type="button">$1</button>');
+  return html.replace(/\n/g, "<br>");
+}
+
+function bindSpoilers(root) {
+  root.querySelectorAll(".spoiler-text").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("revealed");
+    });
+  });
+}
+
+function wrapSelection(openTag, closeTag) {
+  if (!activeTextArea) return;
+  const start = activeTextArea.selectionStart ?? 0;
+  const end = activeTextArea.selectionEnd ?? 0;
+  const value = activeTextArea.value;
+  const selected = value.slice(start, end);
+  const next = `${value.slice(0, start)}${openTag}${selected}${closeTag}${value.slice(end)}`;
+  activeTextArea.value = next;
+  activeTextArea.focus();
+  activeTextArea.selectionStart = start + openTag.length;
+  activeTextArea.selectionEnd = end + openTag.length;
+  activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 function scoreToStars(score) {
-  if (!Number.isFinite(score)) return "\u2606\u2606\u2606\u2606\u2606";
+  if (!Number.isFinite(score)) return "☆☆☆☆☆";
   const full = Math.max(0, Math.min(5, Math.round(score / 2)));
-  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
+  return "★".repeat(full) + "☆".repeat(5 - full);
 }
 
 function reviewCard(item) {
@@ -67,11 +111,11 @@ function reviewCard(item) {
   const target = `review.html?id=${encodeURIComponent(item.id)}`;
 
   article.innerHTML = `
-    <img src="${item.cover || DEFAULT_COVER}" alt="${item.title || "Review"}" />
+    <img src="${item.cover || DEFAULT_COVER}" alt="${escapeHtml(item.title || "Review")}" />
     <div class="card-body">
       <p class="meta">${window.ReviewsStore.categories[item.category] || item.category} · ${fmtDate(item.date)}</p>
-      <h3>${item.title || "Sans titre"}</h3>
-      <p>${item.summary || "Aucun résumé."}</p>
+      <h3>${escapeHtml(item.title || "Sans titre")}</h3>
+      <p>${escapeHtml(item.summary || "Aucun résumé.")}</p>
       <div class="card-footer">
         <span class="score" style="color:${accent}">${scoreToStars(item.score)}${Number.isFinite(item.score) ? ` (${item.score}/10)` : ""}</span>
         <span class="read-hint">Lire</span>
@@ -82,14 +126,12 @@ function reviewCard(item) {
   article.addEventListener("click", () => {
     window.location.href = target;
   });
-
   article.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       window.location.href = target;
     }
   });
-
   return article;
 }
 
@@ -98,20 +140,18 @@ function managerRow(item) {
   row.className = "manager-row";
   row.innerHTML = `
     <div>
-      <strong>${item.title || "Sans titre"}</strong>
+      <strong>${escapeHtml(item.title || "Sans titre")}</strong>
       <span>${window.ReviewsStore.categories[item.category] || item.category} · ${fmtDate(item.date)}</span>
     </div>
     <div class="row-actions">
-      <button class="action-btn secondary" data-action="edit">Editer</button>
+      <button class="action-btn secondary" data-action="edit">Éditer</button>
       <button class="action-btn danger" data-action="delete">Supprimer</button>
     </div>
   `;
 
   row.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(item));
-  row.querySelector('[data-action="delete"]').addEventListener("click", async (event) => {
-    event.stopPropagation();
-    const ok = window.confirm(`Supprimer "${item.title || "Sans titre"}" ?`);
-    if (!ok) return;
+  row.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+    if (!window.confirm(`Supprimer "${item.title || "Sans titre"}" ?`)) return;
     try {
       await window.ReviewsStore.remove(item.id);
       await renderAll();
@@ -119,7 +159,6 @@ function managerRow(item) {
       window.alert(`Suppression impossible : ${error.message}`);
     }
   });
-
   return row;
 }
 
@@ -128,19 +167,18 @@ function topRow(item) {
   row.className = "manager-row";
   row.innerHTML = `
     <div>
-      <strong>${item.title || "Sans titre"}</strong>
+      <strong>${escapeHtml(item.title || "Sans titre")}</strong>
       <span>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}</span>
     </div>
     <div class="row-actions">
-      <button class="action-btn secondary" data-action="edit-top">Editer</button>
+      <button class="action-btn secondary" data-action="edit-top">Éditer</button>
       <button class="action-btn danger" data-action="delete-top">Supprimer</button>
     </div>
   `;
 
   row.querySelector('[data-action="edit-top"]').addEventListener("click", () => openTopForm(item));
   row.querySelector('[data-action="delete-top"]').addEventListener("click", async () => {
-    const ok = window.confirm(`Supprimer le top "${item.title || "Sans titre"}" ?`);
-    if (!ok) return;
+    if (!window.confirm(`Supprimer le top "${item.title || "Sans titre"}" ?`)) return;
     try {
       await window.ReviewsStore.removeTop(item.id);
       await renderTopsManager();
@@ -148,7 +186,6 @@ function topRow(item) {
       window.alert(`Suppression impossible : ${error.message}`);
     }
   });
-
   return row;
 }
 
@@ -162,47 +199,41 @@ function updateBlockIndex() {
 
 function getBlockFieldsHtml(type, block) {
   if (type === "text") {
-    return `<textarea class="block-content" rows="5" placeholder="Ton texte...">${block.content || ""}</textarea>`;
+    return `<textarea class="block-content" rows="5" placeholder="Ton texte...">${escapeHtml(block.content || "")}</textarea>`;
   }
   return `
-    <input class="block-url" type="url" placeholder="URL" value="${block.url || ""}" />
-    <input class="block-caption" type="text" placeholder="Légende (optionnel)" value="${block.caption || ""}" />
+    <input class="block-url" type="url" placeholder="URL" value="${escapeHtml(block.url || "")}" />
+    <input class="block-caption" type="text" placeholder="Légende (optionnel)" value="${escapeHtml(block.caption || "")}" />
   `;
 }
 
 function readBlocks() {
   if (!blocksList) return [];
-  const rows = [...blocksList.querySelectorAll(".block-item")];
-  const blocks = [];
-
-  rows.forEach((row) => {
-    const type = row.querySelector(".block-type").value;
-    if (type === "text") {
-      const content = row.querySelector(".block-content")?.value.trim() || "";
-      if (content) blocks.push({ type, content, url: "", caption: "" });
-      return;
-    }
-    const url = row.querySelector(".block-url")?.value.trim() || "";
-    const caption = row.querySelector(".block-caption")?.value.trim() || "";
-    if (url) blocks.push({ type, content: "", url, caption });
-  });
-
-  return blocks;
+  return [...blocksList.querySelectorAll(".block-item")]
+    .map((row) => {
+      const type = row.querySelector(".block-type").value;
+      if (type === "text") {
+        const content = row.querySelector(".block-content")?.value.trim() || "";
+        return content ? { type, content, url: "", caption: "" } : null;
+      }
+      const url = row.querySelector(".block-url")?.value.trim() || "";
+      const caption = row.querySelector(".block-caption")?.value.trim() || "";
+      return url ? { type, content: "", url, caption } : null;
+    })
+    .filter(Boolean);
 }
 
 function renderPreview() {
   if (!previewBox || !form) return;
-
   const title = form.elements.title.value.trim() || "Sans titre";
   const summary = form.elements.summary.value.trim() || "Aucun résumé.";
   const score = form.elements.score.value === "" ? null : Number(form.elements.score.value);
   const blocks = readBlocks();
 
   previewBox.innerHTML = "";
-
   const head = document.createElement("div");
   head.className = "preview-head";
-  head.innerHTML = `<strong>${title}</strong><span>${scoreToStars(score)}${Number.isFinite(score) ? ` (${score}/10)` : ""}</span>`;
+  head.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${scoreToStars(score)}${Number.isFinite(score) ? ` (${score}/10)` : ""}</span>`;
   previewBox.appendChild(head);
 
   const summaryNode = document.createElement("p");
@@ -212,12 +243,12 @@ function renderPreview() {
 
   const flow = document.createElement("div");
   flow.className = "preview-flow";
-
   blocks.forEach((block) => {
     const node = document.createElement("div");
     node.className = "preview-block";
     if (block.type === "text") {
-      node.textContent = block.content;
+      node.innerHTML = renderRichText(block.content);
+      bindSpoilers(node);
     } else {
       node.textContent = `${block.type.toUpperCase()} · ${block.url}`;
       if (block.caption) {
@@ -228,14 +259,12 @@ function renderPreview() {
     }
     flow.appendChild(node);
   });
-
   if (!blocks.length) {
     const empty = document.createElement("p");
     empty.className = "media-note";
     empty.textContent = "Ajoute des blocs pour voir le rendu.";
     flow.appendChild(empty);
   }
-
   previewBox.appendChild(flow);
 }
 
@@ -263,29 +292,30 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
 
   const typeSelect = row.querySelector(".block-type");
   const fields = row.querySelector(".block-fields");
-
   const renderFields = () => {
     fields.innerHTML = getBlockFieldsHtml(typeSelect.value, block);
     fields.querySelectorAll("input,textarea").forEach((el) => {
       el.addEventListener("input", renderPreview);
+      if (el.classList.contains("block-content")) {
+        el.addEventListener("focus", () => {
+          activeTextArea = el;
+        });
+      }
     });
   };
 
   typeSelect.value = block.type || "text";
   renderFields();
-
   typeSelect.addEventListener("change", () => {
     block.type = typeSelect.value;
     renderFields();
     renderPreview();
   });
-
   row.querySelector(".block-delete").addEventListener("click", () => {
     row.remove();
     updateBlockIndex();
     renderPreview();
   });
-
   row.querySelector(".block-up").addEventListener("click", () => {
     const prev = row.previousElementSibling;
     if (prev && blocksList) {
@@ -294,7 +324,6 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
       renderPreview();
     }
   });
-
   row.querySelector(".block-down").addEventListener("click", () => {
     const next = row.nextElementSibling;
     if (next && blocksList) {
@@ -303,7 +332,6 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
       renderPreview();
     }
   });
-
   return row;
 }
 
@@ -323,7 +351,7 @@ function topReviewOptions(selectedId = "") {
   const options = [`<option value="">Aucune review liée</option>`];
   cachedReviews.forEach((review) => {
     const selected = review.id === selectedId ? " selected" : "";
-    options.push(`<option value="${review.id}"${selected}>${review.title || "Sans titre"}</option>`);
+    options.push(`<option value="${review.id}"${selected}>${escapeHtml(review.title || "Sans titre")}</option>`);
   });
   return options.join("");
 }
@@ -352,26 +380,23 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "" }) {
       <label>Review liée (optionnel)
         <select class="top-review">${topReviewOptions(item.reviewId || "")}</select>
       </label>
-      <input class="top-title" type="text" placeholder="Titre" value="${item.title || ""}" />
-      <input class="top-comment" type="text" placeholder="Commentaire (optionnel)" value="${item.comment || ""}" />
+      <input class="top-title" type="text" placeholder="Titre" value="${escapeHtml(item.title || "")}" />
+      <input class="top-comment" type="text" placeholder="Commentaire (optionnel)" value="${escapeHtml(item.comment || "")}" />
     </div>
   `;
 
   const reviewSelect = row.querySelector(".top-review");
   const titleInput = row.querySelector(".top-title");
-
   reviewSelect.addEventListener("change", () => {
     const match = cachedReviews.find((r) => r.id === reviewSelect.value);
     if (match && !titleInput.value.trim()) {
       titleInput.value = match.title || "";
     }
   });
-
   row.querySelector(".top-delete").addEventListener("click", () => {
     row.remove();
     updateTopItemIndex();
   });
-
   row.querySelector(".top-up").addEventListener("click", () => {
     const prev = row.previousElementSibling;
     if (prev && topItemsList) {
@@ -379,7 +404,6 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "" }) {
       updateTopItemIndex();
     }
   });
-
   row.querySelector(".top-down").addEventListener("click", () => {
     const next = row.nextElementSibling;
     if (next && topItemsList) {
@@ -387,7 +411,6 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "" }) {
       updateTopItemIndex();
     }
   });
-
   return row;
 }
 
@@ -404,8 +427,7 @@ function setTopItems(items) {
 
 function readTopItems() {
   if (!topItemsList) return [];
-  const rows = [...topItemsList.querySelectorAll(".block-item")];
-  return rows
+  return [...topItemsList.querySelectorAll(".block-item")]
     .map((row) => ({
       reviewId: row.querySelector(".top-review")?.value || "",
       title: row.querySelector(".top-title")?.value.trim() || "",
@@ -414,21 +436,42 @@ function readTopItems() {
     .filter((item) => item.title || item.reviewId);
 }
 
+function buildFilterButtons(reviews) {
+  if (!filterButtonsHost) return;
+  const categories = [...new Set(reviews.map((r) => r.category).filter(Boolean))];
+  if (selectedFilter !== "all" && !categories.includes(selectedFilter)) {
+    selectedFilter = "all";
+  }
+  filterButtonsHost.innerHTML = `<button class="filter-btn${selectedFilter === "all" ? " active" : ""}" data-filter="all">Tout</button>`;
+  categories.forEach((cat) => {
+    const name = window.ReviewsStore.categories[cat] || cat;
+    filterButtonsHost.insertAdjacentHTML(
+      "beforeend",
+      `<button class="filter-btn${selectedFilter === cat ? " active" : ""}" data-filter="${cat}">${name}</button>`
+    );
+  });
+  filterButtonsHost.querySelectorAll(".filter-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      filterButtonsHost.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+      button.classList.add("active");
+      selectedFilter = button.dataset.filter;
+      await renderAll();
+    });
+  });
+}
+
 async function renderAll() {
   let reviews = [];
-
   try {
     reviews = await window.ReviewsStore.getAll();
   } catch (error) {
-    console.error(error);
-    if (reviewsGrid || managerList) {
-      window.alert(`Impossible de charger les reviews : ${error.message}`);
-    }
+    if (reviewsGrid || managerList) window.alert(`Impossible de charger les reviews : ${error.message}`);
     return;
   }
 
   reviews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   cachedReviews = reviews;
+  buildFilterButtons(reviews);
 
   if (reviewsGrid) {
     reviewsGrid.innerHTML = "";
@@ -436,7 +479,6 @@ async function renderAll() {
       .filter((item) => selectedFilter === "all" || item.category === selectedFilter)
       .forEach((item) => reviewsGrid.appendChild(reviewCard(item)));
   }
-
   if (managerList) {
     managerList.innerHTML = "";
     reviews.forEach((item) => managerList.appendChild(managerRow(item)));
@@ -459,7 +501,6 @@ function openForm(item = null) {
   editingId = item ? item.id : null;
   form.classList.remove("hidden");
   formTitle.textContent = item ? "Modifier la review" : "Ajouter une review";
-
   form.elements.title.value = item?.title || "";
   form.elements.category.value = item?.category || "jeu";
   form.elements.date.value = item?.date || "";
@@ -468,7 +509,6 @@ function openForm(item = null) {
   form.elements.poster.value = item?.poster || "";
   form.elements.accent.value = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
-
   setBlocks(item?.blocks || []);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -487,10 +527,10 @@ function openTopForm(item = null) {
   editingTopId = item ? item.id : null;
   topForm.classList.remove("hidden");
   topFormTitle.textContent = item ? "Modifier un top" : "Ajouter un top";
-
   topForm.elements.title.value = item?.title || "";
   topForm.elements.category.value = item?.category || "autre";
   topForm.elements.year.value = item?.year || "";
+  topForm.elements.cover.value = item?.cover || "";
   topForm.elements.subtitle.value = item?.subtitle || "";
   setTopItems(item?.items || []);
   topForm.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -508,14 +548,11 @@ if (form) {
   form.elements.title.addEventListener("input", renderPreview);
   form.elements.score.addEventListener("input", renderPreview);
   form.elements.summary.addEventListener("input", renderPreview);
-
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-
     const title = form.elements.title.value.trim() || "Sans titre";
-    const nextId = editingId || window.ReviewsStore.slugify(title);
     const payload = {
-      id: nextId,
+      id: editingId || window.ReviewsStore.slugify(title),
       title,
       category: form.elements.category.value || "jeu",
       date: form.elements.date.value,
@@ -526,14 +563,12 @@ if (form) {
       summary: form.elements.summary.value.trim(),
       blocks: readBlocks()
     };
-
     try {
       await window.ReviewsStore.upsert(payload);
     } catch (error) {
       window.alert(`Sauvegarde impossible : ${error.message}`);
       return;
     }
-
     closeForm();
     await renderAll();
   });
@@ -542,25 +577,22 @@ if (form) {
 if (topForm) {
   topForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-
     const title = topForm.elements.title.value.trim() || "Sans titre";
-    const nextId = editingTopId || window.ReviewsStore.slugify(title);
     const payload = {
-      id: nextId,
+      id: editingTopId || window.ReviewsStore.slugify(title),
       title,
       category: topForm.elements.category.value || "autre",
       year: topForm.elements.year.value.trim(),
+      cover: topForm.elements.cover.value.trim(),
       subtitle: topForm.elements.subtitle.value.trim(),
       items: readTopItems()
     };
-
     try {
       await window.ReviewsStore.upsertTop(payload);
     } catch (error) {
       window.alert(`Sauvegarde top impossible : ${error.message}`);
       return;
     }
-
     closeTopForm();
     await renderTopsManager();
   });
@@ -568,7 +600,6 @@ if (topForm) {
 
 if (addBtn) addBtn.addEventListener("click", () => openForm());
 if (cancelBtn) cancelBtn.addEventListener("click", closeForm);
-
 addBlockButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     if (!blocksList) return;
@@ -577,7 +608,6 @@ addBlockButtons.forEach((btn) => {
     renderPreview();
   });
 });
-
 if (newTopBtn) newTopBtn.addEventListener("click", () => openTopForm());
 if (cancelTopBtn) cancelTopBtn.addEventListener("click", closeTopForm);
 if (addTopItemBtn) {
@@ -588,56 +618,29 @@ if (addTopItemBtn) {
   });
 }
 
-filterButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    filterButtons.forEach((btn) => btn.classList.remove("active"));
-    button.classList.add("active");
-    selectedFilter = button.dataset.filter;
-    await renderAll();
+wrapToolButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const tag = btn.dataset.wrapTag;
+    if (!tag) return;
+    wrapSelection(`[${tag}]`, `[/${tag}]`);
   });
 });
-
-if (exportBtn) {
-  exportBtn.addEventListener("click", async () => {
-    try {
-      const data = await window.ReviewsStore.exportJson();
-      const blob = new Blob([data], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "groszizou-reviews.json";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(link.href);
-    } catch (error) {
-      window.alert(`Export impossible : ${error.message}`);
-    }
+if (toolColorApply) {
+  toolColorApply.addEventListener("click", () => {
+    wrapSelection(`[color=${toolColor?.value || "#f2f2ee"}]`, "[/color]");
+  });
+}
+if (toolSizeApply) {
+  toolSizeApply.addEventListener("click", () => {
+    wrapSelection(`[size=${toolSize?.value || "16"}]`, "[/size]");
   });
 }
 
-if (importInput) {
-  importInput.addEventListener("change", async () => {
-    const file = importInput.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const count = await window.ReviewsStore.importJson(text);
-      window.alert(`Import terminé : ${count} review(s).`);
-      await renderAll();
-    } catch (error) {
-      window.alert(`Import impossible : ${error.message}`);
-    } finally {
-      importInput.value = "";
-    }
-  });
-}
-
-if (window.ReviewsStore.onAuthChanged && authStatus) {
+if (window.ReviewsStore.onAuthChanged) {
   window.ReviewsStore.onAuthChanged(async (user) => {
     const unlocked = Boolean(user);
-    authStatus.textContent = unlocked ? "Débloqué" : "Verrouillé";
     if (managerSection) managerSection.classList.toggle("hidden", !unlocked);
+    if (logoutBtn) logoutBtn.classList.toggle("hidden", !unlocked);
     if (unlocked) {
       await renderAll();
       await renderTopsManager();
@@ -646,13 +649,19 @@ if (window.ReviewsStore.onAuthChanged && authStatus) {
 }
 
 if (loginBtn && adminPassword) {
-  loginBtn.addEventListener("click", async () => {
+  const login = async () => {
     try {
       await window.ReviewsStore.unlockWithPassword(adminPassword.value);
       adminPassword.value = "";
-      window.alert("Débloqué");
     } catch (error) {
       window.alert(`Mot de passe invalide : ${error.message}`);
+    }
+  };
+  loginBtn.addEventListener("click", login);
+  adminPassword.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      login();
     }
   });
 }
@@ -661,7 +670,6 @@ if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
     try {
       await window.ReviewsStore.signOut();
-      window.alert("Verrouillé");
     } catch (error) {
       window.alert(`Erreur : ${error.message}`);
     }
