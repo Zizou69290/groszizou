@@ -1,11 +1,93 @@
-﻿const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
+const menuToggle = document.getElementById("menu-toggle");
+const menu = document.getElementById("menu");
+
+if (menuToggle && menu) {
+  menuToggle.addEventListener("click", () => {
+    menu.classList.toggle("open");
+  });
+}
 
 const title = document.getElementById("top-title");
 const category = document.getElementById("top-category");
 const subtitle = document.getElementById("top-subtitle");
 const year = document.getElementById("top-year");
 const list = document.getElementById("top-items");
+
+const DEFAULT_POSTER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 900'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='600' height='900' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='30' font-family='Arial, sans-serif'>Sans affiche</text></svg>"
+  );
+
+function scoreToStars(score) {
+  if (!Number.isFinite(score)) return "\u2606\u2606\u2606\u2606\u2606";
+  const full = Math.max(0, Math.min(5, Math.round(score / 2)));
+  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
+}
+
+function renderLinkedReviewItem(item, index, review) {
+  const li = document.createElement("li");
+  li.className = "top-item";
+
+  const link = document.createElement("a");
+  link.className = "top-review-link";
+  link.href = `review.html?id=${encodeURIComponent(review.id)}`;
+
+  const poster = document.createElement("img");
+  poster.className = "top-review-poster";
+  poster.src = review.poster || review.cover || DEFAULT_POSTER;
+  poster.alt = review.title || "Review";
+  link.appendChild(poster);
+
+  const content = document.createElement("div");
+  content.className = "top-review-content";
+
+  const h = document.createElement("h3");
+  h.textContent = `${index + 1}. ${review.title || item.title || "Sans titre"}`;
+  content.appendChild(h);
+
+  const meta = document.createElement("p");
+  meta.className = "top-review-meta";
+  meta.textContent = window.ReviewsStore.categories[review.category] || review.category || "Autre";
+  content.appendChild(meta);
+
+  const score = document.createElement("p");
+  score.className = "score";
+  score.textContent = `${scoreToStars(review.score)}${
+    Number.isFinite(review.score) ? ` (${review.score}/10)` : ""
+  }`;
+  content.appendChild(score);
+
+  if (item.comment) {
+    const comment = document.createElement("p");
+    comment.className = "top-review-comment";
+    comment.textContent = item.comment;
+    content.appendChild(comment);
+  }
+
+  link.appendChild(content);
+  li.appendChild(link);
+  return li;
+}
+
+function renderManualItem(item, index) {
+  const li = document.createElement("li");
+  li.className = "top-item";
+
+  const h = document.createElement("h3");
+  h.textContent = `${index + 1}. ${item.title || "Sans titre"}`;
+  li.appendChild(h);
+
+  if (item.comment) {
+    const p = document.createElement("p");
+    p.textContent = item.comment;
+    li.appendChild(p);
+  }
+
+  return li;
+}
 
 async function loadTop() {
   if (!id) {
@@ -27,22 +109,22 @@ async function loadTop() {
   subtitle.textContent = top.subtitle || "";
   year.textContent = top.year ? `Période : ${top.year}` : "";
 
+  const reviewMap = new Map();
+  try {
+    const allReviews = await window.ReviewsStore.getAll();
+    allReviews.forEach((review) => reviewMap.set(review.id, review));
+  } catch {
+    // On continue sans liaison.
+  }
+
   list.innerHTML = "";
   (top.items || []).forEach((item, index) => {
-    const li = document.createElement("li");
-    li.className = "top-item";
-
-    const h = document.createElement("h3");
-    h.textContent = `${index + 1}. ${item.title}`;
-    li.appendChild(h);
-
-    if (item.comment) {
-      const p = document.createElement("p");
-      p.textContent = item.comment;
-      li.appendChild(p);
+    const linkedReview = item.reviewId ? reviewMap.get(item.reviewId) : null;
+    if (linkedReview) {
+      list.appendChild(renderLinkedReviewItem(item, index, linkedReview));
+      return;
     }
-
-    list.appendChild(li);
+    list.appendChild(renderManualItem(item, index));
   });
 
   if (!list.innerHTML) {

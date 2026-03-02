@@ -68,6 +68,7 @@
       date: review.date || "",
       score: Number.isFinite(Number(review.score)) ? Number(review.score) : null,
       cover: review.cover || "",
+      poster: review.poster || "",
       accent: review.accent || "",
       summary: review.summary || "",
       blocks,
@@ -76,10 +77,14 @@
   }
 
   function normalizeTopItem(item) {
-    if (!item || !item.title) return null;
+    if (!item) return null;
+    const title = item.title || "";
+    const reviewId = item.reviewId || "";
+    if (!title && !reviewId) return null;
     return {
-      title: item.title,
-      comment: item.comment || ""
+      title,
+      comment: item.comment || "",
+      reviewId
     };
   }
 

@@ -1,6 +1,18 @@
-﻿const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
-const DEFAULT_COVER = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>");
+const menuToggle = document.getElementById("menu-toggle");
+const menu = document.getElementById("menu");
+const DEFAULT_COVER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>"
+  );
+
+if (menuToggle && menu) {
+  menuToggle.addEventListener("click", () => {
+    menu.classList.toggle("open");
+  });
+}
 
 const title = document.getElementById("review-title");
 const category = document.getElementById("review-category");
@@ -18,9 +30,9 @@ const fmtDate = (iso) => {
 };
 
 function scoreToStars(value) {
-  if (!Number.isFinite(value)) return "☆☆☆☆☆";
+  if (!Number.isFinite(value)) return "\u2606\u2606\u2606\u2606\u2606";
   const full = Math.max(0, Math.min(5, Math.round(value / 2)));
-  return "★".repeat(full) + "☆".repeat(5 - full);
+  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
 }
 
 function renderBlock(block) {
@@ -79,7 +91,7 @@ async function loadReview() {
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
   summary.textContent = item.summary || "Aucun résumé.";
   date.textContent = `Publié le ${fmtDate(item.date)}`;
-  score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
+  score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "\u2606\u2606\u2606\u2606\u2606";
   cover.src = item.cover || DEFAULT_COVER;
   cover.alt = item.title || "Review";
 

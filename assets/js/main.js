@@ -43,6 +43,7 @@ const DEFAULT_COVER =
 let selectedFilter = "all";
 let editingId = null;
 let editingTopId = null;
+let cachedReviews = [];
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -51,9 +52,9 @@ const fmtDate = (iso) => {
 };
 
 function scoreToStars(score) {
-  if (!Number.isFinite(score)) return "☆☆☆☆☆";
+  if (!Number.isFinite(score)) return "\u2606\u2606\u2606\u2606\u2606";
   const full = Math.max(0, Math.min(5, Math.round(score / 2)));
-  return "★".repeat(full) + "☆".repeat(5 - full);
+  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
 }
 
 function reviewCard(item) {
@@ -101,7 +102,7 @@ function managerRow(item) {
       <span>${window.ReviewsStore.categories[item.category] || item.category} · ${fmtDate(item.date)}</span>
     </div>
     <div class="row-actions">
-      <button class="action-btn secondary" data-action="edit">Éditer</button>
+      <button class="action-btn secondary" data-action="edit">Editer</button>
       <button class="action-btn danger" data-action="delete">Supprimer</button>
     </div>
   `;
@@ -131,7 +132,7 @@ function topRow(item) {
       <span>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}</span>
     </div>
     <div class="row-actions">
-      <button class="action-btn secondary" data-action="edit-top">Éditer</button>
+      <button class="action-btn secondary" data-action="edit-top">Editer</button>
       <button class="action-btn danger" data-action="delete-top">Supprimer</button>
     </div>
   `;
@@ -211,6 +212,7 @@ function renderPreview() {
 
   const flow = document.createElement("div");
   flow.className = "preview-flow";
+
   blocks.forEach((block) => {
     const node = document.createElement("div");
     node.className = "preview-block";
@@ -317,7 +319,24 @@ function setBlocks(blocks) {
   renderPreview();
 }
 
-function createTopItemRow(item = { title: "", comment: "" }) {
+function topReviewOptions(selectedId = "") {
+  const options = [`<option value="">Aucune review liée</option>`];
+  cachedReviews.forEach((review) => {
+    const selected = review.id === selectedId ? " selected" : "";
+    options.push(`<option value="${review.id}"${selected}>${review.title || "Sans titre"}</option>`);
+  });
+  return options.join("");
+}
+
+function updateTopItemIndex() {
+  if (!topItemsList) return;
+  [...topItemsList.querySelectorAll(".block-item")].forEach((row, idx) => {
+    const index = row.querySelector(".block-index");
+    if (index) index.textContent = `Item ${idx + 1}`;
+  });
+}
+
+function createTopItemRow(item = { title: "", comment: "", reviewId: "" }) {
   const row = document.createElement("div");
   row.className = "block-item";
   row.innerHTML = `
@@ -330,10 +349,23 @@ function createTopItemRow(item = { title: "", comment: "" }) {
       </div>
     </div>
     <div class="block-fields">
+      <label>Review liée (optionnel)
+        <select class="top-review">${topReviewOptions(item.reviewId || "")}</select>
+      </label>
       <input class="top-title" type="text" placeholder="Titre" value="${item.title || ""}" />
       <input class="top-comment" type="text" placeholder="Commentaire (optionnel)" value="${item.comment || ""}" />
     </div>
   `;
+
+  const reviewSelect = row.querySelector(".top-review");
+  const titleInput = row.querySelector(".top-title");
+
+  reviewSelect.addEventListener("change", () => {
+    const match = cachedReviews.find((r) => r.id === reviewSelect.value);
+    if (match && !titleInput.value.trim()) {
+      titleInput.value = match.title || "";
+    }
+  });
 
   row.querySelector(".top-delete").addEventListener("click", () => {
     row.remove();
@@ -359,14 +391,6 @@ function createTopItemRow(item = { title: "", comment: "" }) {
   return row;
 }
 
-function updateTopItemIndex() {
-  if (!topItemsList) return;
-  [...topItemsList.querySelectorAll(".block-item")].forEach((row, idx) => {
-    const index = row.querySelector(".block-index");
-    if (index) index.textContent = `Item ${idx + 1}`;
-  });
-}
-
 function setTopItems(items) {
   if (!topItemsList) return;
   topItemsList.innerHTML = "";
@@ -383,10 +407,11 @@ function readTopItems() {
   const rows = [...topItemsList.querySelectorAll(".block-item")];
   return rows
     .map((row) => ({
+      reviewId: row.querySelector(".top-review")?.value || "",
       title: row.querySelector(".top-title")?.value.trim() || "",
       comment: row.querySelector(".top-comment")?.value.trim() || ""
     }))
-    .filter((item) => item.title);
+    .filter((item) => item.title || item.reviewId);
 }
 
 async function renderAll() {
@@ -403,6 +428,7 @@ async function renderAll() {
   }
 
   reviews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  cachedReviews = reviews;
 
   if (reviewsGrid) {
     reviewsGrid.innerHTML = "";
@@ -439,6 +465,7 @@ function openForm(item = null) {
   form.elements.date.value = item?.date || "";
   form.elements.score.value = Number.isFinite(item?.score) ? String(item.score) : "";
   form.elements.cover.value = item?.cover || "";
+  form.elements.poster.value = item?.poster || "";
   form.elements.accent.value = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
 
@@ -494,6 +521,7 @@ if (form) {
       date: form.elements.date.value,
       score: form.elements.score.value === "" ? null : Number(form.elements.score.value),
       cover: form.elements.cover.value.trim(),
+      poster: form.elements.poster.value.trim(),
       accent: form.elements.accent.value.trim(),
       summary: form.elements.summary.value.trim(),
       blocks: readBlocks()
@@ -609,9 +637,7 @@ if (window.ReviewsStore.onAuthChanged && authStatus) {
   window.ReviewsStore.onAuthChanged(async (user) => {
     const unlocked = Boolean(user);
     authStatus.textContent = unlocked ? "Débloqué" : "Verrouillé";
-    if (managerSection) {
-      managerSection.classList.toggle("hidden", !unlocked);
-    }
+    if (managerSection) managerSection.classList.toggle("hidden", !unlocked);
     if (unlocked) {
       await renderAll();
       await renderTopsManager();

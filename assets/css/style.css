@@ -74,6 +74,10 @@ img {
   color: var(--text);
 }
 
+.menu-sep {
+  color: #5f7586;
+}
+
 .menu-toggle {
   display: none;
   background: transparent;
@@ -646,6 +650,41 @@ textarea {
 }
 
 .top-item p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.top-review-link {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 0.8rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.top-review-link:hover .top-review-content h3 {
+  text-decoration: underline;
+}
+
+.top-review-poster {
+  width: 82px;
+  height: 116px;
+  object-fit: cover;
+  border-radius: 0.45rem;
+  border: 1px solid #2f4555;
+}
+
+.top-review-content {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.top-review-content h3 {
+  margin: 0;
+}
+
+.top-review-meta,
+.top-review-comment {
   margin: 0;
   color: var(--muted);
 }
