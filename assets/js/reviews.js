@@ -11,6 +11,7 @@
   let firebaseReady = false;
   let db;
   let auth;
+  let cfg;
 
   function ensureFirebase() {
     if (firebaseReady) return;
@@ -19,7 +20,7 @@
       throw new Error("Firebase SDK non charge");
     }
 
-    const cfg = window.GROSZIZOU_FIREBASE_CONFIG || {};
+    cfg = window.GROSZIZOU_FIREBASE_CONFIG || {};
     if (!cfg.apiKey || !cfg.projectId) {
       throw new Error("Config Firebase manquante (assets/js/firebase-config.js)");
     }
@@ -76,7 +77,7 @@
   function requireAuth() {
     ensureFirebase();
     if (!auth.currentUser) {
-      throw new Error("Connecte-toi sur la page Modifier pour ecrire");
+      throw new Error("Mot de passe requis pour modifier");
     }
   }
 
@@ -111,9 +112,12 @@
     return count;
   }
 
-  async function signIn(email, password) {
+  async function unlockWithPassword(password) {
     ensureFirebase();
-    return auth.signInWithEmailAndPassword(email, password);
+    if (!cfg.adminEmail) {
+      throw new Error("Renseigne adminEmail dans assets/js/firebase-config.js");
+    }
+    return auth.signInWithEmailAndPassword(cfg.adminEmail, password);
   }
 
   async function signOut() {
@@ -135,7 +139,7 @@
     remove,
     exportJson,
     importJson,
-    signIn,
+    unlockWithPassword,
     signOut,
     onAuthChanged
   };

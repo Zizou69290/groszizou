@@ -18,7 +18,6 @@
       <a class="brand" href="index.html">GROSZIZOU</a>
       <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
       <ul id="menu" class="menu">
-        <li><a href="index.html">Reviews</a></li>
         <li><a href="modifier.html">Modifier</a></li>
       </ul>
     </nav>
@@ -27,21 +26,18 @@
   <main>
     <section class="container manager-section">
       <div class="token-box">
-        <label>Email admin
-          <input id="admin-email" type="email" placeholder="admin@exemple.com" />
+        <label>Mot de passe
+          <input id="admin-password" type="password" placeholder="Mot de passe admin" />
         </label>
-        <label>Mot de passe admin
-          <input id="admin-password" type="password" placeholder="Mot de passe Firebase Auth" />
-        </label>
-        <p id="auth-status" class="media-note">Non connecte</p>
+        <p id="auth-status" class="media-note">Verrouille</p>
         <div class="row-actions">
-          <button id="admin-login" class="action-btn">Se connecter</button>
-          <button id="admin-logout" class="action-btn secondary">Se deconnecter</button>
+          <button id="admin-login" class="action-btn">Debloquer</button>
+          <button id="admin-logout" class="action-btn secondary">Verrouiller</button>
         </div>
       </div>
     </section>
 
-    <section id="manager" class="container manager-section">
+    <section id="manager" class="container manager-section hidden">
       <div class="section-head">
         <h2>Gestion des reviews</h2>
         <div class="manager-actions">
@@ -104,7 +100,6 @@
   <footer class="footer">
     <div class="container footer-content">
       <p>GROSZIZOU Reviews</p>
-      <p>Mode online: Firebase (gratuit)</p>
     </div>
   </footer>
 

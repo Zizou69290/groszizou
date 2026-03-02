@@ -8,6 +8,7 @@ if (menuToggle && menu) {
 }
 
 const reviewsGrid = document.getElementById("reviews-grid");
+const managerSection = document.getElementById("manager");
 const managerList = document.getElementById("manager-list");
 const form = document.getElementById("review-form");
 const formTitle = document.getElementById("form-title");
@@ -19,7 +20,6 @@ const exportBtn = document.getElementById("export-json");
 const importInput = document.getElementById("import-json");
 const filterButtons = document.querySelectorAll(".filter-btn");
 
-const adminEmail = document.getElementById("admin-email");
 const adminPassword = document.getElementById("admin-password");
 const loginBtn = document.getElementById("admin-login");
 const logoutBtn = document.getElementById("admin-logout");
@@ -289,17 +289,22 @@ if (importInput) {
 
 if (window.ReviewsStore.onAuthChanged && authStatus) {
   window.ReviewsStore.onAuthChanged((user) => {
-    authStatus.textContent = user ? `Connecte: ${user.email || "utilisateur"}` : "Non connecte";
+    const unlocked = Boolean(user);
+    authStatus.textContent = unlocked ? "Debloque" : "Verrouille";
+    if (managerSection) {
+      managerSection.classList.toggle("hidden", !unlocked);
+    }
   });
 }
 
-if (loginBtn && adminEmail && adminPassword) {
+if (loginBtn && adminPassword) {
   loginBtn.addEventListener("click", async () => {
     try {
-      await window.ReviewsStore.signIn(adminEmail.value.trim(), adminPassword.value);
-      window.alert("Connexion OK");
+      await window.ReviewsStore.unlockWithPassword(adminPassword.value);
+      adminPassword.value = "";
+      window.alert("Debloque");
     } catch (error) {
-      window.alert(`Connexion impossible: ${error.message}`);
+      window.alert(`Mot de passe invalide: ${error.message}`);
     }
   });
 }
@@ -308,9 +313,9 @@ if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
     try {
       await window.ReviewsStore.signOut();
-      window.alert("Deconnexion OK");
+      window.alert("Verrouille");
     } catch (error) {
-      window.alert(`Deconnexion impossible: ${error.message}`);
+      window.alert(`Erreur: ${error.message}`);
     }
   });
 }
