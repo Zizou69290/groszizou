@@ -612,15 +612,17 @@ function buildFilterButtons(reviews) {
 async function renderAll() {
   let reviews = [];
   try {
-    const options = managerList ? { ownerId: currentUser?.uid || "__none__" } : {};
-    reviews = await window.ReviewsStore.getAll(options);
+    reviews = await window.ReviewsStore.getAll();
   } catch (error) {
     if (reviewsGrid || managerList) window.alert(`Impossible de charger les reviews : ${error.message}`);
     return;
   }
 
   reviews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-  cachedReviews = reviews;
+  const managerVisibleReviews = managerList
+    ? reviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid)
+    : reviews;
+  cachedReviews = managerVisibleReviews;
   buildFilterButtons(reviews);
 
   if (reviewsGrid) {
@@ -631,16 +633,17 @@ async function renderAll() {
   }
   if (managerList) {
     managerList.innerHTML = "";
-    reviews.forEach((item) => managerList.appendChild(managerRow(item)));
+    managerVisibleReviews.forEach((item) => managerList.appendChild(managerRow(item)));
   }
 }
 
 async function renderTopsManager() {
   if (!topList) return;
   try {
-    const tops = await window.ReviewsStore.getAllTops({ ownerId: currentUser?.uid || "__none__" });
+    const tops = await window.ReviewsStore.getAllTops();
+    const managerVisibleTops = tops.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid);
     topList.innerHTML = "";
-    tops.forEach((item) => topList.appendChild(topRow(item)));
+    managerVisibleTops.forEach((item) => topList.appendChild(topRow(item)));
   } catch (error) {
     window.alert(`Impossible de charger les tops : ${error.message}`);
   }
