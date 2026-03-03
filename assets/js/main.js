@@ -44,11 +44,14 @@ const blocksEditorSection = document.getElementById("blocks-editor-section");
 const richEditorSection = document.getElementById("rich-editor-section");
 const richEditor = document.getElementById("rich-editor");
 const richCmdButtons = document.querySelectorAll("[data-rich-cmd]");
+const richMediaSizeButtons = document.querySelectorAll("[data-media-size]");
+const richMediaAlignButtons = document.querySelectorAll("[data-media-align]");
 const richLinkBtn = document.getElementById("rich-link-btn");
 const richImageBtn = document.getElementById("rich-image-btn");
 const richVideoBtn = document.getElementById("rich-video-btn");
 const richAudioBtn = document.getElementById("rich-audio-btn");
 const richColsBtn = document.getElementById("rich-cols-btn");
+const richSpoilerBtn = document.getElementById("rich-spoiler-btn");
 const reviewBodyHtml = document.getElementById("review-body-html");
 const metaAuthorRow = document.getElementById("meta-author-row");
 const metaDirectorRow = document.getElementById("meta-director-row");
@@ -379,6 +382,51 @@ function setContentMode(mode) {
   if (blocksEditorSection) blocksEditorSection.classList.toggle("hidden", currentContentMode !== "blocks");
   if (richEditorSection) richEditorSection.classList.toggle("hidden", currentContentMode !== "rich");
   contentModeButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.contentMode === currentContentMode));
+  renderPreview();
+}
+
+function getSelectedMediaWrapper() {
+  if (!richEditor) return null;
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return null;
+  let node = selection.anchorNode;
+  if (!node) return null;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+  if (!(node instanceof HTMLElement)) return null;
+  if (!richEditor.contains(node)) return null;
+
+  const media = node.closest("img,video,audio,iframe");
+  if (!media) return null;
+  return media.closest("figure,.video-wrap") || media;
+}
+
+function applyMediaSize(size) {
+  const target = getSelectedMediaWrapper();
+  if (!target) return;
+  target.style.display = "block";
+  target.classList.remove("rich-media-size-small", "rich-media-size-medium", "rich-media-size-large");
+  const cls = size === "small" ? "rich-media-size-small" : size === "medium" ? "rich-media-size-medium" : "rich-media-size-large";
+  target.classList.add(cls);
+  renderPreview();
+}
+
+function applyMediaAlign(align) {
+  const target = getSelectedMediaWrapper();
+  if (!target) return;
+  target.style.display = "block";
+  target.classList.remove("rich-media-float-left", "rich-media-float-right", "rich-media-center");
+  const cls = align === "left" ? "rich-media-float-left" : align === "right" ? "rich-media-float-right" : "rich-media-center";
+  target.classList.add(cls);
+  renderPreview();
+}
+
+function insertRichSpoiler() {
+  if (!richEditor) return;
+  const selection = window.getSelection();
+  const selected = selection ? String(selection.toString() || "").trim() : "";
+  const content = selected || "Spoiler";
+  richEditor.focus();
+  document.execCommand("insertHTML", false, `<button class="spoiler-text" type="button">${escapeHtml(content)}</button>`);
   renderPreview();
 }
 
@@ -844,6 +892,21 @@ richCmdButtons.forEach((btn) => {
     document.execCommand(btn.dataset.richCmd || "", false, null);
     renderPreview();
   });
+});
+
+if (richSpoilerBtn) {
+  richSpoilerBtn.addEventListener("mousedown", (event) => event.preventDefault());
+  richSpoilerBtn.addEventListener("click", insertRichSpoiler);
+}
+
+richMediaSizeButtons.forEach((btn) => {
+  btn.addEventListener("mousedown", (event) => event.preventDefault());
+  btn.addEventListener("click", () => applyMediaSize(btn.dataset.mediaSize || "medium"));
+});
+
+richMediaAlignButtons.forEach((btn) => {
+  btn.addEventListener("mousedown", (event) => event.preventDefault());
+  btn.addEventListener("click", () => applyMediaAlign(btn.dataset.mediaAlign || "center"));
 });
 
 if (richLinkBtn) {

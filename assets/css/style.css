@@ -984,6 +984,33 @@ textarea {
   outline: 0;
 }
 
+.rich-toolbar {
+  row-gap: 0.45rem;
+}
+
+.rich-tool-group {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.2rem;
+  border: 1px solid #2f4555;
+  border-radius: 0.5rem;
+  background: #13212b;
+}
+
+.rich-tool-sep {
+  width: 1px;
+  height: 1.6rem;
+  background: #315060;
+  margin: 0 0.15rem;
+}
+
+.rich-tool-btn {
+  min-width: 2rem;
+  padding: 0.42rem 0.55rem;
+  line-height: 1;
+}
+
 .rich-editor:focus {
   border-color: #4e6b7f;
 }
@@ -1017,6 +1044,49 @@ textarea {
 .rich-preview audio,
 .rich-preview iframe {
   max-width: 100%;
+}
+
+.rich-editor::after,
+.rich-preview::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.rich-editor .rich-media-size-small,
+.rich-preview .rich-media-size-small {
+  width: min(38%, 320px);
+  max-width: 100%;
+}
+
+.rich-editor .rich-media-size-medium,
+.rich-preview .rich-media-size-medium {
+  width: min(60%, 560px);
+  max-width: 100%;
+}
+
+.rich-editor .rich-media-size-large,
+.rich-preview .rich-media-size-large {
+  width: 100%;
+  max-width: 100%;
+}
+
+.rich-editor .rich-media-float-left,
+.rich-preview .rich-media-float-left {
+  float: left;
+  margin: 0.2rem 1rem 0.75rem 0;
+}
+
+.rich-editor .rich-media-float-right,
+.rich-preview .rich-media-float-right {
+  float: right;
+  margin: 0.2rem 0 0.75rem 1rem;
+}
+
+.rich-editor .rich-media-center,
+.rich-preview .rich-media-center {
+  float: none;
+  margin: 0.25rem auto 0.85rem;
 }
 
 .top-items {

@@ -127,20 +127,38 @@
         <div id="rich-editor-section" class="hidden">
           <div class="media-head">
             <h4>Éditeur libre</h4>
-            <div class="manager-actions">
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="bold"><strong>B</strong></button>
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="italic"><em>I</em></button>
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="underline"><span class="u-text">U</span></button>
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList">Liste</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList">Liste num.</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft">Gauche</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter">Centre</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight">Droite</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn">Lien</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn">Image</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn">Vidéo</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn">Audio</button>
-              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-cols-btn">2 colonnes</button>
+            <div class="manager-actions rich-toolbar">
+              <div class="rich-tool-group">
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="bold" title="Gras"><strong>B</strong></button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="italic" title="Italique"><em>I</em></button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="underline" title="Souligné"><span class="u-text">U</span></button>
+                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-spoiler-btn" title="Spoiler">👁</button>
+              </div>
+              <div class="rich-tool-sep" aria-hidden="true"></div>
+              <div class="rich-tool-group">
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList" title="Liste">•</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList" title="Liste numérotée">1.</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner à gauche">⟸</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">≡</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner à droite">⟹</button>
+              </div>
+              <div class="rich-tool-sep" aria-hidden="true"></div>
+              <div class="rich-tool-group">
+                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn" title="Insérer lien">🔗</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn" title="Insérer image">🖼</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn" title="Insérer vidéo">🎬</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn" title="Insérer audio">🎵</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-cols-btn" title="Insérer 2 colonnes">▥</button>
+              </div>
+              <div class="rich-tool-sep" aria-hidden="true"></div>
+              <div class="rich-tool-group">
+                <button type="button" class="action-btn secondary rich-tool-btn" data-media-size="small" title="Média petit">S</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-media-size="medium" title="Média moyen">M</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-media-size="large" title="Média grand">L</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="left" title="Média à gauche">↤</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="center" title="Média centré">↔</button>
+                <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="right" title="Média à droite">↦</button>
+              </div>
             </div>
           </div>
           <div id="rich-editor" class="rich-editor" contenteditable="true"></div>
@@ -211,3 +229,5 @@
   <script src="assets/js/main.js"></script>
 </body>
 </html>
+
+
