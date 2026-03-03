@@ -1,4 +1,4 @@
-﻿const topsGrid = document.getElementById("tops-grid");
+const topsGrid = document.getElementById("tops-grid");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const DEFAULT_COVER =
@@ -20,10 +20,11 @@ function topCard(item) {
   article.setAttribute("role", "link");
   const target = `top.html?id=${encodeURIComponent(item.id)}`;
 
+  const ownerMeta = item.ownerUsername ? ` · @${item.ownerUsername}` : "";
   article.innerHTML = `
     <img src="${item.displayCover || item.cover || DEFAULT_COVER}" alt="${item.title || "Top"}" />
     <div class="card-body">
-      <p class="meta">${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}</p>
+      <p class="meta">${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}${ownerMeta}</p>
       <h3>${item.title || "Sans titre"}</h3>
       <p>${item.subtitle || ""}</p>
       <div class="card-footer">

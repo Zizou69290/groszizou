@@ -107,6 +107,9 @@ async function loadTop() {
   category.textContent = window.ReviewsStore.categories[top.category] || top.category || "Autre";
   subtitle.textContent = top.subtitle || "";
   year.textContent = top.year ? `Période : ${top.year}` : "";
+  if (top.ownerUsername) {
+    year.textContent += `${top.year ? " · " : ""}@${top.ownerUsername}`;
+  }
 
   const reviewMap = new Map();
   try {

@@ -1,10 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin - GROSZIZOU Reviews</title>
-  <meta name="description" content="Ajouter ou modifier les reviews et tops de GROSZIZOU." />
+  <title>Création - GROSZIZOU Reviews</title>
+  <meta name="description" content="Créer et gérer ses reviews et tops." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -29,14 +29,22 @@
   <main>
     <section class="container manager-section">
       <div class="token-box">
-        <label>Mot de passe</label>
-        <div class="admin-auth-row">
-          <input id="admin-password" type="password" placeholder="Mot de passe admin" />
-          <button id="admin-login" class="enter-btn" title="Entrer" aria-label="Entrer">↵</button>
+        <h2>Espace créateur</h2>
+        <p class="media-note">Crée un compte ou connecte-toi pour publier tes reviews et tops.</p>
+        <div class="auth-grid">
+          <label>Nom d'utilisateur
+            <input id="auth-username" type="text" placeholder="ex: groszizou" autocomplete="username" />
+          </label>
+          <label>Mot de passe
+            <input id="auth-password" type="password" placeholder="Minimum 4 caractères" autocomplete="current-password" />
+          </label>
         </div>
         <div class="row-actions">
-          <button id="admin-logout" class="action-btn secondary hidden">Verrouiller</button>
+          <button id="auth-login" class="action-btn">Connexion</button>
+          <button id="auth-register" class="action-btn secondary">Créer un compte</button>
+          <button id="auth-logout" class="action-btn secondary hidden">Déconnexion</button>
         </div>
+        <p id="auth-status" class="auth-status">Non connecté</p>
       </div>
     </section>
 
@@ -91,6 +99,12 @@
           <textarea name="summary" rows="2"></textarea>
         </label>
 
+        <div class="content-mode-switch" role="group" aria-label="Mode d'édition">
+          <button type="button" class="action-btn secondary mode-btn active" data-content-mode="blocks">Mode blocs</button>
+          <button type="button" class="action-btn secondary mode-btn" data-content-mode="rich">Éditeur libre</button>
+        </div>
+
+        <div id="blocks-editor-section">
         <div class="media-head">
           <h4>Blocs de contenu (ordre libre)</h4>
           <div class="manager-actions">
@@ -126,6 +140,30 @@
           <button type="button" id="tool-size-apply" class="action-btn secondary tool-btn">Appliquer taille</button>
         </div>
         <div id="blocks-list" class="blocks-list"></div>
+        </div>
+
+        <div id="rich-editor-section" class="hidden">
+          <div class="media-head">
+            <h4>Éditeur libre</h4>
+            <div class="manager-actions">
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="bold"><strong>B</strong></button>
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="italic"><em>I</em></button>
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="underline"><span class="u-text">U</span></button>
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList">Liste</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList">Liste num.</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft">Gauche</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter">Centre</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight">Droite</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn">Lien</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn">Image</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn">Vidéo</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn">Audio</button>
+              <button type="button" class="action-btn secondary rich-tool-btn" id="rich-cols-btn">2 colonnes</button>
+            </div>
+          </div>
+          <div id="rich-editor" class="rich-editor" contenteditable="true"></div>
+          <textarea id="review-body-html" name="bodyHtml" class="hidden"></textarea>
+        </div>
 
         <h4>Prévisualisation live</h4>
         <div id="review-preview" class="preview-card"></div>

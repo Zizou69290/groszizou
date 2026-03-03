@@ -49,7 +49,7 @@ function renderDetails(item) {
   const entries = [
     { label: "Auteur", value: item.author },
     { label: "Réalisation", value: item.director },
-    { label: "Studio/Développeur", value: item.studio },
+    { label: "Studio / Développeur", value: item.studio },
     { label: "Année", value: item.releaseYear },
     { label: "Genre", value: item.genre }
   ].filter((entry) => String(entry.value || "").trim());
@@ -176,13 +176,19 @@ async function loadReview() {
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
   summary.textContent = item.summary || "Aucun résumé.";
-  date.textContent = `Publié le ${fmtDate(item.date)}`;
+  date.textContent = `Publié le ${fmtDate(item.date)}${item.ownerUsername ? ` · @${item.ownerUsername}` : ""}`;
   score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
   if (coverBg) coverBg.src = item.cover || DEFAULT_COVER;
   renderDetails(item);
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");
 
   content.innerHTML = "";
+  if ((item.contentMode === "rich" || item.bodyHtml) && String(item.bodyHtml || "").trim()) {
+    content.innerHTML = item.bodyHtml;
+    bindSpoilers(content);
+    return;
+  }
+
   const blocks = Array.isArray(item.blocks) ? item.blocks : [];
   if (!blocks.length) {
     content.innerHTML = "<p>Aucun contenu detaille.</p>";

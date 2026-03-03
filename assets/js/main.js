@@ -27,15 +27,29 @@ const cancelTopBtn = document.getElementById("cancel-top-form");
 const addTopItemBtn = document.getElementById("add-top-item");
 const topItemsList = document.getElementById("top-items-list");
 
-const adminPassword = document.getElementById("admin-password");
-const loginBtn = document.getElementById("admin-login");
-const logoutBtn = document.getElementById("admin-logout");
+const authUsername = document.getElementById("auth-username");
+const authPassword = document.getElementById("auth-password");
+const loginBtn = document.getElementById("auth-login");
+const registerBtn = document.getElementById("auth-register");
+const logoutBtn = document.getElementById("auth-logout");
+const authStatus = document.getElementById("auth-status");
 
 const toolColor = document.getElementById("tool-color");
 const toolColorApply = document.getElementById("tool-color-apply");
 const toolSize = document.getElementById("tool-size");
 const toolSizeApply = document.getElementById("tool-size-apply");
 const wrapToolButtons = document.querySelectorAll("[data-wrap-tag]");
+const contentModeButtons = document.querySelectorAll("[data-content-mode]");
+const blocksEditorSection = document.getElementById("blocks-editor-section");
+const richEditorSection = document.getElementById("rich-editor-section");
+const richEditor = document.getElementById("rich-editor");
+const richCmdButtons = document.querySelectorAll("[data-rich-cmd]");
+const richLinkBtn = document.getElementById("rich-link-btn");
+const richImageBtn = document.getElementById("rich-image-btn");
+const richVideoBtn = document.getElementById("rich-video-btn");
+const richAudioBtn = document.getElementById("rich-audio-btn");
+const richColsBtn = document.getElementById("rich-cols-btn");
+const reviewBodyHtml = document.getElementById("review-body-html");
 const metaAuthorRow = document.getElementById("meta-author-row");
 const metaDirectorRow = document.getElementById("meta-director-row");
 const metaStudioRow = document.getElementById("meta-studio-row");
@@ -52,6 +66,8 @@ let editingTopId = null;
 let cachedReviews = [];
 let activeTextArea = null;
 let editingAccent = "";
+let currentContentMode = "blocks";
+let currentUser = null;
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -114,10 +130,11 @@ function reviewCard(item) {
   const accent = item.accent || "#f25f29";
   const target = `review.html?id=${encodeURIComponent(item.id)}`;
 
+  const ownerMeta = item.ownerUsername ? ` &middot; @${escapeHtml(item.ownerUsername)}` : "";
   article.innerHTML = `
     <img src="${item.cover || DEFAULT_COVER}" alt="${escapeHtml(item.title || "Review")}" />
     <div class="card-body">
-      <p class="meta">${window.ReviewsStore.categories[item.category] || item.category} · ${fmtDate(item.date)}</p>
+      <p class="meta">${window.ReviewsStore.categories[item.category] || item.category} &middot; ${fmtDate(item.date)}${ownerMeta}</p>
       <h3>${escapeHtml(item.title || "Sans titre")}</h3>
       <p>${escapeHtml(item.summary || "Aucun résumé.")}</p>
       <div class="card-footer">
@@ -142,10 +159,11 @@ function reviewCard(item) {
 function managerRow(item) {
   const row = document.createElement("div");
   row.className = "manager-row";
+  const ownerMeta = item.ownerUsername ? ` &middot; @${escapeHtml(item.ownerUsername)}` : "";
   row.innerHTML = `
     <div>
       <strong>${escapeHtml(item.title || "Sans titre")}</strong>
-      <span>${window.ReviewsStore.categories[item.category] || item.category} · ${fmtDate(item.date)}</span>
+      <span>${window.ReviewsStore.categories[item.category] || item.category} &middot; ${fmtDate(item.date)}${ownerMeta}</span>
     </div>
     <div class="row-actions">
       <button class="action-btn secondary" data-action="edit">Éditer</button>
@@ -169,10 +187,11 @@ function managerRow(item) {
 function topRow(item) {
   const row = document.createElement("div");
   row.className = "manager-row";
+  const ownerMeta = item.ownerUsername ? ` &middot; @${escapeHtml(item.ownerUsername)}` : "";
   row.innerHTML = `
     <div>
       <strong>${escapeHtml(item.title || "Sans titre")}</strong>
-      <span>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}</span>
+      <span>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` &middot; ${item.year}` : ""}${ownerMeta}</span>
     </div>
     <div class="row-actions">
       <button class="action-btn secondary" data-action="edit-top">Éditer</button>
@@ -275,6 +294,25 @@ function renderPreview() {
 
   const flow = document.createElement("div");
   flow.className = "preview-flow";
+
+  if (currentContentMode === "rich") {
+    const html = getRichHtml();
+    if (!html) {
+      const empty = document.createElement("p");
+      empty.className = "media-note";
+      empty.textContent = "Commence à rédiger pour voir le rendu.";
+      flow.appendChild(empty);
+    } else {
+      const node = document.createElement("div");
+      node.className = "preview-block rich-preview";
+      node.innerHTML = html;
+      bindSpoilers(node);
+      flow.appendChild(node);
+    }
+    previewBox.appendChild(flow);
+    return;
+  }
+
   blocks.forEach((block) => {
     const node = document.createElement("div");
     node.className = "preview-block";
@@ -302,6 +340,36 @@ function renderPreview() {
     flow.appendChild(empty);
   }
   previewBox.appendChild(flow);
+}
+
+function getRichHtml() {
+  const html = richEditor?.innerHTML || reviewBodyHtml?.value || "";
+  return String(html || "").trim();
+}
+
+function setRichHtml(html) {
+  const value = String(html || "");
+  if (richEditor) richEditor.innerHTML = value;
+  if (reviewBodyHtml) reviewBodyHtml.value = value;
+}
+
+function normalizeYouTubeEmbed(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
+    if (u.hostname.includes("youtu.be")) return `https://www.youtube.com/embed/${u.pathname.replace("/", "")}`;
+  } catch {
+    return url;
+  }
+  return url;
+}
+
+function setContentMode(mode) {
+  currentContentMode = mode === "rich" ? "rich" : "blocks";
+  if (blocksEditorSection) blocksEditorSection.classList.toggle("hidden", currentContentMode !== "blocks");
+  if (richEditorSection) richEditorSection.classList.toggle("hidden", currentContentMode !== "rich");
+  contentModeButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.contentMode === currentContentMode));
+  renderPreview();
 }
 
 function configureMetaFields(category) {
@@ -363,8 +431,8 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
         <option value="audio">Audio</option>
       </select>
       <div class="row-actions">
-        <button type="button" class="action-btn secondary block-up">↑</button>
-        <button type="button" class="action-btn secondary block-down">↓</button>
+        <button type="button" class="action-btn secondary block-up">&uarr;</button>
+        <button type="button" class="action-btn secondary block-down">&darr;</button>
         <button type="button" class="action-btn danger block-delete">Supprimer</button>
       </div>
     </div>
@@ -452,8 +520,8 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "" }) {
     <div class="block-head">
       <strong class="block-index">Item</strong>
       <div class="row-actions">
-        <button type="button" class="action-btn secondary top-up">↑</button>
-        <button type="button" class="action-btn secondary top-down">↓</button>
+        <button type="button" class="action-btn secondary top-up">&uarr;</button>
+        <button type="button" class="action-btn secondary top-down">&darr;</button>
         <button type="button" class="action-btn danger top-delete">Supprimer</button>
       </div>
     </div>
@@ -544,7 +612,8 @@ function buildFilterButtons(reviews) {
 async function renderAll() {
   let reviews = [];
   try {
-    reviews = await window.ReviewsStore.getAll();
+    const options = managerList ? { ownerId: currentUser?.uid || "__none__" } : {};
+    reviews = await window.ReviewsStore.getAll(options);
   } catch (error) {
     if (reviewsGrid || managerList) window.alert(`Impossible de charger les reviews : ${error.message}`);
     return;
@@ -569,7 +638,7 @@ async function renderAll() {
 async function renderTopsManager() {
   if (!topList) return;
   try {
-    const tops = await window.ReviewsStore.getAllTops();
+    const tops = await window.ReviewsStore.getAllTops({ ownerId: currentUser?.uid || "__none__" });
     topList.innerHTML = "";
     tops.forEach((item) => topList.appendChild(topRow(item)));
   } catch (error) {
@@ -596,6 +665,9 @@ function openForm(item = null) {
   form.elements.releaseYear.value = item?.releaseYear || "";
   form.elements.genre.value = item?.genre || "";
   configureMetaFields(form.elements.category.value || "jeu");
+  setRichHtml(item?.bodyHtml || "");
+  const nextMode = item?.contentMode || (item?.bodyHtml ? "rich" : "blocks");
+  setContentMode(nextMode);
   setBlocks(item?.blocks || []);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -606,6 +678,8 @@ function closeForm() {
   editingAccent = "";
   form.reset();
   form.classList.add("hidden");
+  setContentMode("blocks");
+  setRichHtml("");
   if (blocksList) blocksList.innerHTML = "";
   renderPreview();
 }
@@ -659,7 +733,9 @@ if (form) {
       studio: selectedCategory === "jeu" ? studioValue : "",
       releaseYear: form.elements.releaseYear.value.trim(),
       genre: form.elements.genre.value.trim(),
-      blocks: readBlocks()
+      contentMode: currentContentMode,
+      bodyHtml: currentContentMode === "rich" ? getRichHtml() : "",
+      blocks: currentContentMode === "blocks" ? readBlocks() : []
     };
     try {
       await window.ReviewsStore.upsert(payload);
@@ -734,32 +810,145 @@ if (toolSizeApply) {
   });
 }
 
+contentModeButtons.forEach((btn) => {
+  btn.addEventListener("click", () => setContentMode(btn.dataset.contentMode || "blocks"));
+});
+
+if (richEditor) {
+  richEditor.addEventListener("input", () => {
+    if (reviewBodyHtml) reviewBodyHtml.value = richEditor.innerHTML;
+    renderPreview();
+  });
+}
+
+richCmdButtons.forEach((btn) => {
+  btn.addEventListener("mousedown", (event) => event.preventDefault());
+  btn.addEventListener("click", () => {
+    if (!richEditor) return;
+    richEditor.focus();
+    document.execCommand(btn.dataset.richCmd || "", false, null);
+    renderPreview();
+  });
+});
+
+if (richLinkBtn) {
+  richLinkBtn.addEventListener("mousedown", (event) => event.preventDefault());
+  richLinkBtn.addEventListener("click", () => {
+    if (!richEditor) return;
+    const url = window.prompt("URL du lien");
+    if (!url) return;
+    richEditor.focus();
+    document.execCommand("createLink", false, url.trim());
+    renderPreview();
+  });
+}
+
+if (richImageBtn) {
+  richImageBtn.addEventListener("mousedown", (event) => event.preventDefault());
+  richImageBtn.addEventListener("click", () => {
+    const url = window.prompt("URL de l'image");
+    if (!url || !richEditor) return;
+    richEditor.focus();
+    document.execCommand("insertHTML", false, `<figure><img src="${escapeHtml(url.trim())}" alt="image" /></figure>`);
+    renderPreview();
+  });
+}
+
+if (richVideoBtn) {
+  richVideoBtn.addEventListener("mousedown", (event) => event.preventDefault());
+  richVideoBtn.addEventListener("click", () => {
+    const url = window.prompt("URL vidéo (YouTube ou fichier vidéo)");
+    if (!url || !richEditor) return;
+    richEditor.focus();
+    const cleaned = url.trim();
+    const embed = normalizeYouTubeEmbed(cleaned);
+    if (embed.includes("youtube.com/embed/")) {
+      document.execCommand("insertHTML", false, `<div class="video-wrap"><iframe src="${escapeHtml(embed)}" title="video" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`);
+    } else {
+      document.execCommand("insertHTML", false, `<video controls src="${escapeHtml(cleaned)}"></video>`);
+    }
+    renderPreview();
+  });
+}
+
+if (richAudioBtn) {
+  richAudioBtn.addEventListener("mousedown", (event) => event.preventDefault());
+  richAudioBtn.addEventListener("click", () => {
+    const url = window.prompt("URL audio");
+    if (!url || !richEditor) return;
+    richEditor.focus();
+    document.execCommand("insertHTML", false, `<audio controls src="${escapeHtml(url.trim())}"></audio>`);
+    renderPreview();
+  });
+}
+
+if (richColsBtn) {
+  richColsBtn.addEventListener("mousedown", (event) => event.preventDefault());
+  richColsBtn.addEventListener("click", () => {
+    if (!richEditor) return;
+    richEditor.focus();
+    document.execCommand(
+      "insertHTML",
+      false,
+      "<table><tbody><tr><td><p>Colonne 1</p></td><td><p>Colonne 2</p></td></tr></tbody></table><p></p>"
+    );
+    renderPreview();
+  });
+}
+
 if (window.ReviewsStore.onAuthChanged) {
   window.ReviewsStore.onAuthChanged(async (user) => {
     const unlocked = Boolean(user);
+    currentUser = unlocked ? window.ReviewsStore.getCurrentUser() : null;
     if (managerSection) managerSection.classList.toggle("hidden", !unlocked);
     if (logoutBtn) logoutBtn.classList.toggle("hidden", !unlocked);
+    if (authStatus) {
+      authStatus.textContent = unlocked
+        ? `Connecté en tant que @${currentUser?.username || "utilisateur"}`
+        : "Non connecté";
+    }
     if (unlocked) {
       await renderAll();
       await renderTopsManager();
+    } else {
+      if (managerList) managerList.innerHTML = "";
+      if (topList) topList.innerHTML = "";
     }
   });
 }
 
-if (loginBtn && adminPassword) {
+if (loginBtn && authUsername && authPassword) {
   const login = async () => {
     try {
-      await window.ReviewsStore.unlockWithPassword(adminPassword.value);
-      adminPassword.value = "";
+      await window.ReviewsStore.loginWithCredentials(authUsername.value, authPassword.value);
+      authPassword.value = "";
     } catch (error) {
-      window.alert(`Mot de passe invalide : ${error.message}`);
+      window.alert(`Connexion impossible : ${error.message}`);
     }
   };
   loginBtn.addEventListener("click", login);
-  adminPassword.addEventListener("keydown", (event) => {
+  authUsername.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
       login();
+    }
+  });
+  authPassword.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      login();
+    }
+  });
+}
+
+if (registerBtn && authUsername && authPassword) {
+  registerBtn.addEventListener("click", async () => {
+    try {
+      await window.ReviewsStore.registerWithCredentials(authUsername.value, authPassword.value);
+      authPassword.value = "";
+      window.alert("Compte créé. Tu es maintenant connecté.");
+    } catch (error) {
+      window.alert(`Inscription impossible : ${error.message}`);
     }
   });
 }
@@ -777,4 +966,10 @@ if (logoutBtn) {
 if (blocksList) setBlocks([]);
 if (topItemsList) setTopItems([]);
 if (form) configureMetaFields(form.elements.category.value || "jeu");
+setContentMode("blocks");
 renderAll();
+
+
+
+
+

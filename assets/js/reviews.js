@@ -1,4 +1,4 @@
-﻿window.ReviewsStore = (() => {
+window.ReviewsStore = (() => {
   const categories = {
     jeu: "Jeu-vidéo",
     film: "Film",
@@ -10,6 +10,9 @@
 
   const reviewCollection = "reviews";
   const topCollection = "tops";
+  const usersCollection = "users";
+  const USERNAME_RE = /^[a-z0-9._-]{3,24}$/;
+
   let firebaseReady = false;
   let db;
   let auth;
@@ -46,6 +49,46 @@
     return result || `${Date.now()}`;
   }
 
+  function normalizeUsername(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function usernameToEmail(username) {
+    return `${username}@groszizou.local`;
+  }
+
+  function validateCredentials(username, password) {
+    const cleanUsername = normalizeUsername(username);
+    const cleanPassword = String(password || "");
+    if (!USERNAME_RE.test(cleanUsername)) {
+      throw new Error("Nom d'utilisateur invalide (3-24 caractères: a-z, 0-9, ., _, -)");
+    }
+    if (cleanPassword.length < 4) {
+      throw new Error("Mot de passe trop court (minimum 4 caractères)");
+    }
+    return { username: cleanUsername, password: cleanPassword };
+  }
+
+  function readUsernameFromUser(user) {
+    if (!user) return "";
+    if (user.displayName) return normalizeUsername(user.displayName);
+    const email = String(user.email || "");
+    const atIndex = email.indexOf("@");
+    if (atIndex > 0) return normalizeUsername(email.slice(0, atIndex));
+    return "";
+  }
+
+  function getCurrentUser() {
+    ensureFirebase();
+    const user = auth.currentUser;
+    if (!user) return null;
+    return {
+      uid: user.uid,
+      username: readUsernameFromUser(user),
+      email: user.email || ""
+    };
+  }
+
   function normalizeBlock(raw) {
     if (!raw || !raw.type) return null;
     const normalized = {
@@ -79,6 +122,10 @@
       studio: review.studio || "",
       releaseYear: review.releaseYear || "",
       genre: review.genre || "",
+      ownerId: review.ownerId || "",
+      ownerUsername: review.ownerUsername || "",
+      contentMode: review.contentMode || (review.bodyHtml ? "rich" : "blocks"),
+      bodyHtml: review.bodyHtml || "",
       blocks,
       updatedAt: typeof review.updatedAt === "number" ? review.updatedAt : Date.now()
     };
@@ -107,6 +154,8 @@
       subtitle: top.subtitle || "",
       category: top.category || "autre",
       year: top.year || "",
+      ownerId: top.ownerId || "",
+      ownerUsername: top.ownerUsername || "",
       items,
       updatedAt: typeof top.updatedAt === "number" ? top.updatedAt : Date.now()
     };
@@ -114,15 +163,23 @@
 
   function requireAuth() {
     ensureFirebase();
-    if (!auth.currentUser) {
-      throw new Error("Mot de passe requis pour modifier");
+    const current = getCurrentUser();
+    if (!current) {
+      throw new Error("Connexion requise pour modifier");
     }
+    return current;
   }
 
-  async function getAll() {
+  async function getAll(options = {}) {
     ensureFirebase();
-    const snap = await db.collection(reviewCollection).orderBy("updatedAt", "desc").get();
-    return snap.docs.map((doc) => normalizeReview({ id: doc.id, ...doc.data() }));
+    let query = db.collection(reviewCollection);
+    if (options.ownerId) {
+      query = query.where("ownerId", "==", options.ownerId);
+    }
+    const snap = await query.get();
+    return snap.docs
+      .map((doc) => normalizeReview({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
 
   async function getById(id) {
@@ -133,22 +190,45 @@
   }
 
   async function upsert(review) {
-    requireAuth();
+    const current = requireAuth();
     const normalized = normalizeReview(review);
-    await db.collection(reviewCollection).doc(normalized.id).set(normalized, { merge: true });
+    const ref = db.collection(reviewCollection).doc(normalized.id);
+    const existing = await ref.get();
+    if (existing.exists) {
+      const data = existing.data() || {};
+      if (data.ownerId && data.ownerId !== current.uid) {
+        throw new Error("Cette review appartient à un autre utilisateur");
+      }
+    }
+    normalized.ownerId = current.uid;
+    normalized.ownerUsername = current.username || "";
+    await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
 
   async function remove(id) {
-    requireAuth();
-    await db.collection(reviewCollection).doc(id).delete();
+    const current = requireAuth();
+    const ref = db.collection(reviewCollection).doc(id);
+    const existing = await ref.get();
+    if (!existing.exists) return { ok: true };
+    const data = existing.data() || {};
+    if (data.ownerId && data.ownerId !== current.uid) {
+      throw new Error("Suppression impossible: cette review appartient à un autre utilisateur");
+    }
+    await ref.delete();
     return { ok: true };
   }
 
-  async function getAllTops() {
+  async function getAllTops(options = {}) {
     ensureFirebase();
-    const snap = await db.collection(topCollection).orderBy("updatedAt", "desc").get();
-    return snap.docs.map((doc) => normalizeTop({ id: doc.id, ...doc.data() }));
+    let query = db.collection(topCollection);
+    if (options.ownerId) {
+      query = query.where("ownerId", "==", options.ownerId);
+    }
+    const snap = await query.get();
+    return snap.docs
+      .map((doc) => normalizeTop({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
 
   async function getTopById(id) {
@@ -159,15 +239,32 @@
   }
 
   async function upsertTop(top) {
-    requireAuth();
+    const current = requireAuth();
     const normalized = normalizeTop(top);
-    await db.collection(topCollection).doc(normalized.id).set(normalized, { merge: true });
+    const ref = db.collection(topCollection).doc(normalized.id);
+    const existing = await ref.get();
+    if (existing.exists) {
+      const data = existing.data() || {};
+      if (data.ownerId && data.ownerId !== current.uid) {
+        throw new Error("Ce top appartient à un autre utilisateur");
+      }
+    }
+    normalized.ownerId = current.uid;
+    normalized.ownerUsername = current.username || "";
+    await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
 
   async function removeTop(id) {
-    requireAuth();
-    await db.collection(topCollection).doc(id).delete();
+    const current = requireAuth();
+    const ref = db.collection(topCollection).doc(id);
+    const existing = await ref.get();
+    if (!existing.exists) return { ok: true };
+    const data = existing.data() || {};
+    if (data.ownerId && data.ownerId !== current.uid) {
+      throw new Error("Suppression impossible: ce top appartient à un autre utilisateur");
+    }
+    await ref.delete();
     return { ok: true };
   }
 
@@ -189,12 +286,30 @@
     return count;
   }
 
-  async function unlockWithPassword(password) {
+  async function registerWithCredentials(username, password) {
     ensureFirebase();
-    if (!cfg.adminEmail) {
-      throw new Error("Renseigne adminEmail dans assets/js/firebase-config.js");
+    const valid = validateCredentials(username, password);
+    const email = usernameToEmail(valid.username);
+    const cred = await auth.createUserWithEmailAndPassword(email, valid.password);
+    if (cred.user) {
+      await cred.user.updateProfile({ displayName: valid.username });
+      await db.collection(usersCollection).doc(cred.user.uid).set(
+        {
+          username: valid.username,
+          lowerUsername: valid.username,
+          createdAt: Date.now()
+        },
+        { merge: true }
+      );
     }
-    return auth.signInWithEmailAndPassword(cfg.adminEmail, password);
+    return { ok: true };
+  }
+
+  async function loginWithCredentials(username, password) {
+    ensureFirebase();
+    const valid = validateCredentials(username, password);
+    const email = usernameToEmail(valid.username);
+    return auth.signInWithEmailAndPassword(email, valid.password);
   }
 
   async function signOut() {
@@ -220,7 +335,9 @@
     removeTop,
     exportJson,
     importJson,
-    unlockWithPassword,
+    registerWithCredentials,
+    loginWithCredentials,
+    getCurrentUser,
     signOut,
     onAuthChanged
   };
