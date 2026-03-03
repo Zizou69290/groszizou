@@ -138,11 +138,22 @@ img {
 
 .auth-popover-meta {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   color: var(--muted);
 }
 
 .auth-popover-field {
   margin: 0;
+}
+
+.auth-edit-group {
+  border: 1px solid #2b4352;
+  border-radius: 0.6rem;
+  padding: 0.55rem;
+  display: grid;
+  gap: 0.5rem;
 }
 
 .auth-popover-actions {
@@ -915,7 +926,8 @@ textarea {
 
 .owner-avatar-fallback {
   color: #8ca2b3;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+  font-weight: 700;
   line-height: 1.05rem;
   text-align: center;
 }

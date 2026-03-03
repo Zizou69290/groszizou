@@ -259,6 +259,79 @@ window.ReviewsStore = (() => {
     };
   }
 
+  async function changeCurrentUsername(newUsername, currentPassword) {
+    ensureFirebase();
+    const current = requireAuth();
+    const username = normalizeUsername(newUsername);
+    const password = String(currentPassword || "");
+    if (!USERNAME_RE.test(username)) {
+      throw new Error("Nom d'utilisateur invalide (3-24 caractères: a-z, 0-9, ., _, -)");
+    }
+    if (!password) {
+      throw new Error("Mot de passe actuel requis");
+    }
+
+    const emailProvider = firebase.auth.EmailAuthProvider;
+    const currentEmail = auth.currentUser?.email || current.email || "";
+    const credential = emailProvider.credential(currentEmail, password);
+    await auth.currentUser.reauthenticateWithCredential(credential);
+
+    const nextEmail = usernameToEmail(username);
+    if (nextEmail !== currentEmail) {
+      await auth.currentUser.updateEmail(nextEmail);
+    }
+
+    await auth.currentUser.updateProfile({
+      displayName: username,
+      photoURL: auth.currentUser.photoURL || ""
+    });
+
+    try {
+      const existing = await findProfileByUsername(username);
+      if (existing && existing.uid !== current.uid) {
+        throw new Error("Nom d'utilisateur déjà utilisé");
+      }
+    } catch {
+      // ignore read errors due to rules
+    }
+
+    try {
+      await db.collection(usersCollection).doc(current.uid).set(
+        {
+          username,
+          lowerUsername: username,
+          email: nextEmail,
+          updatedAt: Date.now()
+        },
+        { merge: true }
+      );
+    } catch {
+      // optional persistence
+    }
+
+    return getCurrentUser();
+  }
+
+  async function changeCurrentUserPassword(currentPassword, newPassword) {
+    ensureFirebase();
+    const current = requireAuth();
+    const oldPwd = String(currentPassword || "");
+    const nextPwd = String(newPassword || "");
+    if (!oldPwd) {
+      throw new Error("Mot de passe actuel requis");
+    }
+    if (nextPwd.length < 4) {
+      throw new Error("Nouveau mot de passe trop court (minimum 4 caractères)");
+    }
+
+    const emailProvider = firebase.auth.EmailAuthProvider;
+    const currentEmail = auth.currentUser?.email || current.email || "";
+    const credential = emailProvider.credential(currentEmail, oldPwd);
+    await auth.currentUser.reauthenticateWithCredential(credential);
+    await auth.currentUser.updatePassword(nextPwd);
+    return { ok: true };
+  }
+
   function requireAuth() {
     ensureFirebase();
     const current = getCurrentUser();
@@ -461,6 +534,8 @@ window.ReviewsStore = (() => {
     getUserProfile,
     getProfilesByIds,
     updateCurrentUserProfile,
+    changeCurrentUsername,
+    changeCurrentUserPassword,
     signOut,
     onAuthChanged
   };

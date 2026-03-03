@@ -41,8 +41,8 @@ function ownerBadge(username, avatarUrl) {
   if (!username) return "";
   const avatar = avatarUrl
     ? `<img class="owner-avatar" src="${escapeHtml(avatarUrl)}" alt="Profil de ${escapeHtml(username)}" />`
-    : `<span class="owner-avatar owner-avatar-fallback">@</span>`;
-  return `<span class="owner-badge">${avatar}<span>@${escapeHtml(username)}</span></span>`;
+    : `<span class="owner-avatar owner-avatar-fallback">${escapeHtml(String(username).slice(0, 1).toUpperCase())}</span>`;
+  return `<span class="owner-badge">${avatar}<span>${escapeHtml(username)}</span></span>`;
 }
 
 function scoreToStars(value) {
