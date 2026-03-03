@@ -71,6 +71,11 @@
       poster: review.poster || "",
       accent: review.accent || "",
       summary: review.summary || "",
+      author: review.author || "",
+      director: review.director || "",
+      studio: review.studio || "",
+      releaseYear: review.releaseYear || "",
+      genre: review.genre || "",
       blocks,
       updatedAt: typeof review.updatedAt === "number" ? review.updatedAt : Date.now()
     };

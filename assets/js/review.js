@@ -19,7 +19,8 @@ const category = document.getElementById("review-category");
 const summary = document.getElementById("review-summary");
 const date = document.getElementById("review-date");
 const score = document.getElementById("review-score");
-const cover = document.getElementById("review-cover");
+const coverBg = document.getElementById("review-cover-bg");
+const details = document.getElementById("review-details");
 const content = document.getElementById("review-content");
 
 const fmtDate = (iso) => {
@@ -39,6 +40,33 @@ function scoreToStars(value) {
   if (!Number.isFinite(value)) return "☆☆☆☆☆";
   const full = Math.max(0, Math.min(5, Math.round(value / 2)));
   return "★".repeat(full) + "☆".repeat(5 - full);
+}
+
+function renderDetails(item) {
+  if (!details) return;
+
+  const entries = [
+    { label: "Auteur", value: item.author },
+    { label: "Realisateur", value: item.director },
+    { label: "Studio/Developpeur", value: item.studio },
+    { label: "Annee", value: item.releaseYear },
+    { label: "Genre", value: item.genre }
+  ].filter((entry) => String(entry.value || "").trim());
+
+  details.innerHTML = "";
+  if (!entries.length) {
+    details.classList.add("hidden");
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const node = document.createElement("span");
+    node.className = "review-detail";
+    node.innerHTML = `<strong>${escapeHtml(entry.label)}:</strong> ${escapeHtml(entry.value)}`;
+    details.appendChild(node);
+  });
+
+  details.classList.remove("hidden");
 }
 
 function renderRichText(text) {
@@ -85,6 +113,7 @@ function renderBlock(block) {
     wrapper.appendChild(p);
     return block.content ? wrapper : null;
   }
+
   if (block.type === "image") wrapper.innerHTML = `<img src="${block.url}" alt="${escapeHtml(block.caption || "image")}" />`;
   if (block.type === "video") wrapper.innerHTML = `<video controls src="${block.url}"></video>`;
   if (block.type === "video-embed") {
@@ -118,17 +147,17 @@ async function loadReview() {
   document.title = `Review - ${item.title || "Sans titre"}`;
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
-  summary.textContent = item.summary || "Aucun résumé.";
-  date.textContent = `Publié le ${fmtDate(item.date)}`;
+  summary.textContent = item.summary || "Aucun resume.";
+  date.textContent = `Publie le ${fmtDate(item.date)}`;
   score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
-  cover.src = item.cover || DEFAULT_COVER;
-  cover.alt = item.title || "Review";
+  if (coverBg) coverBg.src = item.cover || DEFAULT_COVER;
+  renderDetails(item);
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");
 
   content.innerHTML = "";
   const blocks = Array.isArray(item.blocks) ? item.blocks : [];
   if (!blocks.length) {
-    content.innerHTML = "<p>Aucun contenu détaillé.</p>";
+    content.innerHTML = "<p>Aucun contenu detaille.</p>";
   } else {
     blocks.forEach((block) => {
       const node = renderBlock(block);

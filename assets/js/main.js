@@ -509,6 +509,11 @@ function openForm(item = null) {
   form.elements.poster.value = item?.poster || "";
   form.elements.accent.value = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
+  form.elements.author.value = item?.author || "";
+  form.elements.director.value = item?.director || "";
+  form.elements.studio.value = item?.studio || "";
+  form.elements.releaseYear.value = item?.releaseYear || "";
+  form.elements.genre.value = item?.genre || "";
   setBlocks(item?.blocks || []);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -561,6 +566,11 @@ if (form) {
       poster: form.elements.poster.value.trim(),
       accent: form.elements.accent.value.trim(),
       summary: form.elements.summary.value.trim(),
+      author: form.elements.author.value.trim(),
+      director: form.elements.director.value.trim(),
+      studio: form.elements.studio.value.trim(),
+      releaseYear: form.elements.releaseYear.value.trim(),
+      genre: form.elements.genre.value.trim(),
       blocks: readBlocks()
     };
     try {
