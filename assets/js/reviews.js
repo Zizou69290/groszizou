@@ -227,23 +227,36 @@ window.ReviewsStore = (() => {
       if (!USERNAME_RE.test(patch.username)) {
         throw new Error("Nom d'utilisateur invalide (3-24 caractères: a-z, 0-9, ., _, -)");
       }
-      const existing = await findProfileByUsername(patch.username);
-      if (existing && existing.uid !== current.uid) {
-        throw new Error("Nom d'utilisateur déjà utilisé");
+      try {
+        const existing = await findProfileByUsername(patch.username);
+        if (existing && existing.uid !== current.uid) {
+          throw new Error("Nom d'utilisateur déjà utilisé");
+        }
+      } catch {
+        // If rules block read on users collection, skip uniqueness check.
       }
     }
     if (!("username" in patch)) patch.username = current.username || "";
     patch.lowerUsername = patch.username;
     patch.email = current.email || auth.currentUser?.email || "";
     patch.updatedAt = Date.now();
-    await db.collection(usersCollection).doc(current.uid).set(patch, { merge: true });
+    try {
+      await db.collection(usersCollection).doc(current.uid).set(patch, { merge: true });
+    } catch {
+      // Optional persistence; auth profile remains source of truth.
+    }
     if ("avatarUrl" in patch || "username" in patch) {
       await auth.currentUser.updateProfile({
         displayName: patch.username || current.username || "",
         photoURL: patch.avatarUrl || ""
       });
     }
-    return getUserProfile(current.uid);
+    const user = getCurrentUser();
+    return {
+      uid: current.uid,
+      username: user?.username || patch.username || "",
+      avatarUrl: user?.avatarUrl || patch.avatarUrl || ""
+    };
   }
 
   function requireAuth() {
@@ -376,24 +389,32 @@ window.ReviewsStore = (() => {
   async function registerWithCredentials(username, password) {
     ensureFirebase();
     const valid = validateCredentials(username, password);
-    const existing = await findProfileByUsername(valid.username);
-    if (existing) {
-      throw new Error("Nom d'utilisateur déjà utilisé");
+    try {
+      const existing = await findProfileByUsername(valid.username);
+      if (existing) {
+        throw new Error("Nom d'utilisateur déjà utilisé");
+      }
+    } catch {
+      // If rules block read on users collection, continue with auth-only creation.
     }
     const email = usernameToEmail(valid.username);
     const cred = await auth.createUserWithEmailAndPassword(email, valid.password);
     if (cred.user) {
       await cred.user.updateProfile({ displayName: valid.username });
-      await db.collection(usersCollection).doc(cred.user.uid).set(
-        {
-          username: valid.username,
-          lowerUsername: valid.username,
-          email,
-          avatarUrl: "",
-          createdAt: Date.now()
-        },
-        { merge: true }
-      );
+      try {
+        await db.collection(usersCollection).doc(cred.user.uid).set(
+          {
+            username: valid.username,
+            lowerUsername: valid.username,
+            email,
+            avatarUrl: "",
+            createdAt: Date.now()
+          },
+          { merge: true }
+        );
+      } catch {
+        // Optional persistence; auth profile remains source of truth.
+      }
     }
     return { ok: true };
   }
