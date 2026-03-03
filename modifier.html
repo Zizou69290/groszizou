@@ -38,10 +38,14 @@
           <label>Mot de passe
             <input id="auth-password" type="password" placeholder="Minimum 4 caractères" autocomplete="current-password" />
           </label>
+          <label class="auth-wide">Icône profil (URL)
+            <input id="auth-avatar-url" type="url" placeholder="https://..." autocomplete="url" />
+          </label>
         </div>
         <div class="row-actions">
           <button id="auth-login" class="action-btn">Connexion</button>
           <button id="auth-register" class="action-btn secondary">Créer un compte</button>
+          <button id="auth-save-profile" class="action-btn secondary hidden">Enregistrer l'icône</button>
           <button id="auth-logout" class="action-btn secondary hidden">Déconnexion</button>
         </div>
         <p id="auth-status" class="auth-status">Non connecté</p>

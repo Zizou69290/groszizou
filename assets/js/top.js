@@ -33,6 +33,22 @@ function scoreToStars(score) {
   return "★".repeat(full) + "☆".repeat(5 - full);
 }
 
+function escapeHtml(text) {
+  return String(text || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function ownerBadge(username, avatarUrl) {
+  if (!username) return "";
+  const avatar = avatarUrl
+    ? `<img class="owner-avatar" src="${escapeHtml(avatarUrl)}" alt="Profil de ${escapeHtml(username)}" />`
+    : `<span class="owner-avatar owner-avatar-fallback">@</span>`;
+  return `<span class="owner-badge">${avatar}<span>@${escapeHtml(username)}</span></span>`;
+}
+
 function renderLinkedReviewItem(item, index, review) {
   const li = document.createElement("li");
   li.className = "top-item";
@@ -106,10 +122,15 @@ async function loadTop() {
   title.textContent = top.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[top.category] || top.category || "Autre";
   subtitle.textContent = top.subtitle || "";
-  year.textContent = top.year ? `Période : ${top.year}` : "";
-  if (top.ownerUsername) {
-    year.textContent += `${top.year ? " · " : ""}@${top.ownerUsername}`;
+  if (top.ownerId) {
+    try {
+      const profile = await window.ReviewsStore.getUserProfile(top.ownerId);
+      top.ownerAvatar = profile?.avatarUrl || "";
+    } catch {
+      top.ownerAvatar = "";
+    }
   }
+  year.innerHTML = `${top.year ? `Période : ${escapeHtml(top.year)}` : ""}${top.ownerUsername ? `${top.year ? " · " : ""}${ownerBadge(top.ownerUsername, top.ownerAvatar)}` : ""}`;
 
   const reviewMap = new Map();
   try {

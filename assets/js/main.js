@@ -29,8 +29,10 @@ const topItemsList = document.getElementById("top-items-list");
 
 const authUsername = document.getElementById("auth-username");
 const authPassword = document.getElementById("auth-password");
+const authAvatarUrl = document.getElementById("auth-avatar-url");
 const loginBtn = document.getElementById("auth-login");
 const registerBtn = document.getElementById("auth-register");
+const saveProfileBtn = document.getElementById("auth-save-profile");
 const logoutBtn = document.getElementById("auth-logout");
 const authStatus = document.getElementById("auth-status");
 
@@ -82,6 +84,14 @@ const escapeHtml = (text) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
+function ownerBadge(username, avatarUrl) {
+  if (!username) return "";
+  const avatar = avatarUrl
+    ? `<img class="owner-avatar" src="${escapeHtml(avatarUrl)}" alt="Profil de ${escapeHtml(username)}" />`
+    : `<span class="owner-avatar owner-avatar-fallback">@</span>`;
+  return `<span class="owner-badge">${avatar}<span>@${escapeHtml(username)}</span></span>`;
+}
+
 function renderRichText(text) {
   let html = escapeHtml(text);
   html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
@@ -130,7 +140,7 @@ function reviewCard(item) {
   const accent = item.accent || "#f25f29";
   const target = `review.html?id=${encodeURIComponent(item.id)}`;
 
-  const ownerMeta = item.ownerUsername ? ` &middot; @${escapeHtml(item.ownerUsername)}` : "";
+  const ownerMeta = item.ownerUsername ? ` &middot; ${ownerBadge(item.ownerUsername, item.ownerAvatar)}` : "";
   article.innerHTML = `
     <img src="${item.cover || DEFAULT_COVER}" alt="${escapeHtml(item.title || "Review")}" />
     <div class="card-body">
@@ -159,7 +169,7 @@ function reviewCard(item) {
 function managerRow(item) {
   const row = document.createElement("div");
   row.className = "manager-row";
-  const ownerMeta = item.ownerUsername ? ` &middot; @${escapeHtml(item.ownerUsername)}` : "";
+  const ownerMeta = item.ownerUsername ? ` &middot; ${ownerBadge(item.ownerUsername, item.ownerAvatar)}` : "";
   row.innerHTML = `
     <div>
       <strong>${escapeHtml(item.title || "Sans titre")}</strong>
@@ -187,7 +197,7 @@ function managerRow(item) {
 function topRow(item) {
   const row = document.createElement("div");
   row.className = "manager-row";
-  const ownerMeta = item.ownerUsername ? ` &middot; @${escapeHtml(item.ownerUsername)}` : "";
+  const ownerMeta = item.ownerUsername ? ` &middot; ${ownerBadge(item.ownerUsername, item.ownerAvatar)}` : "";
   row.innerHTML = `
     <div>
       <strong>${escapeHtml(item.title || "Sans titre")}</strong>
@@ -619,6 +629,19 @@ async function renderAll() {
   }
 
   reviews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const reviewOwnerIds = [...new Set(reviews.map((r) => r.ownerId).filter(Boolean))];
+  if (reviewOwnerIds.length) {
+    try {
+      const profiles = await window.ReviewsStore.getProfilesByIds(reviewOwnerIds);
+      reviews.forEach((item) => {
+        if (item.ownerId && profiles[item.ownerId]) {
+          item.ownerAvatar = profiles[item.ownerId].avatarUrl || "";
+        }
+      });
+    } catch {
+      // ignore profile lookup failures
+    }
+  }
   const managerVisibleReviews = managerList
     ? reviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid)
     : reviews;
@@ -641,6 +664,19 @@ async function renderTopsManager() {
   if (!topList) return;
   try {
     const tops = await window.ReviewsStore.getAllTops();
+    const topOwnerIds = [...new Set(tops.map((t) => t.ownerId).filter(Boolean))];
+    if (topOwnerIds.length) {
+      try {
+        const profiles = await window.ReviewsStore.getProfilesByIds(topOwnerIds);
+        tops.forEach((item) => {
+          if (item.ownerId && profiles[item.ownerId]) {
+            item.ownerAvatar = profiles[item.ownerId].avatarUrl || "";
+          }
+        });
+      } catch {
+        // ignore profile lookup failures
+      }
+    }
     const managerVisibleTops = tops.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid);
     topList.innerHTML = "";
     managerVisibleTops.forEach((item) => topList.appendChild(topRow(item)));
@@ -905,15 +941,24 @@ if (window.ReviewsStore.onAuthChanged) {
     currentUser = unlocked ? window.ReviewsStore.getCurrentUser() : null;
     if (managerSection) managerSection.classList.toggle("hidden", !unlocked);
     if (logoutBtn) logoutBtn.classList.toggle("hidden", !unlocked);
+    if (saveProfileBtn) saveProfileBtn.classList.toggle("hidden", !unlocked);
+    if (authAvatarUrl) authAvatarUrl.disabled = !unlocked;
     if (authStatus) {
       authStatus.textContent = unlocked
         ? `Connecté en tant que @${currentUser?.username || "utilisateur"}`
         : "Non connecté";
     }
     if (unlocked) {
+      try {
+        const profile = await window.ReviewsStore.getUserProfile(currentUser.uid);
+        if (authAvatarUrl) authAvatarUrl.value = profile?.avatarUrl || currentUser.avatarUrl || "";
+      } catch {
+        if (authAvatarUrl) authAvatarUrl.value = currentUser?.avatarUrl || "";
+      }
       await renderAll();
       await renderTopsManager();
     } else {
+      if (authAvatarUrl) authAvatarUrl.value = "";
       if (managerList) managerList.innerHTML = "";
       if (topList) topList.innerHTML = "";
     }
@@ -948,10 +993,28 @@ if (registerBtn && authUsername && authPassword) {
   registerBtn.addEventListener("click", async () => {
     try {
       await window.ReviewsStore.registerWithCredentials(authUsername.value, authPassword.value);
+      if (authAvatarUrl?.value?.trim()) {
+        await window.ReviewsStore.updateCurrentUserProfile({ avatarUrl: authAvatarUrl.value.trim() });
+      }
       authPassword.value = "";
       window.alert("Compte créé. Tu es maintenant connecté.");
     } catch (error) {
       window.alert(`Inscription impossible : ${error.message}`);
+    }
+  });
+}
+
+if (saveProfileBtn && authAvatarUrl) {
+  saveProfileBtn.addEventListener("click", async () => {
+    try {
+      const profile = await window.ReviewsStore.updateCurrentUserProfile({ avatarUrl: authAvatarUrl.value });
+      currentUser = window.ReviewsStore.getCurrentUser();
+      if (authStatus) authStatus.textContent = `Connecté en tant que @${profile?.username || currentUser?.username || "utilisateur"}`;
+      await renderAll();
+      await renderTopsManager();
+      window.alert("Icône enregistrée.");
+    } catch (error) {
+      window.alert(`Mise à jour impossible : ${error.message}`);
     }
   });
 }

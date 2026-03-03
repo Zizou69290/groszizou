@@ -85,7 +85,8 @@ window.ReviewsStore = (() => {
     return {
       uid: user.uid,
       username: readUsernameFromUser(user),
-      email: user.email || ""
+      email: user.email || "",
+      avatarUrl: user.photoURL || ""
     };
   }
 
@@ -124,6 +125,7 @@ window.ReviewsStore = (() => {
       genre: review.genre || "",
       ownerId: review.ownerId || "",
       ownerUsername: review.ownerUsername || "",
+      ownerAvatar: review.ownerAvatar || "",
       contentMode: review.contentMode || (review.bodyHtml ? "rich" : "blocks"),
       bodyHtml: review.bodyHtml || "",
       blocks,
@@ -156,9 +158,68 @@ window.ReviewsStore = (() => {
       year: top.year || "",
       ownerId: top.ownerId || "",
       ownerUsername: top.ownerUsername || "",
+      ownerAvatar: top.ownerAvatar || "",
       items,
       updatedAt: typeof top.updatedAt === "number" ? top.updatedAt : Date.now()
     };
+  }
+
+  function normalizeAvatarUrl(value) {
+    const url = String(value || "").trim();
+    if (!url) return "";
+    if (!/^https?:\/\//i.test(url)) {
+      throw new Error("L'URL d'icône doit commencer par http:// ou https://");
+    }
+    return url;
+  }
+
+  async function getUserProfile(uid) {
+    ensureFirebase();
+    if (!uid) return null;
+    const doc = await db.collection(usersCollection).doc(uid).get();
+    if (!doc.exists) return null;
+    const data = doc.data() || {};
+    return {
+      uid,
+      username: String(data.username || "").trim().toLowerCase(),
+      avatarUrl: String(data.avatarUrl || "").trim()
+    };
+  }
+
+  async function getProfilesByIds(ids) {
+    ensureFirebase();
+    const uniq = [...new Set((ids || []).filter(Boolean))];
+    if (!uniq.length) return {};
+    const out = {};
+    await Promise.all(
+      uniq.map(async (uid) => {
+        const profile = await getUserProfile(uid);
+        if (profile) out[uid] = profile;
+      })
+    );
+    return out;
+  }
+
+  async function updateCurrentUserProfile(profilePatch = {}) {
+    const current = requireAuth();
+    const patch = {};
+    if ("avatarUrl" in profilePatch) {
+      patch.avatarUrl = normalizeAvatarUrl(profilePatch.avatarUrl);
+    }
+    if ("username" in profilePatch) {
+      patch.username = normalizeUsername(profilePatch.username);
+    }
+    if (!("username" in patch)) patch.username = current.username || "";
+    patch.lowerUsername = patch.username;
+    patch.updatedAt = Date.now();
+    await db.collection(usersCollection).doc(current.uid).set(patch, { merge: true });
+    if ("avatarUrl" in patch || "username" in patch) {
+      await auth.currentUser.updateProfile({
+        displayName: patch.username || current.username || "",
+        photoURL: patch.avatarUrl || ""
+      });
+    }
+    return getUserProfile(current.uid);
   }
 
   function requireAuth() {
@@ -202,6 +263,7 @@ window.ReviewsStore = (() => {
     }
     normalized.ownerId = current.uid;
     normalized.ownerUsername = current.username || "";
+    normalized.ownerAvatar = current.avatarUrl || "";
     await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
@@ -251,6 +313,7 @@ window.ReviewsStore = (() => {
     }
     normalized.ownerId = current.uid;
     normalized.ownerUsername = current.username || "";
+    normalized.ownerAvatar = current.avatarUrl || "";
     await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
@@ -297,6 +360,7 @@ window.ReviewsStore = (() => {
         {
           username: valid.username,
           lowerUsername: valid.username,
+          avatarUrl: "",
           createdAt: Date.now()
         },
         { merge: true }
@@ -338,6 +402,9 @@ window.ReviewsStore = (() => {
     registerWithCredentials,
     loginWithCredentials,
     getCurrentUser,
+    getUserProfile,
+    getProfilesByIds,
+    updateCurrentUserProfile,
     signOut,
     onAuthChanged
   };

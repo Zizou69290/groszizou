@@ -37,6 +37,14 @@ const escapeHtml = (text) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
+function ownerBadge(username, avatarUrl) {
+  if (!username) return "";
+  const avatar = avatarUrl
+    ? `<img class="owner-avatar" src="${escapeHtml(avatarUrl)}" alt="Profil de ${escapeHtml(username)}" />`
+    : `<span class="owner-avatar owner-avatar-fallback">@</span>`;
+  return `<span class="owner-badge">${avatar}<span>@${escapeHtml(username)}</span></span>`;
+}
+
 function scoreToStars(value) {
   if (!Number.isFinite(value)) return "☆☆☆☆☆";
   const full = Math.max(0, Math.min(5, Math.round(value / 2)));
@@ -176,7 +184,15 @@ async function loadReview() {
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
   summary.textContent = item.summary || "Aucun résumé.";
-  date.textContent = `Publié le ${fmtDate(item.date)}${item.ownerUsername ? ` · @${item.ownerUsername}` : ""}`;
+  if (item.ownerId) {
+    try {
+      const profile = await window.ReviewsStore.getUserProfile(item.ownerId);
+      item.ownerAvatar = profile?.avatarUrl || "";
+    } catch {
+      item.ownerAvatar = "";
+    }
+  }
+  date.innerHTML = `Publié le ${fmtDate(item.date)}${item.ownerUsername ? ` · ${ownerBadge(item.ownerUsername, item.ownerAvatar)}` : ""}`;
   score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
   if (coverBg) coverBg.src = item.cover || DEFAULT_COVER;
   renderDetails(item);
