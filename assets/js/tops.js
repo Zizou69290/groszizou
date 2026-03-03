@@ -21,12 +21,9 @@ function escapeHtml(text) {
     .replaceAll('"', "&quot;");
 }
 
-function ownerBadge(username, avatarUrl) {
+function ownerBadge(username) {
   if (!username) return "";
-  const avatar = avatarUrl
-    ? `<img class="owner-avatar" src="${escapeHtml(avatarUrl)}" alt="Profil de ${escapeHtml(username)}" />`
-    : `<span class="owner-avatar owner-avatar-fallback">${escapeHtml(String(username).slice(0, 1).toUpperCase())}</span>`;
-  return `<span class="owner-badge">${avatar}<span>${escapeHtml(username)}</span></span>`;
+  return `<span class="owner-badge"><span>${escapeHtml(username)}</span></span>`;
 }
 
 function topCard(item) {
@@ -36,7 +33,7 @@ function topCard(item) {
   article.setAttribute("role", "link");
   const target = `top.html?id=${encodeURIComponent(item.id)}`;
 
-  const ownerMeta = item.ownerUsername ? ` · ${ownerBadge(item.ownerUsername, item.ownerAvatar)}` : "";
+  const ownerMeta = item.ownerUsername ? ` · ${ownerBadge(item.ownerUsername)}` : "";
   article.innerHTML = `
     <img src="${item.displayCover || item.cover || DEFAULT_COVER}" alt="${item.title || "Top"}" />
     <div class="card-body">
@@ -69,14 +66,8 @@ async function renderTops() {
     const [tops, reviews] = await Promise.all([window.ReviewsStore.getAllTops(), window.ReviewsStore.getAll()]);
     const reviewMap = new Map(reviews.map((r) => [r.id, r]));
 
-    const ownerIds = tops.map((t) => t.ownerId).filter(Boolean);
-    const profiles = await window.ReviewsStore.getProfilesByIds(ownerIds);
-
     topsGrid.innerHTML = "";
     tops.forEach((item) => {
-      if (item.ownerId && profiles[item.ownerId]) {
-        item.ownerAvatar = profiles[item.ownerId].avatarUrl || "";
-      }
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
         const first = item.items[0];
         const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;

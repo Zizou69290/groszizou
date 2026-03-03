@@ -80,8 +80,7 @@ window.ReviewsStore = (() => {
     return {
       uid: doc.id,
       username: String(data.username || clean).trim().toLowerCase(),
-      email: String(data.email || ""),
-      avatarUrl: String(data.avatarUrl || "")
+      email: String(data.email || "")
     };
   }
 
@@ -101,8 +100,7 @@ window.ReviewsStore = (() => {
     return {
       uid: user.uid,
       username: readUsernameFromUser(user),
-      email: user.email || "",
-      avatarUrl: user.photoURL || ""
+      email: user.email || ""
     };
   }
 
@@ -141,7 +139,6 @@ window.ReviewsStore = (() => {
       genre: review.genre || "",
       ownerId: review.ownerId || "",
       ownerUsername: review.ownerUsername || "",
-      ownerAvatar: review.ownerAvatar || "",
       contentMode: review.contentMode || (review.bodyHtml ? "rich" : "blocks"),
       bodyHtml: review.bodyHtml || "",
       blocks,
@@ -174,19 +171,9 @@ window.ReviewsStore = (() => {
       year: top.year || "",
       ownerId: top.ownerId || "",
       ownerUsername: top.ownerUsername || "",
-      ownerAvatar: top.ownerAvatar || "",
       items,
       updatedAt: typeof top.updatedAt === "number" ? top.updatedAt : Date.now()
     };
-  }
-
-  function normalizeAvatarUrl(value) {
-    const url = String(value || "").trim();
-    if (!url) return "";
-    if (!/^https?:\/\//i.test(url)) {
-      throw new Error("L'URL d'icône doit commencer par http:// ou https://");
-    }
-    return url;
   }
 
   async function getUserProfile(uid) {
@@ -197,8 +184,7 @@ window.ReviewsStore = (() => {
     const data = doc.data() || {};
     return {
       uid,
-      username: String(data.username || "").trim().toLowerCase(),
-      avatarUrl: String(data.avatarUrl || "").trim()
+      username: String(data.username || "").trim().toLowerCase()
     };
   }
 
@@ -219,9 +205,6 @@ window.ReviewsStore = (() => {
   async function updateCurrentUserProfile(profilePatch = {}) {
     const current = requireAuth();
     const patch = {};
-    if ("avatarUrl" in profilePatch) {
-      patch.avatarUrl = normalizeAvatarUrl(profilePatch.avatarUrl);
-    }
     if ("username" in profilePatch) {
       patch.username = normalizeUsername(profilePatch.username);
       if (!USERNAME_RE.test(patch.username)) {
@@ -245,17 +228,15 @@ window.ReviewsStore = (() => {
     } catch {
       // Optional persistence; auth profile remains source of truth.
     }
-    if ("avatarUrl" in patch || "username" in patch) {
+    if ("username" in patch) {
       await auth.currentUser.updateProfile({
-        displayName: patch.username || current.username || "",
-        photoURL: patch.avatarUrl || ""
+        displayName: patch.username || current.username || ""
       });
     }
     const user = getCurrentUser();
     return {
       uid: current.uid,
-      username: user?.username || patch.username || "",
-      avatarUrl: user?.avatarUrl || patch.avatarUrl || ""
+      username: user?.username || patch.username || ""
     };
   }
 
@@ -373,7 +354,6 @@ window.ReviewsStore = (() => {
     }
     normalized.ownerId = current.uid;
     normalized.ownerUsername = current.username || "";
-    normalized.ownerAvatar = current.avatarUrl || "";
     await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
@@ -423,7 +403,6 @@ window.ReviewsStore = (() => {
     }
     normalized.ownerId = current.uid;
     normalized.ownerUsername = current.username || "";
-    normalized.ownerAvatar = current.avatarUrl || "";
     await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
@@ -480,7 +459,6 @@ window.ReviewsStore = (() => {
             username: valid.username,
             lowerUsername: valid.username,
             email,
-            avatarUrl: "",
             createdAt: Date.now()
           },
           { merge: true }

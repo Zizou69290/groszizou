@@ -5,7 +5,7 @@
   let panelOpen = false;
   let currentUser = null;
   let currentProfile = null;
-  let editState = { username: false, avatar: false, password: false };
+  let editState = { username: false, password: false };
 
   const escapeHtml = (text) =>
     String(text || "")
@@ -14,12 +14,8 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;");
 
-  function avatarMarkup(username, avatarUrl) {
-    if (avatarUrl) {
-      return `<img class="auth-nav-avatar" src="${escapeHtml(avatarUrl)}" alt="Profil de ${escapeHtml(username || "utilisateur")}" />`;
-    }
-    const initial = String(username || "?").slice(0, 1).toUpperCase();
-    return `<span class="auth-nav-avatar auth-nav-avatar-fallback">${escapeHtml(initial)}</span>`;
+  function accountLabel(username) {
+    return username ? `${escapeHtml(username)}` : "Mon compte";
   }
 
   function renderGuestPanel() {
@@ -40,11 +36,10 @@
 
   function renderUserPanel() {
     const username = currentProfile?.username || currentUser?.username || "";
-    const avatarUrl = currentProfile?.avatarUrl || currentUser?.avatarUrl || "";
 
     return `
       <div class="auth-popover-title">Mon profil</div>
-      <p class="auth-popover-meta">${avatarMarkup(username, avatarUrl)}<span>${escapeHtml(username || "utilisateur")}</span></p>
+      <p class="auth-popover-meta"><span>${escapeHtml(username || "utilisateur")}</span></p>
 
       <div class="auth-edit-group">
         <label class="auth-popover-field">Nom d'utilisateur
@@ -56,16 +51,6 @@
         <div class="auth-popover-actions">
           <button id="auth-toggle-name" class="action-btn secondary">${editState.username ? "Annuler" : "Changer le nom"}</button>
           ${editState.username ? '<button id="auth-save-name" class="action-btn">Valider</button>' : ""}
-        </div>
-      </div>
-
-      <div class="auth-edit-group">
-        <label class="auth-popover-field">Icone profil (URL)
-          <input id="auth-pop-avatar" type="url" value="${escapeHtml(avatarUrl)}" placeholder="https://..." ${editState.avatar ? "" : "disabled"} />
-        </label>
-        <div class="auth-popover-actions">
-          <button id="auth-toggle-avatar" class="action-btn secondary">${editState.avatar ? "Annuler" : "Changer d'icone"}</button>
-          ${editState.avatar ? '<button id="auth-save-avatar" class="action-btn">Valider</button>' : ""}
         </div>
       </div>
 
@@ -154,14 +139,11 @@
   function wireUserEvents() {
     const logoutBtn = slot.querySelector("#auth-pop-logout");
     const toggleNameBtn = slot.querySelector("#auth-toggle-name");
-    const toggleAvatarBtn = slot.querySelector("#auth-toggle-avatar");
     const togglePasswordBtn = slot.querySelector("#auth-toggle-password");
     const saveNameBtn = slot.querySelector("#auth-save-name");
-    const saveAvatarBtn = slot.querySelector("#auth-save-avatar");
     const savePasswordBtn = slot.querySelector("#auth-save-password");
 
     if (toggleNameBtn) toggleNameBtn.addEventListener("click", () => setEditMode("username", !editState.username));
-    if (toggleAvatarBtn) toggleAvatarBtn.addEventListener("click", () => setEditMode("avatar", !editState.avatar));
     if (togglePasswordBtn) togglePasswordBtn.addEventListener("click", () => setEditMode("password", !editState.password));
 
     if (saveNameBtn) {
@@ -173,20 +155,6 @@
           await refreshProfile();
           setEditMode("username", false);
           window.alert("Nom d'utilisateur mis a jour.");
-        } catch (error) {
-          window.alert(`Mise a jour impossible : ${error.message}`);
-        }
-      });
-    }
-
-    if (saveAvatarBtn) {
-      saveAvatarBtn.addEventListener("click", async () => {
-        const avatarUrl = slot.querySelector("#auth-pop-avatar")?.value || "";
-        try {
-          await window.ReviewsStore.updateCurrentUserProfile({ avatarUrl });
-          await refreshProfile();
-          setEditMode("avatar", false);
-          window.alert("Icone mise a jour.");
         } catch (error) {
           window.alert(`Mise a jour impossible : ${error.message}`);
         }
@@ -244,8 +212,7 @@
 
   function render() {
     const username = currentProfile?.username || currentUser?.username || "";
-    const avatarUrl = currentProfile?.avatarUrl || currentUser?.avatarUrl || "";
-    const label = currentUser ? avatarMarkup(username, avatarUrl) : "Connexion";
+    const label = currentUser ? accountLabel(username) : "Connexion";
 
     slot.innerHTML = `
       <button id="auth-nav-toggle" class="auth-nav-btn" type="button" aria-expanded="${panelOpen ? "true" : "false"}">
@@ -263,7 +230,7 @@
   });
 
   window.ReviewsStore.onAuthChanged(async () => {
-    editState = { username: false, avatar: false, password: false };
+    editState = { username: false, password: false };
     await refreshProfile();
     render();
   });
