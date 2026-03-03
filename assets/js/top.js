@@ -115,7 +115,7 @@ async function loadTop() {
     return;
   }
 
-  document.title = `Top - ${top.title || "Sans titre"}`;
+  document.title = `SuperSite - Top - ${top.title || "Sans titre"}`;
   title.textContent = top.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[top.category] || top.category || "Autre";
   subtitle.textContent = top.subtitle || "";

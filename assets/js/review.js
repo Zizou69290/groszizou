@@ -177,7 +177,7 @@ async function loadReview() {
     return;
   }
 
-  document.title = `Review - ${item.title || "Sans titre"}`;
+  document.title = `SuperSite - Review - ${item.title || "Sans titre"}`;
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
   summary.textContent = item.summary || "Aucun résumé.";
