@@ -22,6 +22,7 @@ const score = document.getElementById("review-score");
 const coverBg = document.getElementById("review-cover-bg");
 const details = document.getElementById("review-details");
 const content = document.getElementById("review-content");
+const articleHero = document.querySelector(".article-hero-covered");
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -47,26 +48,34 @@ function renderDetails(item) {
 
   const entries = [
     { label: "Auteur", value: item.author },
-    { label: "Realisateur", value: item.director },
-    { label: "Studio/Developpeur", value: item.studio },
-    { label: "Annee", value: item.releaseYear },
+    { label: "Réalisation", value: item.director },
+    { label: "Studio/Développeur", value: item.studio },
+    { label: "Année", value: item.releaseYear },
     { label: "Genre", value: item.genre }
   ].filter((entry) => String(entry.value || "").trim());
 
   details.innerHTML = "";
   if (!entries.length) {
     details.classList.add("hidden");
+    if (articleHero) {
+      articleHero.classList.remove("has-details");
+      articleHero.classList.add("no-details");
+    }
     return;
   }
 
   entries.forEach((entry) => {
     const node = document.createElement("span");
     node.className = "review-detail";
-    node.innerHTML = `<strong>${escapeHtml(entry.label)}:</strong> ${escapeHtml(entry.value)}`;
+    node.innerHTML = `<strong>${escapeHtml(entry.label)} :</strong> ${escapeHtml(entry.value)}`;
     details.appendChild(node);
   });
 
   details.classList.remove("hidden");
+  if (articleHero) {
+    articleHero.classList.add("has-details");
+    articleHero.classList.remove("no-details");
+  }
 }
 
 function renderRichText(text) {
@@ -115,6 +124,25 @@ function renderBlock(block) {
   }
 
   if (block.type === "image") wrapper.innerHTML = `<img src="${block.url}" alt="${escapeHtml(block.caption || "image")}" />`;
+  if (block.type === "image-text-left" || block.type === "image-text-right") {
+    wrapper.className = `media-item media-split ${block.type === "image-text-right" ? "reverse" : ""}`;
+    const image = block.url ? `<img src="${block.url}" alt="${escapeHtml(block.caption || "image")}" />` : "";
+    const text = block.content ? `<div class="media-split-text"><p>${renderRichText(block.content)}</p></div>` : "";
+    wrapper.innerHTML = `<div class="media-split-image">${image}</div>${text}`;
+    bindSpoilers(wrapper);
+    return wrapper.innerHTML ? wrapper : null;
+  }
+  if (block.type === "two-images") {
+    wrapper.className = "media-item media-two-images";
+    const left = block.url
+      ? `<figure><img src="${block.url}" alt="${escapeHtml(block.caption || "image")}" />${block.caption ? `<figcaption>${escapeHtml(block.caption)}</figcaption>` : ""}</figure>`
+      : "";
+    const right = block.url2
+      ? `<figure><img src="${block.url2}" alt="${escapeHtml(block.caption2 || "image")}" />${block.caption2 ? `<figcaption>${escapeHtml(block.caption2)}</figcaption>` : ""}</figure>`
+      : "";
+    wrapper.innerHTML = `${left}${right}`;
+    return wrapper.innerHTML ? wrapper : null;
+  }
   if (block.type === "video") wrapper.innerHTML = `<video controls src="${block.url}"></video>`;
   if (block.type === "video-embed") {
     const embedUrl = normalizeYouTubeEmbed(block.url || "");
@@ -147,8 +175,8 @@ async function loadReview() {
   document.title = `Review - ${item.title || "Sans titre"}`;
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
-  summary.textContent = item.summary || "Aucun resume.";
-  date.textContent = `Publie le ${fmtDate(item.date)}`;
+  summary.textContent = item.summary || "Aucun résumé.";
+  date.textContent = `Publié le ${fmtDate(item.date)}`;
   score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
   if (coverBg) coverBg.src = item.cover || DEFAULT_COVER;
   renderDetails(item);

@@ -36,6 +36,9 @@ const toolColorApply = document.getElementById("tool-color-apply");
 const toolSize = document.getElementById("tool-size");
 const toolSizeApply = document.getElementById("tool-size-apply");
 const wrapToolButtons = document.querySelectorAll("[data-wrap-tag]");
+const metaAuthorRow = document.getElementById("meta-author-row");
+const metaDirectorRow = document.getElementById("meta-director-row");
+const metaStudioRow = document.getElementById("meta-studio-row");
 
 const DEFAULT_COVER =
   "data:image/svg+xml;utf8," +
@@ -48,6 +51,7 @@ let editingId = null;
 let editingTopId = null;
 let cachedReviews = [];
 let activeTextArea = null;
+let editingAccent = "";
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -201,6 +205,21 @@ function getBlockFieldsHtml(type, block) {
   if (type === "text") {
     return `<textarea class="block-content" rows="5" placeholder="Ton texte...">${escapeHtml(block.content || "")}</textarea>`;
   }
+  if (type === "image-text-left" || type === "image-text-right") {
+    return `
+      <input class="block-url" type="url" placeholder="URL image" value="${escapeHtml(block.url || "")}" />
+      <input class="block-caption" type="text" placeholder="Légende image (optionnel)" value="${escapeHtml(block.caption || "")}" />
+      <textarea class="block-content" rows="5" placeholder="Texte à côté de l'image...">${escapeHtml(block.content || "")}</textarea>
+    `;
+  }
+  if (type === "two-images") {
+    return `
+      <input class="block-url" type="url" placeholder="URL image gauche" value="${escapeHtml(block.url || "")}" />
+      <input class="block-caption" type="text" placeholder="Légende image gauche (optionnel)" value="${escapeHtml(block.caption || "")}" />
+      <input class="block-url-2" type="url" placeholder="URL image droite" value="${escapeHtml(block.url2 || "")}" />
+      <input class="block-caption-2" type="text" placeholder="Légende image droite (optionnel)" value="${escapeHtml(block.caption2 || "")}" />
+    `;
+  }
   return `
     <input class="block-url" type="url" placeholder="URL" value="${escapeHtml(block.url || "")}" />
     <input class="block-caption" type="text" placeholder="Légende (optionnel)" value="${escapeHtml(block.caption || "")}" />
@@ -215,6 +234,19 @@ function readBlocks() {
       if (type === "text") {
         const content = row.querySelector(".block-content")?.value.trim() || "";
         return content ? { type, content, url: "", caption: "" } : null;
+      }
+      if (type === "image-text-left" || type === "image-text-right") {
+        const url = row.querySelector(".block-url")?.value.trim() || "";
+        const caption = row.querySelector(".block-caption")?.value.trim() || "";
+        const content = row.querySelector(".block-content")?.value.trim() || "";
+        return url || content ? { type, content, url, caption } : null;
+      }
+      if (type === "two-images") {
+        const url = row.querySelector(".block-url")?.value.trim() || "";
+        const caption = row.querySelector(".block-caption")?.value.trim() || "";
+        const url2 = row.querySelector(".block-url-2")?.value.trim() || "";
+        const caption2 = row.querySelector(".block-caption-2")?.value.trim() || "";
+        return url || url2 ? { type, content: "", url, caption, url2, caption2 } : null;
       }
       const url = row.querySelector(".block-url")?.value.trim() || "";
       const caption = row.querySelector(".block-caption")?.value.trim() || "";
@@ -249,6 +281,10 @@ function renderPreview() {
     if (block.type === "text") {
       node.innerHTML = renderRichText(block.content);
       bindSpoilers(node);
+    } else if (block.type === "image-text-left" || block.type === "image-text-right") {
+      node.textContent = `${block.type === "image-text-left" ? "IMAGE GAUCHE + TEXTE" : "TEXTE + IMAGE DROITE"} · ${block.url || "Sans image"}`;
+    } else if (block.type === "two-images") {
+      node.textContent = `2 IMAGES · ${block.url || "Sans image gauche"} | ${block.url2 || "Sans image droite"}`;
     } else {
       node.textContent = `${block.type.toUpperCase()} · ${block.url}`;
       if (block.caption) {
@@ -268,6 +304,48 @@ function renderPreview() {
   previewBox.appendChild(flow);
 }
 
+function configureMetaFields(category) {
+  if (!form) return;
+
+  const show = (el, visible) => {
+    if (!el) return;
+    el.classList.toggle("hidden", !visible);
+  };
+
+  const authorLabel = metaAuthorRow?.childNodes?.[0];
+  const directorLabel = metaDirectorRow?.childNodes?.[0];
+  const studioLabel = metaStudioRow?.childNodes?.[0];
+
+  if (category === "film" || category === "serie") {
+    show(metaAuthorRow, false);
+    show(metaStudioRow, false);
+    show(metaDirectorRow, true);
+    if (directorLabel) directorLabel.textContent = "Réalisation";
+  } else if (category === "jeu") {
+    show(metaAuthorRow, false);
+    show(metaDirectorRow, false);
+    show(metaStudioRow, true);
+    if (studioLabel) studioLabel.textContent = "Studio de développement";
+  } else if (category === "livre") {
+    show(metaDirectorRow, false);
+    show(metaStudioRow, false);
+    show(metaAuthorRow, true);
+    if (authorLabel) authorLabel.textContent = "Auteur";
+  } else if (category === "musique") {
+    show(metaDirectorRow, false);
+    show(metaStudioRow, false);
+    show(metaAuthorRow, true);
+    if (authorLabel) authorLabel.textContent = "Artiste";
+  } else {
+    show(metaAuthorRow, true);
+    show(metaDirectorRow, true);
+    show(metaStudioRow, true);
+    if (authorLabel) authorLabel.textContent = "Auteur / Artiste";
+    if (directorLabel) directorLabel.textContent = "Réalisation";
+    if (studioLabel) studioLabel.textContent = "Studio / Développeur";
+  }
+}
+
 function createBlockRow(block = { type: "text", content: "", url: "", caption: "" }) {
   const row = document.createElement("div");
   row.className = "block-item";
@@ -277,6 +355,9 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
       <select class="block-type">
         <option value="text">Texte</option>
         <option value="image">Image</option>
+        <option value="image-text-left">Image gauche + Texte droite</option>
+        <option value="image-text-right">Texte gauche + Image droite</option>
+        <option value="two-images">2 images côte à côte</option>
         <option value="video">Vidéo</option>
         <option value="video-embed">Vidéo embed</option>
         <option value="audio">Audio</option>
@@ -507,13 +588,14 @@ function openForm(item = null) {
   form.elements.score.value = Number.isFinite(item?.score) ? String(item.score) : "";
   form.elements.cover.value = item?.cover || "";
   form.elements.poster.value = item?.poster || "";
-  form.elements.accent.value = item?.accent || "";
+  editingAccent = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
   form.elements.author.value = item?.author || "";
   form.elements.director.value = item?.director || "";
   form.elements.studio.value = item?.studio || "";
   form.elements.releaseYear.value = item?.releaseYear || "";
   form.elements.genre.value = item?.genre || "";
+  configureMetaFields(form.elements.category.value || "jeu");
   setBlocks(item?.blocks || []);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -521,6 +603,7 @@ function openForm(item = null) {
 function closeForm() {
   if (!form) return;
   editingId = null;
+  editingAccent = "";
   form.reset();
   form.classList.add("hidden");
   if (blocksList) blocksList.innerHTML = "";
@@ -553,22 +636,27 @@ if (form) {
   form.elements.title.addEventListener("input", renderPreview);
   form.elements.score.addEventListener("input", renderPreview);
   form.elements.summary.addEventListener("input", renderPreview);
+  form.elements.category.addEventListener("change", () => configureMetaFields(form.elements.category.value || "jeu"));
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = form.elements.title.value.trim() || "Sans titre";
+    const selectedCategory = form.elements.category.value || "jeu";
+    const authorValue = form.elements.author.value.trim();
+    const directorValue = form.elements.director.value.trim();
+    const studioValue = form.elements.studio.value.trim();
     const payload = {
       id: editingId || window.ReviewsStore.slugify(title),
       title,
-      category: form.elements.category.value || "jeu",
+      category: selectedCategory,
       date: form.elements.date.value,
       score: form.elements.score.value === "" ? null : Number(form.elements.score.value),
       cover: form.elements.cover.value.trim(),
       poster: form.elements.poster.value.trim(),
-      accent: form.elements.accent.value.trim(),
+      accent: editingAccent,
       summary: form.elements.summary.value.trim(),
-      author: form.elements.author.value.trim(),
-      director: form.elements.director.value.trim(),
-      studio: form.elements.studio.value.trim(),
+      author: selectedCategory === "livre" || selectedCategory === "musique" ? authorValue : "",
+      director: selectedCategory === "film" || selectedCategory === "serie" ? directorValue : "",
+      studio: selectedCategory === "jeu" ? studioValue : "",
       releaseYear: form.elements.releaseYear.value.trim(),
       genre: form.elements.genre.value.trim(),
       blocks: readBlocks()
@@ -688,4 +776,5 @@ if (logoutBtn) {
 
 if (blocksList) setBlocks([]);
 if (topItemsList) setTopItems([]);
+if (form) configureMetaFields(form.elements.category.value || "jeu");
 renderAll();

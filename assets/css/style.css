@@ -400,7 +400,15 @@ textarea {
   position: relative;
   overflow: hidden;
   padding: 0;
-  min-height: 360px;
+  min-height: clamp(230px, 30vw, 320px);
+}
+
+.article-hero-covered.has-details {
+  min-height: clamp(238px, 30vw, 318px);
+}
+
+.article-hero-covered.no-details {
+  min-height: clamp(210px, 26vw, 290px);
 }
 
 .article-hero-covered::before {
@@ -437,7 +445,11 @@ textarea {
 .article-hero-inner {
   position: relative;
   z-index: 2;
-  padding: 1.6rem clamp(1rem, 2.2vw, 2rem) 2.2rem;
+  padding: 1.2rem clamp(1rem, 2.2vw, 2rem) 1.5rem;
+}
+
+.article-hero-covered.has-details .article-hero-inner {
+  padding-bottom: 1.05rem;
 }
 
 .article-hero-inner .back-link,
@@ -537,6 +549,45 @@ textarea {
   margin-top: 0.45rem;
 }
 
+.media-split {
+  display: grid;
+  grid-template-columns: minmax(180px, 38%) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.media-split.reverse {
+  grid-template-columns: 1fr minmax(180px, 38%);
+}
+
+.media-split.reverse .media-split-image {
+  order: 2;
+}
+
+.media-split.reverse .media-split-text {
+  order: 1;
+}
+
+.media-split-image img {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #2f4555;
+}
+
+.media-split-text p {
+  margin: 0;
+}
+
+.media-two-images {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.media-two-images figure {
+  margin: 0;
+}
+
 .video-wrap {
   position: relative;
   padding-top: 56.25%;
@@ -604,6 +655,12 @@ textarea {
   .media-row {
     grid-template-columns: 1fr;
   }
+
+  .media-split,
+  .media-split.reverse,
+  .media-two-images {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
@@ -640,11 +697,11 @@ textarea {
   }
 
   .article-hero-covered {
-    min-height: 300px;
+    min-height: clamp(210px, 40vw, 280px);
   }
 
   .article-hero-inner {
-    padding: 1.2rem clamp(0.8rem, 3vw, 1.2rem) 1.8rem;
+    padding: 1rem clamp(0.8rem, 3vw, 1.2rem) 1.2rem;
   }
 }
 

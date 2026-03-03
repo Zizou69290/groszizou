@@ -48,12 +48,15 @@
 
   function normalizeBlock(raw) {
     if (!raw || !raw.type) return null;
-    return {
+    const normalized = {
       type: raw.type,
       content: raw.content || "",
       url: raw.url || "",
       caption: raw.caption || ""
     };
+    if ("url2" in raw) normalized.url2 = raw.url2 || "";
+    if ("caption2" in raw) normalized.caption2 = raw.caption2 || "";
+    return normalized;
   }
 
   function normalizeReview(review) {

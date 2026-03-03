@@ -70,19 +70,16 @@
           <label>Affiche (URL)
             <input name="poster" type="url" />
           </label>
-          <label>Couleur d'accent (hex)
-            <input name="accent" type="text" placeholder="#f25f29" />
-          </label>
-          <label>Auteur / Artiste
+          <label id="meta-author-row">Auteur / Artiste
             <input name="author" type="text" placeholder="Ex: Frank Herbert" />
           </label>
-          <label>Realisateur
+          <label id="meta-director-row">Réalisation
             <input name="director" type="text" placeholder="Ex: Denis Villeneuve" />
           </label>
-          <label>Studio / Developpeur
+          <label id="meta-studio-row">Studio / Développeur
             <input name="studio" type="text" placeholder="Ex: FromSoftware" />
           </label>
-          <label>Annee de sortie
+          <label>Année de sortie
             <input name="releaseYear" type="text" placeholder="Ex: 2025" />
           </label>
           <label>Genre
@@ -97,18 +94,21 @@
         <div class="media-head">
           <h4>Blocs de contenu (ordre libre)</h4>
           <div class="manager-actions">
-            <button type="button" class="action-btn secondary" data-add-block="text">+ Texte</button>
-            <button type="button" class="action-btn secondary" data-add-block="image">+ Image</button>
-            <button type="button" class="action-btn secondary" data-add-block="video">+ Vidéo</button>
-            <button type="button" class="action-btn secondary" data-add-block="video-embed">+ Vidéo embed</button>
-            <button type="button" class="action-btn secondary" data-add-block="audio">+ Audio</button>
+            <button type="button" class="action-btn secondary" data-add-block="text">Texte</button>
+            <button type="button" class="action-btn secondary" data-add-block="image">Image</button>
+            <button type="button" class="action-btn secondary" data-add-block="image-text-left">Image + Texte</button>
+            <button type="button" class="action-btn secondary" data-add-block="image-text-right">Texte + Image</button>
+            <button type="button" class="action-btn secondary" data-add-block="two-images">2 images côte à côte</button>
+            <button type="button" class="action-btn secondary" data-add-block="video">Vidéo</button>
+            <button type="button" class="action-btn secondary" data-add-block="video-embed">Vidéo embed</button>
+            <button type="button" class="action-btn secondary" data-add-block="audio">Audio</button>
           </div>
         </div>
-        <p class="media-note">Tu peux mélanger comme tu veux : texte, image, texte, vidéo, etc. (URLs uniquement).</p>
         <div class="text-tools">
           <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="b"><strong>B</strong></button>
           <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="i"><em>I</em></button>
           <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="u"><span class="u-text">U</span></button>
+          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="spoiler">Spoiler</button>
           <label class="tool-inline">Couleur
             <input id="tool-color" type="color" value="#f2f2ee" />
           </label>
@@ -124,7 +124,6 @@
             </select>
           </label>
           <button type="button" id="tool-size-apply" class="action-btn secondary tool-btn">Appliquer taille</button>
-          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="spoiler">Spoiler</button>
         </div>
         <div id="blocks-list" class="blocks-list"></div>
 
