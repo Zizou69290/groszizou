@@ -401,8 +401,13 @@ window.ReviewsStore = (() => {
   async function loginWithCredentials(username, password) {
     ensureFirebase();
     const valid = validateCredentials(username, password);
-    const profile = await findProfileByUsername(valid.username);
-    const email = profile?.email || usernameToEmail(valid.username);
+    let email = usernameToEmail(valid.username);
+    try {
+      const profile = await findProfileByUsername(valid.username);
+      email = profile?.email || email;
+    } catch {
+      // If Firestore rules block anonymous reads, fallback to deterministic email.
+    }
     return auth.signInWithEmailAndPassword(email, valid.password);
   }
 
