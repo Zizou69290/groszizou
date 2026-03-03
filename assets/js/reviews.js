@@ -69,6 +69,22 @@ window.ReviewsStore = (() => {
     return { username: cleanUsername, password: cleanPassword };
   }
 
+  async function findProfileByUsername(username) {
+    ensureFirebase();
+    const clean = normalizeUsername(username);
+    if (!clean) return null;
+    const snap = await db.collection(usersCollection).where("lowerUsername", "==", clean).limit(1).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    const data = doc.data() || {};
+    return {
+      uid: doc.id,
+      username: String(data.username || clean).trim().toLowerCase(),
+      email: String(data.email || ""),
+      avatarUrl: String(data.avatarUrl || "")
+    };
+  }
+
   function readUsernameFromUser(user) {
     if (!user) return "";
     if (user.displayName) return normalizeUsername(user.displayName);
@@ -208,9 +224,17 @@ window.ReviewsStore = (() => {
     }
     if ("username" in profilePatch) {
       patch.username = normalizeUsername(profilePatch.username);
+      if (!USERNAME_RE.test(patch.username)) {
+        throw new Error("Nom d'utilisateur invalide (3-24 caractères: a-z, 0-9, ., _, -)");
+      }
+      const existing = await findProfileByUsername(patch.username);
+      if (existing && existing.uid !== current.uid) {
+        throw new Error("Nom d'utilisateur déjà utilisé");
+      }
     }
     if (!("username" in patch)) patch.username = current.username || "";
     patch.lowerUsername = patch.username;
+    patch.email = current.email || auth.currentUser?.email || "";
     patch.updatedAt = Date.now();
     await db.collection(usersCollection).doc(current.uid).set(patch, { merge: true });
     if ("avatarUrl" in patch || "username" in patch) {
@@ -352,6 +376,10 @@ window.ReviewsStore = (() => {
   async function registerWithCredentials(username, password) {
     ensureFirebase();
     const valid = validateCredentials(username, password);
+    const existing = await findProfileByUsername(valid.username);
+    if (existing) {
+      throw new Error("Nom d'utilisateur déjà utilisé");
+    }
     const email = usernameToEmail(valid.username);
     const cred = await auth.createUserWithEmailAndPassword(email, valid.password);
     if (cred.user) {
@@ -360,6 +388,7 @@ window.ReviewsStore = (() => {
         {
           username: valid.username,
           lowerUsername: valid.username,
+          email,
           avatarUrl: "",
           createdAt: Date.now()
         },
@@ -372,7 +401,8 @@ window.ReviewsStore = (() => {
   async function loginWithCredentials(username, password) {
     ensureFirebase();
     const valid = validateCredentials(username, password);
-    const email = usernameToEmail(valid.username);
+    const profile = await findProfileByUsername(valid.username);
+    const email = profile?.email || usernameToEmail(valid.username);
     return auth.signInWithEmailAndPassword(email, valid.password);
   }
 

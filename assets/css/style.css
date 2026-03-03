@@ -76,6 +76,81 @@ img {
   color: var(--text);
 }
 
+.auth-menu-slot {
+  position: relative;
+}
+
+.auth-nav-btn {
+  border: 1px solid #466175;
+  background: #152632;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.42rem 0.9rem;
+  min-height: 2rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.auth-nav-btn:hover {
+  border-color: var(--accent);
+}
+
+.auth-nav-avatar {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #4b677a;
+  background: #1a2b36;
+  display: inline-block;
+}
+
+.auth-nav-avatar-fallback {
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  width: min(92vw, 320px);
+  border: 1px solid #2f4555;
+  border-radius: 0.75rem;
+  background: #111c24;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.6rem;
+  z-index: 15;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.auth-popover-title {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+}
+
+.auth-popover-meta {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth-popover-field {
+  margin: 0;
+}
+
+.auth-popover-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .menu-sep {
   color: #5f7586;
 }

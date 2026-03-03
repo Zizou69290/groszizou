@@ -21,35 +21,14 @@
         <li><a href="index.html">Reviews</a></li>
         <li><a href="tops.html">Tops</a></li>
         <li class="menu-sep" aria-hidden="true">|</li>
-        <li><a href="modifier.html">Admin</a></li>
+        <li id="auth-menu-slot" class="auth-menu-slot"></li>
       </ul>
     </nav>
   </header>
 
   <main>
     <section class="container manager-section">
-      <div class="token-box">
-        <h2>Espace créateur</h2>
-        <p class="media-note">Crée un compte ou connecte-toi pour publier tes reviews et tops.</p>
-        <div class="auth-grid">
-          <label>Nom d'utilisateur
-            <input id="auth-username" type="text" placeholder="ex: groszizou" autocomplete="username" />
-          </label>
-          <label>Mot de passe
-            <input id="auth-password" type="password" placeholder="Minimum 4 caractères" autocomplete="current-password" />
-          </label>
-          <label class="auth-wide">Icône profil (URL)
-            <input id="auth-avatar-url" type="url" placeholder="https://..." autocomplete="url" />
-          </label>
-        </div>
-        <div class="row-actions">
-          <button id="auth-login" class="action-btn">Connexion</button>
-          <button id="auth-register" class="action-btn secondary">Créer un compte</button>
-          <button id="auth-save-profile" class="action-btn secondary hidden">Enregistrer l'icône</button>
-          <button id="auth-logout" class="action-btn secondary hidden">Déconnexion</button>
-        </div>
-        <p id="auth-status" class="auth-status">Non connecté</p>
-      </div>
+      <p class="media-note">Connecte-toi via le bouton en haut à droite pour gérer tes reviews et tops.</p>
     </section>
 
     <section id="manager" class="container manager-section hidden">
@@ -229,6 +208,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="assets/js/reviews.js"></script>
+  <script src="assets/js/auth-ui.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
 </html>
