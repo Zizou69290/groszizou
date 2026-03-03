@@ -11,6 +11,7 @@ window.ReviewsStore = (() => {
   const reviewCollection = "reviews";
   const topCollection = "tops";
   const usersCollection = "users";
+  const ADMIN_USERNAME = "admin";
   const USERNAME_RE = /^[a-z0-9._-]{3,24}$/;
 
   let firebaseReady = false;
@@ -257,11 +258,6 @@ window.ReviewsStore = (() => {
     const credential = emailProvider.credential(currentEmail, password);
     await auth.currentUser.reauthenticateWithCredential(credential);
 
-    const nextEmail = usernameToEmail(username);
-    if (nextEmail !== currentEmail) {
-      await auth.currentUser.updateEmail(nextEmail);
-    }
-
     await auth.currentUser.updateProfile({
       displayName: username,
       photoURL: auth.currentUser.photoURL || ""
@@ -281,7 +277,7 @@ window.ReviewsStore = (() => {
         {
           username,
           lowerUsername: username,
-          email: nextEmail,
+          email: currentEmail,
           updatedAt: Date.now()
         },
         { merge: true }
@@ -322,6 +318,10 @@ window.ReviewsStore = (() => {
     return current;
   }
 
+  function isAdminUser(user) {
+    return normalizeUsername(user?.username || "") === ADMIN_USERNAME;
+  }
+
   async function getAll(options = {}) {
     ensureFirebase();
     let query = db.collection(reviewCollection);
@@ -343,28 +343,36 @@ window.ReviewsStore = (() => {
 
   async function upsert(review) {
     const current = requireAuth();
+    const isAdmin = isAdminUser(current);
     const normalized = normalizeReview(review);
     const ref = db.collection(reviewCollection).doc(normalized.id);
     const existing = await ref.get();
     if (existing.exists) {
       const data = existing.data() || {};
-      if (data.ownerId && data.ownerId !== current.uid) {
+      if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
         throw new Error("Cette review appartient à un autre utilisateur");
       }
+      if (isAdmin && data.ownerId) {
+        normalized.ownerId = data.ownerId;
+        normalized.ownerUsername = data.ownerUsername || normalized.ownerUsername;
+      }
     }
-    normalized.ownerId = current.uid;
-    normalized.ownerUsername = current.username || "";
+    if (!normalized.ownerId) {
+      normalized.ownerId = current.uid;
+      normalized.ownerUsername = current.username || "";
+    }
     await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
 
   async function remove(id) {
     const current = requireAuth();
+    const isAdmin = isAdminUser(current);
     const ref = db.collection(reviewCollection).doc(id);
     const existing = await ref.get();
     if (!existing.exists) return { ok: true };
     const data = existing.data() || {};
-    if (data.ownerId && data.ownerId !== current.uid) {
+    if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
       throw new Error("Suppression impossible: cette review appartient à un autre utilisateur");
     }
     await ref.delete();
@@ -392,28 +400,36 @@ window.ReviewsStore = (() => {
 
   async function upsertTop(top) {
     const current = requireAuth();
+    const isAdmin = isAdminUser(current);
     const normalized = normalizeTop(top);
     const ref = db.collection(topCollection).doc(normalized.id);
     const existing = await ref.get();
     if (existing.exists) {
       const data = existing.data() || {};
-      if (data.ownerId && data.ownerId !== current.uid) {
+      if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
         throw new Error("Ce top appartient à un autre utilisateur");
       }
+      if (isAdmin && data.ownerId) {
+        normalized.ownerId = data.ownerId;
+        normalized.ownerUsername = data.ownerUsername || normalized.ownerUsername;
+      }
     }
-    normalized.ownerId = current.uid;
-    normalized.ownerUsername = current.username || "";
+    if (!normalized.ownerId) {
+      normalized.ownerId = current.uid;
+      normalized.ownerUsername = current.username || "";
+    }
     await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
 
   async function removeTop(id) {
     const current = requireAuth();
+    const isAdmin = isAdminUser(current);
     const ref = db.collection(topCollection).doc(id);
     const existing = await ref.get();
     if (!existing.exists) return { ok: true };
     const data = existing.data() || {};
-    if (data.ownerId && data.ownerId !== current.uid) {
+    if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
       throw new Error("Suppression impossible: ce top appartient à un autre utilisateur");
     }
     await ref.delete();

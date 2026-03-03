@@ -68,6 +68,11 @@ let activeTextArea = null;
 let editingAccent = "";
 let currentContentMode = "blocks";
 let currentUser = null;
+const ADMIN_USERNAME = "admin";
+
+function isAdminUser(user) {
+  return String(user?.username || "").trim().toLowerCase() === ADMIN_USERNAME;
+}
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -625,7 +630,7 @@ async function renderAll() {
 
   reviews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   const managerVisibleReviews = managerList
-    ? reviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid)
+    ? (isAdminUser(currentUser) ? reviews : reviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid))
     : reviews;
   cachedReviews = managerVisibleReviews;
   buildFilterButtons(reviews);
@@ -646,7 +651,9 @@ async function renderTopsManager() {
   if (!topList) return;
   try {
     const tops = await window.ReviewsStore.getAllTops();
-    const managerVisibleTops = tops.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid);
+    const managerVisibleTops = isAdminUser(currentUser)
+      ? tops
+      : tops.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid);
     topList.innerHTML = "";
     managerVisibleTops.forEach((item) => topList.appendChild(topRow(item)));
   } catch (error) {

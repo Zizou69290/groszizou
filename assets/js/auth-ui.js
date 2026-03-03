@@ -5,7 +5,6 @@
   let panelOpen = false;
   let currentUser = null;
   let currentProfile = null;
-  let editState = { username: false, password: false };
 
   const escapeHtml = (text) =>
     String(text || "")
@@ -41,37 +40,6 @@
       <div class="auth-popover-title">Mon profil</div>
       <p class="auth-popover-meta"><span>${escapeHtml(username || "utilisateur")}</span></p>
 
-      <div class="auth-edit-group">
-        <label class="auth-popover-field">Nom d'utilisateur
-          <input id="auth-pop-new-user" type="text" value="${escapeHtml(username)}" ${editState.username ? "" : "disabled"} />
-        </label>
-        ${editState.username ? `<label class="auth-popover-field">Mot de passe actuel
-          <input id="auth-pop-name-pass" type="password" autocomplete="current-password" />
-        </label>` : ""}
-        <div class="auth-popover-actions">
-          <button id="auth-toggle-name" class="action-btn secondary">${editState.username ? "Annuler" : "Changer le nom"}</button>
-          ${editState.username ? '<button id="auth-save-name" class="action-btn">Valider</button>' : ""}
-        </div>
-      </div>
-
-      <div class="auth-edit-group">
-        ${editState.password ? `
-          <label class="auth-popover-field">Mot de passe actuel
-            <input id="auth-pop-old-pass" type="password" autocomplete="current-password" />
-          </label>
-          <label class="auth-popover-field">Nouveau mot de passe
-            <input id="auth-pop-new-pass" type="password" autocomplete="new-password" />
-          </label>
-          <label class="auth-popover-field">Confirmer le nouveau mot de passe
-            <input id="auth-pop-new-pass-2" type="password" autocomplete="new-password" />
-          </label>
-        ` : ""}
-        <div class="auth-popover-actions">
-          <button id="auth-toggle-password" class="action-btn secondary">${editState.password ? "Annuler" : "Changer de mdp"}</button>
-          ${editState.password ? '<button id="auth-save-password" class="action-btn">Valider</button>' : ""}
-        </div>
-      </div>
-
       <div class="auth-popover-actions">
         <a href="modifier.html" class="action-btn secondary">Mes contenus</a>
         <button id="auth-pop-logout" class="action-btn secondary">Deconnexion</button>
@@ -93,16 +61,6 @@
         currentProfile = null;
       }
     }
-  }
-
-  function setEditMode(key, enabled) {
-    editState[key] = enabled;
-    if (enabled) {
-      Object.keys(editState).forEach((k) => {
-        if (k !== key) editState[k] = false;
-      });
-    }
-    render();
   }
 
   function wireGuestEvents() {
@@ -138,47 +96,6 @@
 
   function wireUserEvents() {
     const logoutBtn = slot.querySelector("#auth-pop-logout");
-    const toggleNameBtn = slot.querySelector("#auth-toggle-name");
-    const togglePasswordBtn = slot.querySelector("#auth-toggle-password");
-    const saveNameBtn = slot.querySelector("#auth-save-name");
-    const savePasswordBtn = slot.querySelector("#auth-save-password");
-
-    if (toggleNameBtn) toggleNameBtn.addEventListener("click", () => setEditMode("username", !editState.username));
-    if (togglePasswordBtn) togglePasswordBtn.addEventListener("click", () => setEditMode("password", !editState.password));
-
-    if (saveNameBtn) {
-      saveNameBtn.addEventListener("click", async () => {
-        const username = slot.querySelector("#auth-pop-new-user")?.value || "";
-        const currentPassword = slot.querySelector("#auth-pop-name-pass")?.value || "";
-        try {
-          await window.ReviewsStore.changeCurrentUsername(username, currentPassword);
-          await refreshProfile();
-          setEditMode("username", false);
-          window.alert("Nom d'utilisateur mis a jour.");
-        } catch (error) {
-          window.alert(`Mise a jour impossible : ${error.message}`);
-        }
-      });
-    }
-
-    if (savePasswordBtn) {
-      savePasswordBtn.addEventListener("click", async () => {
-        const currentPassword = slot.querySelector("#auth-pop-old-pass")?.value || "";
-        const nextPassword = slot.querySelector("#auth-pop-new-pass")?.value || "";
-        const confirmPassword = slot.querySelector("#auth-pop-new-pass-2")?.value || "";
-        if (nextPassword !== confirmPassword) {
-          window.alert("Les nouveaux mots de passe ne correspondent pas.");
-          return;
-        }
-        try {
-          await window.ReviewsStore.changeCurrentUserPassword(currentPassword, nextPassword);
-          setEditMode("password", false);
-          window.alert("Mot de passe mis a jour.");
-        } catch (error) {
-          window.alert(`Mise a jour impossible : ${error.message}`);
-        }
-      });
-    }
 
     if (logoutBtn) {
       logoutBtn.addEventListener("click", async () => {
@@ -230,7 +147,6 @@
   });
 
   window.ReviewsStore.onAuthChanged(async () => {
-    editState = { username: false, password: false };
     await refreshProfile();
     render();
   });
