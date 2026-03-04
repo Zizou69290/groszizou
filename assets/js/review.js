@@ -296,6 +296,11 @@ function teardownBackgroundAudio() {
 
 function alignAudioControlsToLastInfo() {
   if (!audioControls || !articleHero || audioControls.classList.contains("hidden")) return;
+  if (window.matchMedia("(max-width: 700px)").matches) {
+    audioControls.style.top = "auto";
+    audioControls.style.bottom = "0.85rem";
+    return;
+  }
   const candidates = [linkActions, details, articleMeta].filter(
     (el) => el && !el.classList.contains("hidden") && (el.children?.length || el.textContent?.trim())
   );
@@ -320,6 +325,7 @@ function setupBackgroundAudio(item) {
   const rawUrl = String(item?.bgMusic || "").trim();
   if (!rawUrl) {
     audioControls.classList.add("hidden");
+    if (articleHero) articleHero.classList.remove("has-bg-audio");
     return;
   }
 
@@ -345,6 +351,7 @@ function setupBackgroundAudio(item) {
   };
 
   audioControls.classList.remove("hidden");
+  if (articleHero) articleHero.classList.add("has-bg-audio");
   requestAnimationFrame(alignAudioControlsToLastInfo);
   audioToggleBtn.onclick = async () => {
     if (audio.paused) {

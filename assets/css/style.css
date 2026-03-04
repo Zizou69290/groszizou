@@ -1035,6 +1035,10 @@ textarea {
     padding-bottom: 0.62rem;
   }
 
+  .article-hero-covered.has-bg-audio .article-hero-inner {
+    padding-bottom: 3.25rem;
+  }
+
   .review-audio-controls {
     width: calc(100% - 1.6rem);
     top: auto;
