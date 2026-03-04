@@ -28,7 +28,9 @@
   </header>
 
   <main>
-    <section class="container manager-section"></section>
+    <section class="container manager-section">
+      <p id="manager-guest-message" class="manager-guest-note hidden">Y'a rien à voir ici, connecte-toi</p>
+    </section>
 
     <section id="manager" class="container manager-section hidden">
       <div class="section-head">
@@ -54,7 +56,7 @@
           <label><span class="label-row"><span class="field-label-text">Catégorie</span><span class="field-hint field-required">obligatoire</span></span>
             <select name="category" required>
               <option value="jeu">Jeu-vidéo</option>
-              <option value="film">Film</option>
+              <option value="film" selected>Film</option>
               <option value="serie">Série</option>
               <option value="musique">Musique</option>
               <option value="livre">Livre</option>
@@ -91,7 +93,7 @@
             <input name="bgMusic" type="url" placeholder="https://..." />
           </label>
           <div class="link-pair-row">
-            <label><span class="label-row"><span class="field-label-text">Libellé bouton 1</span><span class="field-hint">optionnel</span></span>
+            <label><span class="label-row"><span class="field-label-text">Nom bouton 1</span><span class="field-hint">optionnel</span></span>
               <input name="linkLabel1" type="text" placeholder="Ex: Trailer" />
             </label>
             <label><span class="label-row"><span class="field-label-text">Lien bouton 1</span><span class="field-hint">optionnel</span></span>
@@ -99,7 +101,7 @@
             </label>
           </div>
           <div class="link-pair-row">
-            <label><span class="label-row"><span class="field-label-text">Libellé bouton 2</span><span class="field-hint">optionnel</span></span>
+            <label><span class="label-row"><span class="field-label-text">Nom bouton 2</span><span class="field-hint">optionnel</span></span>
               <input name="linkLabel2" type="text" placeholder="Ex: Letterboxd" />
             </label>
             <label><span class="label-row"><span class="field-label-text">Lien bouton 2</span><span class="field-hint">optionnel</span></span>
@@ -107,7 +109,7 @@
             </label>
           </div>
           <div class="link-pair-row">
-            <label><span class="label-row"><span class="field-label-text">Libellé bouton 3</span><span class="field-hint">optionnel</span></span>
+            <label><span class="label-row"><span class="field-label-text">Nom bouton 3</span><span class="field-hint">optionnel</span></span>
               <input name="linkLabel3" type="text" placeholder="Ex: IMDb" />
             </label>
             <label><span class="label-row"><span class="field-label-text">Lien bouton 3</span><span class="field-hint">optionnel</span></span>
@@ -122,13 +124,10 @@
 
         <div class="content-mode-switch" role="group" aria-label="Mode d'édition">
           <button type="button" class="action-btn secondary mode-btn active" data-content-mode="blocks">Mode blocs</button>
-          <button type="button" class="action-btn secondary mode-btn" data-content-mode="rich">Éditeur libre (Beta)</button>
+          <button type="button" class="action-btn secondary mode-btn" data-content-mode="rich">Éditeur libre (pas conseillé, inshallah bientôt)</button>
         </div>
 
         <div id="blocks-editor-section">
-        <div class="media-head">
-          <h4>Blocs de contenu (ordre libre)</h4>
-        </div>
         <div class="text-tools">
           <div class="rich-tool-group">
             <button type="button" class="action-btn secondary tool-btn" id="add-block-btn" title="Ajouter un bloc">+ Bloc</button>
@@ -275,7 +274,7 @@
           <label>Catégorie <span class="field-hint field-required">obligatoire</span>
             <select name="category" required>
               <option value="jeu">Jeux-vidéo</option>
-              <option value="film">Films</option>
+              <option value="film" selected>Films</option>
               <option value="serie">Séries</option>
               <option value="musique">Musiques</option>
               <option value="livre">Livres</option>

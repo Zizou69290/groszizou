@@ -440,7 +440,7 @@ async function loadReview() {
 
   const blocks = Array.isArray(item.blocks) ? item.blocks : [];
   if (!blocks.length) {
-    content.innerHTML = "<p>Aucun contenu detaille.</p>";
+    content.innerHTML = "<p>Bah y'a rien là</p>";
   } else {
     blocks.forEach((block) => {
       const node = renderBlock(block);

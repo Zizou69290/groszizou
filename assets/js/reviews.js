@@ -140,7 +140,7 @@ window.ReviewsStore = (() => {
     return {
       id: review.id || slugify(review.title),
       title: review.title || "Sans titre",
-      category: review.category || "jeu",
+      category: review.category || "film",
       date: review.date || "",
       score: Number.isFinite(Number(review.score)) ? Number(review.score) : null,
       cover: review.cover || "",
@@ -185,7 +185,7 @@ window.ReviewsStore = (() => {
       id: top.id || slugify(top.title),
       title: top.title || "Sans titre",
       subtitle: top.subtitle || "",
-      category: top.category || "autre",
+      category: top.category || "film",
       year: top.year || "",
       status: normalizeStatus(top.status),
       ownerId: top.ownerId || "",

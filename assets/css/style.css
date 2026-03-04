@@ -430,6 +430,16 @@ h1 {
   margin-bottom: 1rem;
 }
 
+.manager-guest-note {
+  margin: 0;
+  border: 1px solid #2f4555;
+  border-radius: 0.7rem;
+  background: #13202a;
+  color: var(--muted);
+  font-size: 0.92rem;
+  padding: 0.7rem 0.8rem;
+}
+
 .manager-row {
   border: 1px solid #2f4555;
   border-radius: 0.7rem;
@@ -1128,9 +1138,11 @@ textarea {
   display: flex;
   flex-wrap: nowrap;
   overflow: visible;
-  gap: 0.28rem;
+  gap: 0.52rem;
   margin: 0.6rem 0 0.9rem;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
   padding-bottom: 0;
 }
 
@@ -1156,11 +1168,39 @@ textarea {
   padding: 0.45rem 0.5rem;
 }
 
+.text-tools .rich-tool-group {
+  flex: 0 1 auto;
+  gap: 0.3rem;
+  padding: 0.2rem;
+  border-color: #37566a;
+  background: #122331;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.text-tools .tool-btn {
+  min-height: 2rem;
+}
+
+.text-tools .tool-inline input,
+.text-tools .tool-inline select {
+  min-height: 2rem;
+}
+
 @media (max-width: 700px) {
+  .block-type-tools {
+    width: 100%;
+  }
+
+  .block-type-tools .block-type {
+    min-width: 0;
+    flex: 1;
+  }
+
   .text-tools {
     flex-wrap: wrap;
     row-gap: 0.35rem;
     align-items: flex-start;
+    justify-content: flex-start;
   }
 
   .text-tools .rich-tool-group {
@@ -1353,8 +1393,29 @@ textarea {
   flex-wrap: wrap;
 }
 
+.block-type-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.block-type-tools .block-type {
+  min-width: 220px;
+}
+
+.block-type-tools .action-btn {
+  min-width: 2rem;
+  padding-inline: 0.55rem;
+}
+
 .block-fields {
   display: grid;
+  gap: 0.5rem;
+}
+
+.block-media-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.5rem;
 }
 

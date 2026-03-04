@@ -11,6 +11,7 @@ if (menuToggle && menu) {
 
 const reviewsGrid = document.getElementById("reviews-grid");
 const managerSection = document.getElementById("manager");
+const managerGuestMessage = document.getElementById("manager-guest-message");
 const managerList = document.getElementById("manager-list");
 const form = document.getElementById("review-form");
 const formTitle = document.getElementById("form-title");
@@ -414,25 +415,32 @@ function getBlockFieldsHtml(type, block) {
   }
   if (type === "image-text-left" || type === "image-text-right") {
     return `
-      <input class="block-url" type="url" placeholder="URL image" value="${escapeHtml(block.url || "")}" />
-      <input class="block-caption" type="text" placeholder="Légende image (optionnel)" value="${escapeHtml(block.caption || "")}" />
-      <textarea class="block-content" rows="5" placeholder="Texte à côté de l'image...">${escapeHtml(block.content || "")}</textarea>
+      <div class="block-media-pair">
+        <input class="block-url" type="url" placeholder="URL image" value="${escapeHtml(block.url || "")}" />
+        <input class="block-caption" type="text" placeholder="Legende image (optionnel)" value="${escapeHtml(block.caption || "")}" />
+      </div>
+      <textarea class="block-content" rows="5" placeholder="Texte a cote de l'image...">${escapeHtml(block.content || "")}</textarea>
     `;
   }
   if (type === "two-images") {
     return `
-      <input class="block-url" type="url" placeholder="URL image gauche" value="${escapeHtml(block.url || "")}" />
-      <input class="block-caption" type="text" placeholder="Légende image gauche (optionnel)" value="${escapeHtml(block.caption || "")}" />
-      <input class="block-url-2" type="url" placeholder="URL image droite" value="${escapeHtml(block.url2 || "")}" />
-      <input class="block-caption-2" type="text" placeholder="Légende image droite (optionnel)" value="${escapeHtml(block.caption2 || "")}" />
+      <div class="block-media-pair">
+        <input class="block-url" type="url" placeholder="URL image gauche" value="${escapeHtml(block.url || "")}" />
+        <input class="block-caption" type="text" placeholder="Legende image gauche (optionnel)" value="${escapeHtml(block.caption || "")}" />
+      </div>
+      <div class="block-media-pair">
+        <input class="block-url-2" type="url" placeholder="URL image droite" value="${escapeHtml(block.url2 || "")}" />
+        <input class="block-caption-2" type="text" placeholder="Legende image droite (optionnel)" value="${escapeHtml(block.caption2 || "")}" />
+      </div>
     `;
   }
   return `
-    <input class="block-url" type="url" placeholder="URL" value="${escapeHtml(block.url || "")}" />
-    <input class="block-caption" type="text" placeholder="Légende (optionnel)" value="${escapeHtml(block.caption || "")}" />
+    <div class="block-media-pair">
+      <input class="block-url" type="url" placeholder="URL" value="${escapeHtml(block.url || "")}" />
+      <input class="block-caption" type="text" placeholder="Legende (optionnel)" value="${escapeHtml(block.caption || "")}" />
+    </div>
   `;
 }
-
 function insertAtSelection(text) {
   const textarea = getTargetBlockTextarea();
   if (!textarea) return;
@@ -1142,18 +1150,20 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
   row.innerHTML = `
     <div class="block-head">
       <strong class="block-index">Bloc</strong>
-      <select class="block-type">
-        <option value="text">Texte</option>
-        <option value="image">Image</option>
-        <option value="image-text-left">Image gauche + Texte droite</option>
-        <option value="image-text-right">Texte gauche + Image droite</option>
-        <option value="two-images">2 images côte à côte</option>
-        <option value="video">Vidéo</option>
-        <option value="audio">Audio</option>
-      </select>
+      <div class="block-type-tools">
+        <select class="block-type">
+          <option value="text">Texte</option>
+          <option value="image">Image</option>
+          <option value="image-text-left">Image gauche + Texte droite</option>
+          <option value="image-text-right">Texte gauche + Image droite</option>
+          <option value="two-images">2 images côte à côte</option>
+          <option value="video">Vidéo</option>
+          <option value="audio">Audio</option>
+        </select>
+        <button type="button" class="action-btn secondary block-up" title="Monter le bloc">&uarr;</button>
+        <button type="button" class="action-btn secondary block-down" title="Descendre le bloc">&darr;</button>
+      </div>
       <div class="row-actions">
-        <button type="button" class="action-btn secondary block-up">&uarr;</button>
-        <button type="button" class="action-btn secondary block-down">&darr;</button>
         <button type="button" class="action-btn danger block-delete">Supprimer</button>
       </div>
     </div>
@@ -1487,7 +1497,7 @@ function openForm(item = null) {
   form.classList.remove("hidden");
   formTitle.textContent = item ? "Modifier la review" : "Ajouter une review";
   form.elements.title.value = item?.title || "";
-  form.elements.category.value = item?.category || "jeu";
+  form.elements.category.value = item?.category || "film";
   form.elements.date.value = item?.date || "";
   if (form.elements.status) form.elements.status.value = normalizePublicationStatus(item?.status || "published");
   form.elements.score.value = Number.isFinite(item?.score) ? String(item.score) : "";
@@ -1502,7 +1512,7 @@ function openForm(item = null) {
   form.elements.genre.value = item?.genre || "";
   if (form.elements.bgMusic) form.elements.bgMusic.value = item?.bgMusic || "";
   fillExternalLinksInForm(item);
-  configureMetaFields(form.elements.category.value || "jeu");
+  configureMetaFields(form.elements.category.value || "film");
   setRichHtml(item?.bodyHtml || "");
   const nextMode = item?.contentMode || (item?.bodyHtml ? "rich" : "blocks");
   setContentMode(nextMode);
@@ -1528,7 +1538,7 @@ function openTopForm(item = null) {
   topForm.classList.remove("hidden");
   topFormTitle.textContent = item ? "Modifier un top" : "Ajouter un top";
   topForm.elements.title.value = item?.title || "";
-  topForm.elements.category.value = item?.category || "autre";
+  topForm.elements.category.value = item?.category || "film";
   topForm.elements.year.value = item?.year || "";
   if (topForm.elements.status) topForm.elements.status.value = normalizePublicationStatus(item?.status || "published");
   topForm.elements.cover.value = item?.cover || "";
@@ -1549,11 +1559,11 @@ if (form) {
   form.elements.title.addEventListener("input", renderPreview);
   form.elements.score.addEventListener("input", renderPreview);
   form.elements.summary.addEventListener("input", renderPreview);
-  form.elements.category.addEventListener("change", () => configureMetaFields(form.elements.category.value || "jeu"));
+  form.elements.category.addEventListener("change", () => configureMetaFields(form.elements.category.value || "film"));
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = form.elements.title.value.trim() || "Sans titre";
-    const selectedCategory = form.elements.category.value || "jeu";
+    const selectedCategory = form.elements.category.value || "film";
     const authorValue = form.elements.author.value.trim();
     const directorValue = form.elements.director.value.trim();
     const studioValue = form.elements.studio.value.trim();
@@ -1597,7 +1607,7 @@ if (topForm) {
     const payload = {
       id: editingTopId || window.ReviewsStore.slugify(title),
       title,
-      category: topForm.elements.category.value || "autre",
+      category: topForm.elements.category.value || "film",
       status: normalizePublicationStatus(topForm.elements.status?.value || "published"),
       year: topForm.elements.year.value.trim(),
       cover: topForm.elements.cover.value.trim(),
@@ -1849,6 +1859,7 @@ if (window.ReviewsStore.onAuthChanged) {
     const unlocked = Boolean(user);
     currentUser = unlocked ? window.ReviewsStore.getCurrentUser() : null;
     if (managerSection) managerSection.classList.toggle("hidden", !unlocked);
+    if (managerGuestMessage) managerGuestMessage.classList.toggle("hidden", unlocked);
     if (logoutBtn) logoutBtn.classList.toggle("hidden", !unlocked);
     if (authStatus) {
       authStatus.textContent = unlocked
@@ -1914,9 +1925,10 @@ if (logoutBtn) {
 
 if (blocksList) setBlocks([]);
 if (topItemsList) setTopItems([]);
-if (form) configureMetaFields(form.elements.category.value || "jeu");
+if (form) configureMetaFields(form.elements.category.value || "film");
 setContentMode("blocks");
 renderAll();
+
 
 
 
