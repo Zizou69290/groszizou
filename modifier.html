@@ -16,7 +16,7 @@
 
   <header class="hero">
     <nav class="topbar container">
-      <a class="brand" href="index.html">SUPERSITE</a>
+      <a class="brand" href="index.html"><img src="pouce.png" alt="" class="brand-icon" aria-hidden="true" /><span>SUPERSITE</span></a>
       <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
       <ul id="menu" class="menu">
         <li><a href="index.html">Reviews</a></li>
@@ -49,11 +49,10 @@
 
       <form id="review-form" class="review-form hidden">
         <h3 id="form-title">Ajouter une review</h3>
-
         <div class="form-grid">
-          <label>Titre<input name="title" /></label>
-          <label>Catégorie
-            <select name="category">
+          <label><span class="label-row"><span class="field-label-text">Titre</span><span class="field-hint field-required">obligatoire</span></span><input name="title" required /></label>
+          <label><span class="label-row"><span class="field-label-text">Catégorie</span><span class="field-hint field-required">obligatoire</span></span>
+            <select name="category" required>
               <option value="jeu">Jeu-vidéo</option>
               <option value="film">Film</option>
               <option value="serie">Série</option>
@@ -61,54 +60,54 @@
               <option value="livre">Livre</option>
             </select>
           </label>
-          <label>Date<input name="date" type="date" /></label>
-          <label>Note (/10)<input name="score" type="number" min="0" max="10" step="0.1" /></label>
-          <label>Image de couverture (URL)<input name="cover" type="url" /></label>
-          <label>Affiche (URL)
+          <label><span class="label-row"><span class="field-label-text">Date de publication</span><span class="field-hint field-required">obligatoire</span></span><input name="date" type="date" required /></label>
+          <label><span class="label-row"><span class="field-label-text">Note (/10)</span><span class="field-hint">optionnel</span></span><input name="score" type="number" min="0" max="10" step="0.1" /></label>
+          <label><span class="label-row"><span class="field-label-text">Image de couverture (URL)</span><span class="field-hint">optionnel</span></span><input name="cover" type="url" /></label>
+          <label><span class="label-row"><span class="field-label-text">Affiche (URL)</span><span class="field-hint">optionnel</span></span>
             <input name="poster" type="url" />
           </label>
-          <label id="meta-author-row">Auteur / Artiste
+          <label id="meta-author-row"><span class="label-row"><span class="field-label-text">Auteur / Artiste</span><span class="field-hint">optionnel</span></span>
             <input name="author" type="text" placeholder="Ex: Frank Herbert" />
           </label>
-          <label id="meta-director-row">Réalisation
+          <label id="meta-director-row"><span class="label-row"><span class="field-label-text">Réalisation</span><span class="field-hint">optionnel</span></span>
             <input name="director" type="text" placeholder="Ex: Denis Villeneuve" />
           </label>
-          <label id="meta-studio-row">Studio / Développeur
+          <label id="meta-studio-row"><span class="label-row"><span class="field-label-text">Studio / Développeur</span><span class="field-hint">optionnel</span></span>
             <input name="studio" type="text" placeholder="Ex: FromSoftware" />
           </label>
-          <label>Année de sortie
+          <label><span class="label-row"><span class="field-label-text">Année de sortie</span><span class="field-hint">optionnel</span></span>
             <input name="releaseYear" type="text" placeholder="Ex: 2025" />
           </label>
-          <label>Genre
+          <label><span class="label-row"><span class="field-label-text">Genre</span><span class="field-hint">optionnel</span></span>
             <input name="genre" type="text" placeholder="Ex: Action, RPG, Sci-Fi" />
           </label>
           <div class="link-pair-row">
-            <label>Libellé bouton 1
+            <label><span class="label-row"><span class="field-label-text">Libellé bouton 1</span><span class="field-hint">optionnel</span></span>
               <input name="linkLabel1" type="text" placeholder="Ex: Trailer" />
             </label>
-            <label>Lien bouton 1
+            <label><span class="label-row"><span class="field-label-text">Lien bouton 1</span><span class="field-hint">optionnel</span></span>
               <input name="linkUrl1" type="url" placeholder="https://..." />
             </label>
           </div>
           <div class="link-pair-row">
-            <label>Libellé bouton 2
+            <label><span class="label-row"><span class="field-label-text">Libellé bouton 2</span><span class="field-hint">optionnel</span></span>
               <input name="linkLabel2" type="text" placeholder="Ex: Letterboxd" />
             </label>
-            <label>Lien bouton 2
+            <label><span class="label-row"><span class="field-label-text">Lien bouton 2</span><span class="field-hint">optionnel</span></span>
               <input name="linkUrl2" type="url" placeholder="https://..." />
             </label>
           </div>
           <div class="link-pair-row">
-            <label>Libellé bouton 3
+            <label><span class="label-row"><span class="field-label-text">Libellé bouton 3</span><span class="field-hint">optionnel</span></span>
               <input name="linkLabel3" type="text" placeholder="Ex: IMDb" />
             </label>
-            <label>Lien bouton 3
+            <label><span class="label-row"><span class="field-label-text">Lien bouton 3</span><span class="field-hint">optionnel</span></span>
               <input name="linkUrl3" type="url" placeholder="https://..." />
             </label>
           </div>
         </div>
 
-        <label>Résumé
+        <label><span class="label-row"><span class="field-label-text">Résumé</span><span class="field-hint">optionnel</span></span>
           <textarea name="summary" rows="2"></textarea>
         </label>
 
@@ -131,33 +130,45 @@
             <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="u" title="Souligné"><span class="u-text">U</span></button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="strike" title="Barré"><span style="text-decoration:line-through">S</span></button>
             <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="spoiler" title="Spoiler">&#128065;</button>
-          </div>
-          <div class="rich-tool-group">
             <button type="button" class="action-btn secondary tool-btn" data-block-action="quote" title="Citation">&#10077;</button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="url" title="Lien">&#128279;</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="undo" title="Annuler">&#8630;</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="redo" title="Restaurer">&#8631;</button>
           </div>
           <div class="rich-tool-group">
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="ul" title="Liste à puces">&#8226;</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="ol" title="Liste numérotée">1.</button>
+            <label class="tool-inline" title="Taille texte">
+              <select id="tool-size">
+                <option value="14">14</option>
+                <option value="16" selected>16</option>
+                <option value="18">18</option>
+                <option value="20">20</option>
+                <option value="24">24</option>
+                <option value="28">28</option>
+              </select>
+            </label>
+            <button type="button" class="action-btn secondary tool-btn" id="tool-size-apply" title="Appliquer taille">&#10003;</button>
+            <label class="tool-inline" title="Couleur texte">
+              <input id="tool-color" type="color" value="#f2f2ee" />
+            </label>
+            <button type="button" class="action-btn secondary tool-btn" id="tool-color-apply" title="Appliquer couleur">&#10003;</button>
+            <label class="tool-inline" title="Surlignage texte">
+              <input id="tool-highlight" type="color" value="#f7b538" />
+            </label>
+            <button type="button" class="action-btn secondary tool-btn" id="tool-highlight-apply" title="Appliquer surlignage">&#10003;</button>
+          </div>
+          <div class="rich-tool-group">
             <button type="button" class="action-btn secondary tool-btn" data-block-action="left" title="Aligner à gauche">L</button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="center" title="Centrer">C</button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="right" title="Aligner à droite">R</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="justify" title="Justifier">J</button>
           </div>
-          <label class="tool-inline" title="Couleur texte">
-            <input id="tool-color" type="color" value="#f2f2ee" />
-          </label>
-          <label class="tool-inline" title="Taille texte">
-            <select id="tool-size">
-              <option value="14">14</option>
-              <option value="16" selected>16</option>
-              <option value="18">18</option>
-              <option value="20">20</option>
-              <option value="24">24</option>
-              <option value="28">28</option>
-            </select>
-          </label>
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="ol" title="Liste numérotée">1.</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="ul" title="Liste à puces">&#8226;</button>
+          </div>
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="undo" title="Annuler">&#8630;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="redo" title="Restaurer">&#8631;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="clear" title="Enlever mise en page">Tx</button>
+          </div>
         </div>
         <div id="blocks-list" class="blocks-list"></div>
         </div>
@@ -179,7 +190,7 @@
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList" title="Liste">&#8226;</button>
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList" title="Liste numérotée">1.</button>
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner à gauche">⟸</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">≡</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">â‰¡</button>
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner à droite">⟹</button>
           </div>
           <div class="rich-tool-sep" aria-hidden="true"></div>
@@ -251,9 +262,9 @@
         <h3 id="top-form-title">Ajouter un top</h3>
 
         <div class="form-grid">
-          <label>Titre<input name="title" /></label>
-          <label>Catégorie
-            <select name="category">
+          <label>Titre <span class="field-hint field-required">obligatoire</span><input name="title" required /></label>
+          <label>Catégorie <span class="field-hint field-required">obligatoire</span>
+            <select name="category" required>
               <option value="jeu">Jeux-vidéo</option>
               <option value="film">Films</option>
               <option value="serie">Séries</option>
@@ -263,7 +274,7 @@
             </select>
           </label>
           <label>Année / période<input name="year" placeholder="2025" /></label>
-          <label>Image de couverture (URL)<input name="cover" type="url" /></label>
+          <label>Image de couverture (URL) <span class="field-hint">optionnel</span><input name="cover" type="url" /></label>
         </div>
 
         <label>Sous-titre
@@ -293,5 +304,8 @@
   <script src="assets/js/main.js"></script>
 </body>
 </html>
+
+
+
 
 

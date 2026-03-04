@@ -42,7 +42,11 @@ const logoutBtn = document.getElementById("auth-logout");
 const authStatus = document.getElementById("auth-status");
 
 const toolColor = document.getElementById("tool-color");
+const toolColorApply = document.getElementById("tool-color-apply");
 const toolSize = document.getElementById("tool-size");
+const toolSizeApply = document.getElementById("tool-size-apply");
+const toolHighlight = document.getElementById("tool-highlight");
+const toolHighlightApply = document.getElementById("tool-highlight-apply");
 const wrapToolButtons = document.querySelectorAll("[data-wrap-tag]");
 const blockActionButtons = document.querySelectorAll("[data-block-action]");
 const contentModeButtons = document.querySelectorAll("[data-content-mode]");
@@ -88,6 +92,7 @@ const ADMIN_USERNAME = "admin";
 let selectedRichMediaWrapper = null;
 let richMediaResizeState = null;
 let pendingEditReviewId = requestedEditReviewId || "";
+const blockEditorHistory = new WeakMap();
 
 function isAdminUser(user) {
   return String(user?.username || "").trim().toLowerCase() === ADMIN_USERNAME;
@@ -178,8 +183,10 @@ function renderRichText(text) {
   html = html.replace(/\[left\]([\s\S]*?)\[\/left\]/gi, '<div style="text-align:left">$1</div>');
   html = html.replace(/\[center\]([\s\S]*?)\[\/center\]/gi, '<div style="text-align:center">$1</div>');
   html = html.replace(/\[right\]([\s\S]*?)\[\/right\]/gi, '<div style="text-align:right">$1</div>');
+  html = html.replace(/\[justify\]([\s\S]*?)\[\/justify\]/gi, '<div style="text-align:justify">$1</div>');
   html = html.replace(/\[color=(#[0-9a-f]{3,8})\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
   html = html.replace(/\[size=(\d{1,2})\]([\s\S]*?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>');
+  html = html.replace(/\[mark=(#[0-9a-f]{3,8})\]([\s\S]*?)\[\/mark\]/gi, '<span style="background-color:$1;padding:0 .15em">$2</span>');
   html = html.replace(
     /\[url=(https?:\/\/[^\]\s]+)\]([\s\S]*?)\[\/url\]/gi,
     '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>'
@@ -221,17 +228,18 @@ function bindSpoilers(root) {
 }
 
 function wrapSelection(openTag, closeTag) {
-  if (!activeTextArea) return;
-  const start = activeTextArea.selectionStart ?? 0;
-  const end = activeTextArea.selectionEnd ?? 0;
-  const value = activeTextArea.value;
+  const textarea = getTargetBlockTextarea();
+  if (!textarea) return;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const value = textarea.value;
   const selected = value.slice(start, end);
   const next = `${value.slice(0, start)}${openTag}${selected}${closeTag}${value.slice(end)}`;
-  activeTextArea.value = next;
-  activeTextArea.focus();
-  activeTextArea.selectionStart = start + openTag.length;
-  activeTextArea.selectionEnd = end + openTag.length;
-  activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+  textarea.value = next;
+  textarea.focus();
+  textarea.selectionStart = start + openTag.length;
+  textarea.selectionEnd = end + openTag.length;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function scoreToStars(score) {
@@ -365,23 +373,25 @@ function getBlockFieldsHtml(type, block) {
 }
 
 function insertAtSelection(text) {
-  if (!activeTextArea) return;
-  const start = activeTextArea.selectionStart ?? 0;
-  const end = activeTextArea.selectionEnd ?? 0;
-  const value = activeTextArea.value;
-  activeTextArea.value = `${value.slice(0, start)}${text}${value.slice(end)}`;
-  activeTextArea.focus();
+  const textarea = getTargetBlockTextarea();
+  if (!textarea) return;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const value = textarea.value;
+  textarea.value = `${value.slice(0, start)}${text}${value.slice(end)}`;
+  textarea.focus();
   const cursor = start + text.length;
-  activeTextArea.selectionStart = cursor;
-  activeTextArea.selectionEnd = cursor;
-  activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+  textarea.selectionStart = cursor;
+  textarea.selectionEnd = cursor;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function wrapLinesAsList(ordered = false) {
-  if (!activeTextArea) return;
-  const start = activeTextArea.selectionStart ?? 0;
-  const end = activeTextArea.selectionEnd ?? 0;
-  const value = activeTextArea.value;
+  const textarea = getTargetBlockTextarea();
+  if (!textarea) return;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const value = textarea.value;
   const selected = value.slice(start, end).trim();
   if (!selected) {
     const tag = ordered ? "[list=1]\n[*]Item 1\n[*]Item 2\n[/list]" : "[list]\n[*]Item 1\n[*]Item 2\n[/list]";
@@ -396,11 +406,81 @@ function wrapLinesAsList(ordered = false) {
     .join("\n");
   const open = ordered ? "[list=1]" : "[list]";
   const wrapped = `${open}\n${items}\n[/list]`;
-  activeTextArea.value = `${value.slice(0, start)}${wrapped}${value.slice(end)}`;
-  activeTextArea.focus();
-  activeTextArea.selectionStart = start;
-  activeTextArea.selectionEnd = start + wrapped.length;
-  activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+  textarea.value = `${value.slice(0, start)}${wrapped}${value.slice(end)}`;
+  textarea.focus();
+  textarea.selectionStart = start;
+  textarea.selectionEnd = start + wrapped.length;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function getTargetBlockTextarea() {
+  if (document.activeElement instanceof HTMLTextAreaElement && document.activeElement.classList.contains("block-content")) {
+    activeTextArea = document.activeElement;
+    return activeTextArea;
+  }
+  if (activeTextArea && blocksList?.contains(activeTextArea)) return activeTextArea;
+  const fallback = blocksList?.querySelector(".block-content");
+  if (fallback instanceof HTMLTextAreaElement) {
+    activeTextArea = fallback;
+    return fallback;
+  }
+  return null;
+}
+
+function initBlockHistory(textarea) {
+  if (!(textarea instanceof HTMLTextAreaElement)) return null;
+  let state = blockEditorHistory.get(textarea);
+  if (!state) {
+    state = { stack: [textarea.value], index: 0, applying: false };
+    blockEditorHistory.set(textarea, state);
+  }
+  return state;
+}
+
+function recordBlockHistory(textarea) {
+  const state = initBlockHistory(textarea);
+  if (!state || state.applying) return;
+  const value = textarea.value;
+  if (state.stack[state.index] === value) return;
+  state.stack = state.stack.slice(0, state.index + 1);
+  state.stack.push(value);
+  if (state.stack.length > 300) state.stack.shift();
+  state.index = state.stack.length - 1;
+}
+
+function applyBlockHistoryStep(textarea, direction) {
+  const state = initBlockHistory(textarea);
+  if (!state) return false;
+  const nextIndex = state.index + direction;
+  if (nextIndex < 0 || nextIndex >= state.stack.length) return false;
+  state.index = nextIndex;
+  state.applying = true;
+  textarea.value = state.stack[state.index];
+  textarea.focus();
+  const end = textarea.value.length;
+  textarea.selectionStart = end;
+  textarea.selectionEnd = end;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  state.applying = false;
+  return true;
+}
+
+function handleBlockTextareaKeydown(event) {
+  const textarea = event.currentTarget;
+  if (!(textarea instanceof HTMLTextAreaElement)) return;
+  if (!(event.ctrlKey || event.metaKey)) return;
+  const key = String(event.key || "").toLowerCase();
+  if (key === "z" && !event.shiftKey) {
+    if (applyBlockHistoryStep(textarea, -1)) {
+      event.preventDefault();
+    }
+    return;
+  }
+  if (key === "y" || (key === "z" && event.shiftKey)) {
+    if (applyBlockHistoryStep(textarea, 1)) {
+      event.preventDefault();
+    }
+  }
 }
 
 function applyBlockAction(action) {
@@ -411,19 +491,37 @@ function applyBlockAction(action) {
   if (action === "left") return wrapSelection("[left]", "[/left]");
   if (action === "center") return wrapSelection("[center]", "[/center]");
   if (action === "right") return wrapSelection("[right]", "[/right]");
+  if (action === "justify") return wrapSelection("[justify]", "[/justify]");
   if (action === "hr") return insertAtSelection("\n[hr]\n");
   if (action === "undo") {
-    if (!activeTextArea) return;
-    activeTextArea.focus();
-    document.execCommand("undo");
-    activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+    const textarea = getTargetBlockTextarea();
+    if (!textarea) return;
+    applyBlockHistoryStep(textarea, -1);
     return;
   }
   if (action === "redo") {
-    if (!activeTextArea) return;
-    activeTextArea.focus();
-    document.execCommand("redo");
-    activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+    const textarea = getTargetBlockTextarea();
+    if (!textarea) return;
+    applyBlockHistoryStep(textarea, 1);
+    return;
+  }
+  if (action === "clear") {
+    const textarea = getTargetBlockTextarea();
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+    if (end <= start) return;
+    const value = textarea.value;
+    const selected = value.slice(start, end);
+    const cleaned = selected
+      .replace(/\[\/?(?:b|i|u|s|spoiler|quote|left|center|right|justify|url|list|list=1)\]/gi, "")
+      .replace(/\[(?:color|size|mark)=[^\]]+\]/gi, "")
+      .replace(/\[\/(?:color|size|mark)\]/gi, "")
+      .replace(/\[\*\]/gi, "");
+    textarea.value = `${value.slice(0, start)}${cleaned}${value.slice(end)}`;
+    textarea.selectionStart = start;
+    textarea.selectionEnd = start + cleaned.length;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
     return;
   }
   if (action === "ul") return wrapLinesAsList(false);
@@ -431,10 +529,11 @@ function applyBlockAction(action) {
   if (action === "url") {
     const url = window.prompt("URL du lien");
     if (!url) return;
-    if (!activeTextArea) return;
-    const start = activeTextArea.selectionStart ?? 0;
-    const end = activeTextArea.selectionEnd ?? 0;
-    const selected = activeTextArea.value.slice(start, end).trim();
+    const textarea = getTargetBlockTextarea();
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+    const selected = textarea.value.slice(start, end).trim();
     const bb = selected ? `[url=${url.trim()}]${selected}[/url]` : `[url]${url.trim()}[/url]`;
     return insertAtSelection(bb);
   }
@@ -931,9 +1030,9 @@ function configureMetaFields(category) {
     el.classList.toggle("hidden", !visible);
   };
 
-  const authorLabel = metaAuthorRow?.childNodes?.[0];
-  const directorLabel = metaDirectorRow?.childNodes?.[0];
-  const studioLabel = metaStudioRow?.childNodes?.[0];
+  const authorLabel = metaAuthorRow?.querySelector(".field-label-text");
+  const directorLabel = metaDirectorRow?.querySelector(".field-label-text");
+  const studioLabel = metaStudioRow?.querySelector(".field-label-text");
 
   if (category === "film" || category === "serie") {
     show(metaAuthorRow, false);
@@ -995,11 +1094,23 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
   const renderFields = () => {
     fields.innerHTML = getBlockFieldsHtml(typeSelect.value, block);
     fields.querySelectorAll("input,textarea").forEach((el) => {
-      el.addEventListener("input", renderPreview);
+      el.addEventListener("input", () => {
+        if (el instanceof HTMLTextAreaElement && el.classList.contains("block-content")) {
+          recordBlockHistory(el);
+        }
+        renderPreview();
+      });
       if (el.classList.contains("block-content")) {
-        el.addEventListener("focus", () => {
-          activeTextArea = el;
-        });
+        const remember = () => {
+          if (el instanceof HTMLTextAreaElement) {
+            activeTextArea = el;
+            initBlockHistory(el);
+          }
+        };
+        el.addEventListener("focus", remember);
+        el.addEventListener("click", remember);
+        el.addEventListener("keydown", handleBlockTextareaKeydown);
+        remember();
       }
     });
   };
@@ -1022,6 +1133,7 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
       blocksList.insertBefore(row, prev);
       updateBlockIndex();
       renderPreview();
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   });
   row.querySelector(".block-down").addEventListener("click", () => {
@@ -1030,6 +1142,7 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
       blocksList.insertBefore(next, row);
       updateBlockIndex();
       renderPreview();
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   });
   return row;
@@ -1455,14 +1568,13 @@ wrapToolButtons.forEach((btn) => {
 blockActionButtons.forEach((btn) => {
   btn.addEventListener("click", () => applyBlockAction(btn.dataset.blockAction || ""));
 });
-if (toolColor) {
-  const apply = () => wrapSelection(`[color=${toolColor?.value || "#f2f2ee"}]`, "[/color]");
-  toolColor.addEventListener("input", apply);
-  toolColor.addEventListener("change", apply);
-}
-if (toolSize) {
+if (toolColorApply) toolColorApply.addEventListener("click", () => wrapSelection(`[color=${toolColor?.value || "#f2f2ee"}]`, "[/color]"));
+if (toolSizeApply) {
   const apply = () => wrapSelection(`[size=${toolSize?.value || "16"}]`, "[/size]");
-  toolSize.addEventListener("change", apply);
+  toolSizeApply.addEventListener("click", apply);
+}
+if (toolHighlightApply) {
+  toolHighlightApply.addEventListener("click", () => wrapSelection(`[mark=${toolHighlight?.value || "#f7b538"}]`, "[/mark]"));
 }
 
 if (reviewsSortSelect) {
@@ -1728,6 +1840,8 @@ if (topItemsList) setTopItems([]);
 if (form) configureMetaFields(form.elements.category.value || "jeu");
 setContentMode("blocks");
 renderAll();
+
+
 
 
 

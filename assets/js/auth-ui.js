@@ -37,12 +37,10 @@
     const username = currentProfile?.username || currentUser?.username || "";
 
     return `
-      <div class="auth-popover-title">Mon profil</div>
-      <p class="auth-popover-meta"><span>${escapeHtml(username || "utilisateur")}</span></p>
-
+      <div class="auth-popover-title">Connect\u00E9 en tant que ${escapeHtml(username || "utilisateur")}</div>
       <div class="auth-popover-actions">
         <a href="modifier.html" class="action-btn secondary">Mes contenus</a>
-        <button id="auth-pop-logout" class="action-btn secondary">Déconnexion</button>
+        <button id="auth-pop-logout" class="action-btn secondary">D\u00E9connexion</button>
       </div>
     `;
   }
@@ -80,9 +78,7 @@
       }
     };
 
-    if (loginBtn) {
-      loginBtn.addEventListener("click", login);
-    }
+    if (loginBtn) loginBtn.addEventListener("click", login);
 
     if (registerBtn) {
       registerBtn.addEventListener("click", async () => {
@@ -108,17 +104,16 @@
 
   function wireUserEvents() {
     const logoutBtn = slot.querySelector("#auth-pop-logout");
+    if (!logoutBtn) return;
 
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", async () => {
-        try {
-          await window.ReviewsStore.signOut();
-          panelOpen = false;
-        } catch (error) {
-          window.alert(`Deconnexion impossible : ${error.message}`);
-        }
-      });
-    }
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await window.ReviewsStore.signOut();
+        panelOpen = false;
+      } catch (error) {
+        window.alert(`D\u00E9connexion impossible : ${error.message}`);
+      }
+    });
   }
 
   function wireEvents() {

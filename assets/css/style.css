@@ -57,6 +57,15 @@ img {
   font-family: var(--font-heading);
   letter-spacing: 0.1em;
   font-size: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.brand-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  object-fit: contain;
 }
 
 .menu {
@@ -154,6 +163,10 @@ img {
   justify-content: center;
   font-size: 0.92rem;
   line-height: 1.2;
+  font-family: var(--font-body);
+  font-weight: 700;
+  white-space: nowrap;
+  appearance: none;
 }
 
 .menu-sep {
@@ -442,6 +455,28 @@ label {
   margin-bottom: 0.7rem;
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.field-hint {
+  margin-left: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #8fa5b5;
+  letter-spacing: 0.01em;
+  opacity: 0.82;
+  text-transform: lowercase;
+}
+
+.label-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.field-required {
+  color: #9cb2c1;
+  opacity: 0.9;
 }
 
 .link-pair-row {
