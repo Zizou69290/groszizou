@@ -122,6 +122,14 @@ window.ReviewsStore = (() => {
     const blocks = Array.isArray(review.blocks)
       ? review.blocks.map(normalizeBlock).filter(Boolean)
       : [];
+    const externalLinks = Array.isArray(review.externalLinks)
+      ? review.externalLinks
+        .map((entry) => ({
+          label: String(entry?.label || "").trim(),
+          url: String(entry?.url || "").trim()
+        }))
+        .filter((entry) => entry.label && entry.url)
+      : [];
 
     return {
       id: review.id || slugify(review.title),
@@ -142,6 +150,7 @@ window.ReviewsStore = (() => {
       ownerUsername: review.ownerUsername || "",
       contentMode: review.contentMode || (review.bodyHtml ? "rich" : "blocks"),
       bodyHtml: review.bodyHtml || "",
+      externalLinks,
       blocks,
       updatedAt: typeof review.updatedAt === "number" ? review.updatedAt : Date.now()
     };

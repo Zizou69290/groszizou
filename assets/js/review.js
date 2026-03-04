@@ -23,6 +23,9 @@ const coverBg = document.getElementById("review-cover-bg");
 const details = document.getElementById("review-details");
 const content = document.getElementById("review-content");
 const articleHero = document.querySelector(".article-hero-covered");
+const linkActions = document.getElementById("review-link-actions");
+const editLink = document.getElementById("review-edit-link");
+let loadedReview = null;
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -40,6 +43,48 @@ const escapeHtml = (text) =>
 function ownerBadge(username) {
   if (!username) return "";
   return `<span class="owner-badge"><span>${escapeHtml(username)}</span></span>`;
+}
+
+function isAdminUser(user) {
+  return String(user?.username || "").trim().toLowerCase() === "admin";
+}
+
+function renderQuickActions(item) {
+  if (!linkActions || !editLink) return;
+  const currentUser = window.ReviewsStore?.getCurrentUser?.() || null;
+  const canEdit = Boolean(
+    item &&
+    currentUser &&
+    (isAdminUser(currentUser) || (item.ownerId && item.ownerId === currentUser.uid))
+  );
+  const links = Array.isArray(item?.externalLinks)
+    ? item.externalLinks
+      .map((entry) => ({
+        label: String(entry?.label || "").trim(),
+        url: String(entry?.url || "").trim()
+      }))
+      .filter((entry) => entry.label && entry.url)
+    : [];
+
+  linkActions.innerHTML = "";
+  links.forEach((entry) => {
+    const a = document.createElement("a");
+    a.className = "action-btn secondary";
+    a.href = entry.url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = entry.label;
+    linkActions.appendChild(a);
+  });
+
+  if (canEdit) {
+    editLink.href = `modifier.html?edit=${encodeURIComponent(item.id)}`;
+    editLink.classList.remove("hidden");
+  } else {
+    editLink.classList.add("hidden");
+  }
+
+  linkActions.classList.toggle("hidden", !linkActions.children.length);
 }
 
 function scoreToStars(value) {
@@ -216,6 +261,7 @@ async function loadReview() {
     return;
   }
 
+  loadedReview = item;
   document.title = `SuperSite - Review - ${item.title || "Sans titre"}`;
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
@@ -224,6 +270,7 @@ async function loadReview() {
   score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
   if (coverBg) coverBg.src = item.cover || DEFAULT_COVER;
   renderDetails(item);
+  renderQuickActions(item);
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");
 
   content.innerHTML = "";
@@ -244,6 +291,12 @@ async function loadReview() {
       if (node) content.appendChild(node);
     });
   }
+}
+
+if (window.ReviewsStore?.onAuthChanged) {
+  window.ReviewsStore.onAuthChanged(() => {
+    if (loadedReview) renderQuickActions(loadedReview);
+  });
 }
 
 loadReview();

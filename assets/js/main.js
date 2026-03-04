@@ -1,5 +1,7 @@
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
+const pageParams = new URLSearchParams(window.location.search);
+const requestedEditReviewId = String(pageParams.get("edit") || "").trim();
 
 if (menuToggle && menu) {
   menuToggle.addEventListener("click", () => {
@@ -20,6 +22,8 @@ const previewBox = document.getElementById("review-preview");
 const filterButtonsHost = document.querySelector(".filters");
 const reviewsSortSelect = document.getElementById("reviews-sort");
 const reviewsUserFilterSelect = document.getElementById("reviews-user-filter");
+const reviewsSearchInput = document.getElementById("reviews-search");
+const managerReviewsSortSelect = document.getElementById("manager-reviews-sort");
 
 const topList = document.getElementById("tops-manager-list");
 const topForm = document.getElementById("top-form");
@@ -28,6 +32,7 @@ const newTopBtn = document.getElementById("new-top");
 const cancelTopBtn = document.getElementById("cancel-top-form");
 const addTopItemBtn = document.getElementById("add-top-item");
 const topItemsList = document.getElementById("top-items-list");
+const managerTopsSortSelect = document.getElementById("manager-tops-sort");
 
 const authUsername = document.getElementById("auth-username");
 const authPassword = document.getElementById("auth-password");
@@ -37,9 +42,7 @@ const logoutBtn = document.getElementById("auth-logout");
 const authStatus = document.getElementById("auth-status");
 
 const toolColor = document.getElementById("tool-color");
-const toolColorApply = document.getElementById("tool-color-apply");
 const toolSize = document.getElementById("tool-size");
-const toolSizeApply = document.getElementById("tool-size-apply");
 const wrapToolButtons = document.querySelectorAll("[data-wrap-tag]");
 const blockActionButtons = document.querySelectorAll("[data-block-action]");
 const contentModeButtons = document.querySelectorAll("[data-content-mode]");
@@ -71,6 +74,9 @@ const DEFAULT_COVER =
 let selectedFilter = "all";
 let selectedSort = "date-desc";
 let selectedUserFilter = "all";
+let selectedReviewsSearch = "";
+let selectedManagerReviewSort = "date-desc";
+let selectedManagerTopSort = "date-desc";
 let editingId = null;
 let editingTopId = null;
 let cachedReviews = [];
@@ -81,6 +87,7 @@ let currentUser = null;
 const ADMIN_USERNAME = "admin";
 let selectedRichMediaWrapper = null;
 let richMediaResizeState = null;
+let pendingEditReviewId = requestedEditReviewId || "";
 
 function isAdminUser(user) {
   return String(user?.username || "").trim().toLowerCase() === ADMIN_USERNAME;
@@ -106,6 +113,53 @@ function ownerBadge(username) {
 
 function normalizeUsernameValue(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function normalizeSearchValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function readExternalLinksFromForm() {
+  if (!form) return [];
+  const pairs = [
+    { label: form.elements.linkLabel1?.value, url: form.elements.linkUrl1?.value },
+    { label: form.elements.linkLabel2?.value, url: form.elements.linkUrl2?.value },
+    { label: form.elements.linkLabel3?.value, url: form.elements.linkUrl3?.value }
+  ];
+  return pairs
+    .map((entry) => ({
+      label: String(entry.label || "").trim(),
+      url: String(entry.url || "").trim()
+    }))
+    .filter((entry) => entry.label && entry.url);
+}
+
+function fillExternalLinksInForm(review) {
+  if (!form) return;
+  const links = Array.isArray(review?.externalLinks) ? review.externalLinks : [];
+  const get = (idx, key) => String(links[idx]?.[key] || "").trim();
+  if (form.elements.linkLabel1) form.elements.linkLabel1.value = get(0, "label");
+  if (form.elements.linkUrl1) form.elements.linkUrl1.value = get(0, "url");
+  if (form.elements.linkLabel2) form.elements.linkLabel2.value = get(1, "label");
+  if (form.elements.linkUrl2) form.elements.linkUrl2.value = get(1, "url");
+  if (form.elements.linkLabel3) form.elements.linkLabel3.value = get(2, "label");
+  if (form.elements.linkUrl3) form.elements.linkUrl3.value = get(2, "url");
+}
+
+async function openRequestedReviewForEdit() {
+  if (!pendingEditReviewId || !window.ReviewsStore?.getById) return;
+  const reviewId = pendingEditReviewId;
+  pendingEditReviewId = "";
+  let item = cachedReviews.find((entry) => entry.id === reviewId) || null;
+  if (!item) {
+    try {
+      item = await window.ReviewsStore.getById(reviewId);
+    } catch {
+      item = null;
+    }
+  }
+  if (!item) return;
+  openForm(item);
 }
 
 function renderRichText(text) {
@@ -1093,26 +1147,61 @@ function getReviewSortScore(item) {
   return Number.isFinite(Number(item?.score)) ? Number(item.score) : null;
 }
 
-function sortReviews(items) {
+function sortReviews(items, mode = selectedSort) {
   const sorted = [...items];
   sorted.sort((a, b) => {
     const dateA = getReviewPublicationTimestamp(a);
     const dateB = getReviewPublicationTimestamp(b);
     const scoreA = getReviewSortScore(a);
     const scoreB = getReviewSortScore(b);
-    if (selectedSort === "date-asc") return dateA - dateB;
-    if (selectedSort === "score-desc") {
+    if (mode === "date-asc") return dateA - dateB;
+    if (mode === "score-desc") {
       const left = scoreA ?? Number.NEGATIVE_INFINITY;
       const right = scoreB ?? Number.NEGATIVE_INFINITY;
       if (left !== right) return right - left;
       return dateB - dateA;
     }
-    if (selectedSort === "score-asc") {
+    if (mode === "score-asc") {
       const left = scoreA ?? Number.POSITIVE_INFINITY;
       const right = scoreB ?? Number.POSITIVE_INFINITY;
       if (left !== right) return left - right;
       return dateB - dateA;
     }
+    return dateB - dateA;
+  });
+  return sorted;
+}
+
+function reviewMatchesSearch(item, rawQuery) {
+  const query = normalizeSearchValue(rawQuery);
+  if (!query) return true;
+  const haystack = [
+    item?.title,
+    item?.summary,
+    item?.category,
+    item?.author,
+    item?.director,
+    item?.studio,
+    item?.genre,
+    item?.ownerUsername
+  ]
+    .map((value) => normalizeSearchValue(value))
+    .join(" ");
+  return haystack.includes(query);
+}
+
+function getTopPublicationTimestamp(item) {
+  const updated = Number(item?.updatedAt);
+  if (Number.isFinite(updated) && updated > 0) return updated;
+  return 0;
+}
+
+function sortManagerTops(items, mode = selectedManagerTopSort) {
+  const sorted = [...items];
+  sorted.sort((a, b) => {
+    const dateA = getTopPublicationTimestamp(a);
+    const dateB = getTopPublicationTimestamp(b);
+    if (mode === "date-asc") return dateA - dateB;
     return dateB - dateA;
   });
   return sorted;
@@ -1172,8 +1261,8 @@ async function renderAll() {
   const sortedReviews = sortReviews(reviews);
   const managerVisibleReviews = managerList
     ? (isAdminUser(currentUser)
-      ? sortedReviews
-      : sortedReviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid))
+      ? sortReviews(sortedReviews, selectedManagerReviewSort)
+      : sortReviews(sortedReviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid), selectedManagerReviewSort))
     : sortedReviews;
   cachedReviews = managerVisibleReviews;
   buildFilterButtons(sortedReviews);
@@ -1184,6 +1273,7 @@ async function renderAll() {
     sortedReviews
       .filter((item) => selectedFilter === "all" || item.category === selectedFilter)
       .filter((item) => selectedUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedUserFilter)
+      .filter((item) => reviewMatchesSearch(item, selectedReviewsSearch))
       .forEach((item) => reviewsGrid.appendChild(reviewCard(item)));
   }
   if (managerList) {
@@ -1199,8 +1289,9 @@ async function renderTopsManager() {
     const managerVisibleTops = isAdminUser(currentUser)
       ? tops
       : tops.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid);
+    const managerSortedTops = sortManagerTops(managerVisibleTops, selectedManagerTopSort);
     topList.innerHTML = "";
-    managerVisibleTops.forEach((item) => topList.appendChild(topRow(item)));
+    managerSortedTops.forEach((item) => topList.appendChild(topRow(item)));
   } catch (error) {
     window.alert(`Impossible de charger les tops : ${error.message}`);
   }
@@ -1224,6 +1315,7 @@ function openForm(item = null) {
   form.elements.studio.value = item?.studio || "";
   form.elements.releaseYear.value = item?.releaseYear || "";
   form.elements.genre.value = item?.genre || "";
+  fillExternalLinksInForm(item);
   configureMetaFields(form.elements.category.value || "jeu");
   setRichHtml(item?.bodyHtml || "");
   const nextMode = item?.contentMode || (item?.bodyHtml ? "rich" : "blocks");
@@ -1293,6 +1385,7 @@ if (form) {
       studio: selectedCategory === "jeu" ? studioValue : "",
       releaseYear: form.elements.releaseYear.value.trim(),
       genre: form.elements.genre.value.trim(),
+      externalLinks: readExternalLinksFromForm(),
       contentMode: currentContentMode,
       bodyHtml: currentContentMode === "rich" ? getRichHtml() : "",
       blocks: currentContentMode === "blocks" ? readBlocks() : []
@@ -1362,15 +1455,14 @@ wrapToolButtons.forEach((btn) => {
 blockActionButtons.forEach((btn) => {
   btn.addEventListener("click", () => applyBlockAction(btn.dataset.blockAction || ""));
 });
-if (toolColorApply) {
-  toolColorApply.addEventListener("click", () => {
-    wrapSelection(`[color=${toolColor?.value || "#f2f2ee"}]`, "[/color]");
-  });
+if (toolColor) {
+  const apply = () => wrapSelection(`[color=${toolColor?.value || "#f2f2ee"}]`, "[/color]");
+  toolColor.addEventListener("input", apply);
+  toolColor.addEventListener("change", apply);
 }
-if (toolSizeApply) {
-  toolSizeApply.addEventListener("click", () => {
-    wrapSelection(`[size=${toolSize?.value || "16"}]`, "[/size]");
-  });
+if (toolSize) {
+  const apply = () => wrapSelection(`[size=${toolSize?.value || "16"}]`, "[/size]");
+  toolSize.addEventListener("change", apply);
 }
 
 if (reviewsSortSelect) {
@@ -1385,6 +1477,29 @@ if (reviewsUserFilterSelect) {
   reviewsUserFilterSelect.addEventListener("change", async () => {
     selectedUserFilter = reviewsUserFilterSelect.value || "all";
     await renderAll();
+  });
+}
+
+if (reviewsSearchInput) {
+  reviewsSearchInput.addEventListener("input", async () => {
+    selectedReviewsSearch = reviewsSearchInput.value || "";
+    await renderAll();
+  });
+}
+
+if (managerReviewsSortSelect) {
+  managerReviewsSortSelect.value = selectedManagerReviewSort;
+  managerReviewsSortSelect.addEventListener("change", async () => {
+    selectedManagerReviewSort = managerReviewsSortSelect.value || "date-desc";
+    await renderAll();
+  });
+}
+
+if (managerTopsSortSelect) {
+  managerTopsSortSelect.value = selectedManagerTopSort;
+  managerTopsSortSelect.addEventListener("change", async () => {
+    selectedManagerTopSort = managerTopsSortSelect.value || "date-desc";
+    await renderTopsManager();
   });
 }
 
@@ -1554,6 +1669,7 @@ if (window.ReviewsStore.onAuthChanged) {
     if (unlocked) {
       await renderAll();
       await renderTopsManager();
+      await openRequestedReviewForEdit();
     } else {
       if (managerList) managerList.innerHTML = "";
       if (topList) topList.innerHTML = "";

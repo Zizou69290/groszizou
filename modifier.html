@@ -34,6 +34,13 @@
       <div class="section-head">
         <h2>Gestion des reviews</h2>
         <div class="manager-actions">
+          <label class="select-inline" for="manager-reviews-sort">
+            Tri
+            <select id="manager-reviews-sort">
+              <option value="date-desc">Plus récent</option>
+              <option value="date-asc">Plus ancien</option>
+            </select>
+          </label>
           <button id="new-review" class="action-btn">Nouvelle review</button>
         </div>
       </div>
@@ -75,6 +82,30 @@
           <label>Genre
             <input name="genre" type="text" placeholder="Ex: Action, RPG, Sci-Fi" />
           </label>
+          <div class="link-pair-row">
+            <label>Libellé bouton 1
+              <input name="linkLabel1" type="text" placeholder="Ex: Trailer" />
+            </label>
+            <label>Lien bouton 1
+              <input name="linkUrl1" type="url" placeholder="https://..." />
+            </label>
+          </div>
+          <div class="link-pair-row">
+            <label>Libellé bouton 2
+              <input name="linkLabel2" type="text" placeholder="Ex: Letterboxd" />
+            </label>
+            <label>Lien bouton 2
+              <input name="linkUrl2" type="url" placeholder="https://..." />
+            </label>
+          </div>
+          <div class="link-pair-row">
+            <label>Libellé bouton 3
+              <input name="linkLabel3" type="text" placeholder="Ex: IMDb" />
+            </label>
+            <label>Lien bouton 3
+              <input name="linkUrl3" type="url" placeholder="https://..." />
+            </label>
+          </div>
         </div>
 
         <label>Résumé
@@ -117,7 +148,6 @@
           <label class="tool-inline" title="Couleur texte">
             <input id="tool-color" type="color" value="#f2f2ee" />
           </label>
-          <button type="button" id="tool-color-apply" class="action-btn secondary tool-btn" title="Appliquer couleur">&#127912;</button>
           <label class="tool-inline" title="Taille texte">
             <select id="tool-size">
               <option value="14">14</option>
@@ -128,7 +158,6 @@
               <option value="28">28</option>
             </select>
           </label>
-          <button type="button" id="tool-size-apply" class="action-btn secondary tool-btn" title="Appliquer taille">&#8645;</button>
         </div>
         <div id="blocks-list" class="blocks-list"></div>
         </div>
@@ -204,7 +233,16 @@
 
       <div class="section-head">
         <h2>Gestion des tops</h2>
-        <button id="new-top" class="action-btn">Nouveau top</button>
+        <div class="manager-actions">
+          <label class="select-inline" for="manager-tops-sort">
+            Tri
+            <select id="manager-tops-sort">
+              <option value="date-desc">Plus récent</option>
+              <option value="date-asc">Plus ancien</option>
+            </select>
+          </label>
+          <button id="new-top" class="action-btn">Nouveau top</button>
+        </div>
       </div>
 
       <div id="tops-manager-list" class="manager-list"></div>

@@ -1,5 +1,6 @@
 const topsGrid = document.getElementById("tops-grid");
 const topsSortSelect = document.getElementById("tops-sort");
+const topsSearchInput = document.getElementById("tops-search");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const DEFAULT_COVER =
@@ -9,6 +10,7 @@ const DEFAULT_COVER =
   );
 
 let selectedTopSort = "date-desc";
+let selectedTopSearch = "";
 
 if (menuToggle && menu) {
   menuToggle.addEventListener("click", () => {
@@ -103,6 +105,25 @@ function sortTops(items, reviewMap) {
   return sorted;
 }
 
+function normalizeSearchValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function topMatchesSearch(item, rawQuery) {
+  const query = normalizeSearchValue(rawQuery);
+  if (!query) return true;
+  const haystack = [
+    item?.title,
+    item?.subtitle,
+    item?.category,
+    item?.year,
+    item?.ownerUsername
+  ]
+    .map((value) => normalizeSearchValue(value))
+    .join(" ");
+  return haystack.includes(query);
+}
+
 async function renderTops() {
   if (!topsGrid) return;
   try {
@@ -111,14 +132,16 @@ async function renderTops() {
     const sortedTops = sortTops(tops, reviewMap);
 
     topsGrid.innerHTML = "";
-    sortedTops.forEach((item) => {
+    sortedTops
+      .filter((item) => topMatchesSearch(item, selectedTopSearch))
+      .forEach((item) => {
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
         const first = item.items[0];
         const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;
         item.displayCover = linked?.cover || linked?.poster || "";
       }
       topsGrid.appendChild(topCard(item));
-    });
+      });
   } catch (error) {
     window.alert(`Impossible de charger les tops : ${error.message}`);
   }
@@ -128,6 +151,13 @@ if (topsSortSelect) {
   topsSortSelect.value = selectedTopSort;
   topsSortSelect.addEventListener("change", async () => {
     selectedTopSort = topsSortSelect.value || "date-desc";
+    await renderTops();
+  });
+}
+
+if (topsSearchInput) {
+  topsSearchInput.addEventListener("input", async () => {
+    selectedTopSearch = topsSearchInput.value || "";
     await renderTops();
   });
 }

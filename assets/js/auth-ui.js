@@ -42,7 +42,7 @@
 
       <div class="auth-popover-actions">
         <a href="modifier.html" class="action-btn secondary">Mes contenus</a>
-        <button id="auth-pop-logout" class="action-btn secondary">Deconnexion</button>
+        <button id="auth-pop-logout" class="action-btn secondary">Déconnexion</button>
       </div>
     `;
   }
@@ -66,24 +66,28 @@
   function wireGuestEvents() {
     const loginBtn = slot.querySelector("#auth-pop-login");
     const registerBtn = slot.querySelector("#auth-pop-register");
+    const usernameInput = slot.querySelector("#auth-pop-user");
+    const passwordInput = slot.querySelector("#auth-pop-pass");
+
+    const login = async () => {
+      const username = usernameInput?.value || "";
+      const password = passwordInput?.value || "";
+      try {
+        await window.ReviewsStore.loginWithCredentials(username, password);
+        panelOpen = false;
+      } catch (error) {
+        window.alert(`Connexion impossible : ${error.message}`);
+      }
+    };
 
     if (loginBtn) {
-      loginBtn.addEventListener("click", async () => {
-        const username = slot.querySelector("#auth-pop-user")?.value || "";
-        const password = slot.querySelector("#auth-pop-pass")?.value || "";
-        try {
-          await window.ReviewsStore.loginWithCredentials(username, password);
-          panelOpen = false;
-        } catch (error) {
-          window.alert(`Connexion impossible : ${error.message}`);
-        }
-      });
+      loginBtn.addEventListener("click", login);
     }
 
     if (registerBtn) {
       registerBtn.addEventListener("click", async () => {
-        const username = slot.querySelector("#auth-pop-user")?.value || "";
-        const password = slot.querySelector("#auth-pop-pass")?.value || "";
+        const username = usernameInput?.value || "";
+        const password = passwordInput?.value || "";
         try {
           await window.ReviewsStore.registerWithCredentials(username, password);
           panelOpen = false;
@@ -92,6 +96,14 @@
         }
       });
     }
+
+    const onEnter = async (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      await login();
+    };
+    if (usernameInput) usernameInput.addEventListener("keydown", onEnter);
+    if (passwordInput) passwordInput.addEventListener("keydown", onEnter);
   }
 
   function wireUserEvents() {
