@@ -257,11 +257,11 @@ function reviewCard(item) {
   const accent = item.accent || "#f25f29";
   const target = `review.html?id=${encodeURIComponent(item.id)}`;
 
-  const ownerMeta = item.ownerUsername ? ` &middot; ${ownerBadge(item.ownerUsername)}` : "";
+  const ownerMeta = item.ownerUsername ? `, par ${ownerBadge(item.ownerUsername)}` : "";
   article.innerHTML = `
     <img src="${item.cover || DEFAULT_COVER}" alt="${escapeHtml(item.title || "Review")}" />
     <div class="card-body">
-      <p class="meta">${window.ReviewsStore.categories[item.category] || item.category} &middot; ${fmtDate(item.date)}${ownerMeta}</p>
+      <p class="meta">Publié le ${fmtDate(item.date)}${ownerMeta}</p>
       <h3>${escapeHtml(item.title || "Sans titre")}</h3>
       <p>${escapeHtml(item.summary || "Aucun résumé.")}</p>
       <div class="card-footer">

@@ -19,6 +19,7 @@ const category = document.getElementById("review-category");
 const summary = document.getElementById("review-summary");
 const date = document.getElementById("review-date");
 const score = document.getElementById("review-score");
+const articleMeta = document.querySelector(".article-meta");
 const coverBg = document.getElementById("review-cover-bg");
 const details = document.getElementById("review-details");
 const content = document.getElementById("review-content");
@@ -90,6 +91,8 @@ function renderQuickActions(item) {
   }
 
   linkActions.classList.toggle("hidden", !linkActions.children.length);
+  refreshHeroInfoLayout();
+  alignAudioControlsToLastInfo();
 }
 
 function scoreToStars(value) {
@@ -116,6 +119,8 @@ function renderDetails(item) {
       articleHero.classList.remove("has-details");
       articleHero.classList.add("no-details");
     }
+    refreshHeroInfoLayout();
+    alignAudioControlsToLastInfo();
     return;
   }
 
@@ -131,6 +136,15 @@ function renderDetails(item) {
     articleHero.classList.add("has-details");
     articleHero.classList.remove("no-details");
   }
+  refreshHeroInfoLayout();
+  alignAudioControlsToLastInfo();
+}
+
+function refreshHeroInfoLayout() {
+  if (!articleHero) return;
+  const hasDetails = Boolean(details && !details.classList.contains("hidden") && details.children.length);
+  const hasQuickActions = Boolean(linkActions && !linkActions.classList.contains("hidden") && linkActions.children.length);
+  articleHero.classList.toggle("has-extra-info", hasDetails || hasQuickActions);
 }
 
 function renderRichText(text) {
@@ -280,6 +294,25 @@ function teardownBackgroundAudio() {
   }
 }
 
+function alignAudioControlsToLastInfo() {
+  if (!audioControls || !articleHero || audioControls.classList.contains("hidden")) return;
+  const candidates = [linkActions, details, articleMeta].filter(
+    (el) => el && !el.classList.contains("hidden") && (el.children?.length || el.textContent?.trim())
+  );
+  const anchor = candidates[0] || articleMeta;
+  if (!anchor) return;
+
+  const heroRect = articleHero.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
+  const controlsRect = audioControls.getBoundingClientRect();
+  const anchorCenterY = anchorRect.top + anchorRect.height / 2 - heroRect.top;
+  const nextTop = anchorCenterY - controlsRect.height / 2;
+  const clampedTop = Math.max(10, Math.min(heroRect.height - controlsRect.height - 10, nextTop));
+
+  audioControls.style.top = `${clampedTop}px`;
+  audioControls.style.bottom = "auto";
+}
+
 function setupBackgroundAudio(item) {
   if (!audioControls || !audioToggleBtn || !audioVolumeInput || !audioProgressInput) return;
   teardownBackgroundAudio();
@@ -312,6 +345,7 @@ function setupBackgroundAudio(item) {
   };
 
   audioControls.classList.remove("hidden");
+  requestAnimationFrame(alignAudioControlsToLastInfo);
   audioToggleBtn.onclick = async () => {
     if (audio.paused) {
       try {
@@ -381,6 +415,7 @@ async function loadReview() {
   setupBackgroundAudio(item);
   renderDetails(item);
   renderQuickActions(item);
+  alignAudioControlsToLastInfo();
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");
 
   content.innerHTML = "";
@@ -408,5 +443,9 @@ if (window.ReviewsStore?.onAuthChanged) {
     if (loadedReview) renderQuickActions(loadedReview);
   });
 }
+
+window.addEventListener("resize", () => {
+  alignAudioControlsToLastInfo();
+});
 
 loadReview();
