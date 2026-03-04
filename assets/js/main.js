@@ -266,7 +266,6 @@ function reviewCard(item) {
       <p>${escapeHtml(item.summary || "Aucun résumé.")}</p>
       <div class="card-footer">
         <span class="score" style="color:${accent}">${scoreToStars(item.score)}${Number.isFinite(item.score) ? ` (${item.score}/10)` : ""}</span>
-        <span class="read-hint">Lire</span>
       </div>
     </div>
   `;

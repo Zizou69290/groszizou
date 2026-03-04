@@ -1,6 +1,8 @@
 const topsGrid = document.getElementById("tops-grid");
+const topsFiltersHost = document.getElementById("tops-filters");
 const topsSortSelect = document.getElementById("tops-sort");
 const topsSearchInput = document.getElementById("tops-search");
+const topsUserFilterSelect = document.getElementById("tops-user-filter");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const DEFAULT_COVER =
@@ -11,6 +13,8 @@ const DEFAULT_COVER =
 
 let selectedTopSort = "date-desc";
 let selectedTopSearch = "";
+let selectedTopFilter = "all";
+let selectedTopUserFilter = "all";
 
 if (menuToggle && menu) {
   menuToggle.addEventListener("click", () => {
@@ -47,7 +51,6 @@ function topCard(item) {
       <p>${item.subtitle || ""}</p>
       <div class="card-footer">
         <span class="score">${(item.items || []).length} item(s)</span>
-        <span class="read-hint">Lire</span>
       </div>
     </div>
   `;
@@ -109,6 +112,50 @@ function normalizeSearchValue(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function normalizeUsernameValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function buildTopFilterButtons(tops) {
+  if (!topsFiltersHost) return;
+  const categories = [...new Set(tops.map((t) => t.category).filter(Boolean))];
+  if (selectedTopFilter !== "all" && !categories.includes(selectedTopFilter)) {
+    selectedTopFilter = "all";
+  }
+  topsFiltersHost.innerHTML = `<button class="filter-btn${selectedTopFilter === "all" ? " active" : ""}" data-filter="all">Tout</button>`;
+  categories.forEach((cat) => {
+    const name = window.ReviewsStore.categories[cat] || cat;
+    topsFiltersHost.insertAdjacentHTML(
+      "beforeend",
+      `<button class="filter-btn${selectedTopFilter === cat ? " active" : ""}" data-filter="${cat}">${name}</button>`
+    );
+  });
+  topsFiltersHost.querySelectorAll(".filter-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      topsFiltersHost.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+      button.classList.add("active");
+      selectedTopFilter = button.dataset.filter || "all";
+      await renderTops();
+    });
+  });
+}
+
+function buildTopUserFilterOptions(tops) {
+  if (!topsUserFilterSelect) return;
+  const users = [...new Set(tops.map((t) => normalizeUsernameValue(t.ownerUsername)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  if (selectedTopUserFilter !== "all" && !users.includes(selectedTopUserFilter)) {
+    selectedTopUserFilter = "all";
+  }
+  topsUserFilterSelect.innerHTML = `<option value="all">Tous</option>`;
+  users.forEach((username) => {
+    const option = document.createElement("option");
+    option.value = username;
+    option.textContent = username;
+    option.selected = selectedTopUserFilter === username;
+    topsUserFilterSelect.appendChild(option);
+  });
+}
+
 function topMatchesSearch(item, rawQuery) {
   const query = normalizeSearchValue(rawQuery);
   if (!query) return true;
@@ -130,9 +177,13 @@ async function renderTops() {
     const [tops, reviews] = await Promise.all([window.ReviewsStore.getAllTops(), window.ReviewsStore.getAll()]);
     const reviewMap = new Map(reviews.map((r) => [r.id, r]));
     const sortedTops = sortTops(tops, reviewMap);
+    buildTopFilterButtons(sortedTops);
+    buildTopUserFilterOptions(sortedTops);
 
     topsGrid.innerHTML = "";
     sortedTops
+      .filter((item) => selectedTopFilter === "all" || item.category === selectedTopFilter)
+      .filter((item) => selectedTopUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedTopUserFilter)
       .filter((item) => topMatchesSearch(item, selectedTopSearch))
       .forEach((item) => {
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
@@ -158,6 +209,13 @@ if (topsSortSelect) {
 if (topsSearchInput) {
   topsSearchInput.addEventListener("input", async () => {
     selectedTopSearch = topsSearchInput.value || "";
+    await renderTops();
+  });
+}
+
+if (topsUserFilterSelect) {
+  topsUserFilterSelect.addEventListener("change", async () => {
+    selectedTopUserFilter = topsUserFilterSelect.value || "all";
     await renderTops();
   });
 }
