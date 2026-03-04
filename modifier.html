@@ -83,33 +83,42 @@
 
         <div class="content-mode-switch" role="group" aria-label="Mode d'édition">
           <button type="button" class="action-btn secondary mode-btn active" data-content-mode="blocks">Mode blocs</button>
-          <button type="button" class="action-btn secondary mode-btn" data-content-mode="rich">Éditeur libre</button>
+          <button type="button" class="action-btn secondary mode-btn" data-content-mode="rich">Éditeur libre (Beta)</button>
         </div>
 
         <div id="blocks-editor-section">
         <div class="media-head">
           <h4>Blocs de contenu (ordre libre)</h4>
-          <div class="manager-actions">
-            <button type="button" class="action-btn secondary" data-add-block="text">Texte</button>
-            <button type="button" class="action-btn secondary" data-add-block="image">Image</button>
-            <button type="button" class="action-btn secondary" data-add-block="image-text-left">Image + Texte</button>
-            <button type="button" class="action-btn secondary" data-add-block="image-text-right">Texte + Image</button>
-            <button type="button" class="action-btn secondary" data-add-block="two-images">2 images côte à côte</button>
-            <button type="button" class="action-btn secondary" data-add-block="video">Vidéo</button>
-            <button type="button" class="action-btn secondary" data-add-block="video-embed">Vidéo embed</button>
-            <button type="button" class="action-btn secondary" data-add-block="audio">Audio</button>
-          </div>
         </div>
         <div class="text-tools">
-          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="b"><strong>B</strong></button>
-          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="i"><em>I</em></button>
-          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="u"><span class="u-text">U</span></button>
-          <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="spoiler">Spoiler</button>
-          <label class="tool-inline">Couleur
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary tool-btn" id="add-block-btn" title="Ajouter un bloc">+ Bloc</button>
+          </div>
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="b" title="Gras"><strong>B</strong></button>
+            <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="i" title="Italique"><em>I</em></button>
+            <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="u" title="Souligné"><span class="u-text">U</span></button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="strike" title="Barré"><span style="text-decoration:line-through">S</span></button>
+            <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="spoiler" title="Spoiler">&#128065;</button>
+          </div>
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="quote" title="Citation">&#10077;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="url" title="Lien">&#128279;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="undo" title="Annuler">&#8630;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="redo" title="Restaurer">&#8631;</button>
+          </div>
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="ul" title="Liste à puces">&#8226;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="ol" title="Liste numérotée">1.</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="left" title="Aligner à gauche">L</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="center" title="Centrer">C</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="right" title="Aligner à droite">R</button>
+          </div>
+          <label class="tool-inline" title="Couleur texte">
             <input id="tool-color" type="color" value="#f2f2ee" />
           </label>
-          <button type="button" id="tool-color-apply" class="action-btn secondary tool-btn">Appliquer couleur</button>
-          <label class="tool-inline">Taille
+          <button type="button" id="tool-color-apply" class="action-btn secondary tool-btn" title="Appliquer couleur">&#127912;</button>
+          <label class="tool-inline" title="Taille texte">
             <select id="tool-size">
               <option value="14">14</option>
               <option value="16" selected>16</option>
@@ -119,7 +128,7 @@
               <option value="28">28</option>
             </select>
           </label>
-          <button type="button" id="tool-size-apply" class="action-btn secondary tool-btn">Appliquer taille</button>
+          <button type="button" id="tool-size-apply" class="action-btn secondary tool-btn" title="Appliquer taille">&#8645;</button>
         </div>
         <div id="blocks-list" class="blocks-list"></div>
         </div>
@@ -129,38 +138,55 @@
             <h4>Éditeur libre</h4>
             <div class="manager-actions rich-toolbar">
               <div class="rich-tool-group">
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="bold" title="Gras"><strong>B</strong></button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="italic" title="Italique"><em>I</em></button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="underline" title="Souligné"><span class="u-text">U</span></button>
-                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-spoiler-btn" title="Spoiler">👁</button>
-              </div>
-              <div class="rich-tool-sep" aria-hidden="true"></div>
-              <div class="rich-tool-group">
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList" title="Liste">•</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList" title="Liste numérotée">1.</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner à gauche">⟸</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">≡</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner à droite">⟹</button>
-              </div>
-              <div class="rich-tool-sep" aria-hidden="true"></div>
-              <div class="rich-tool-group">
-                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn" title="Insérer lien">🔗</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn" title="Insérer image">🖼</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn" title="Insérer vidéo">🎬</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn" title="Insérer audio">🎵</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" id="rich-cols-btn" title="Insérer 2 colonnes">▥</button>
-              </div>
-              <div class="rich-tool-sep" aria-hidden="true"></div>
-              <div class="rich-tool-group">
-                <button type="button" class="action-btn secondary rich-tool-btn" data-media-size="small" title="Média petit">S</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-media-size="medium" title="Média moyen">M</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-media-size="large" title="Média grand">L</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="left" title="Média à gauche">↤</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="center" title="Média centré">↔</button>
-                <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="right" title="Média à droite">↦</button>
-              </div>
-            </div>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="bold" title="Gras"><strong>B</strong></button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="italic" title="Italique"><em>I</em></button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="underline" title="Souligné"><span class="u-text">U</span></button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="strikeThrough" title="Barré"><span style="text-decoration:line-through">S</span></button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-spoiler-btn" title="Spoiler">&#128065;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="formatBlock" data-rich-value="blockquote" title="Citation">&#10077;</button>
           </div>
+          <div class="rich-tool-sep" aria-hidden="true"></div>
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList" title="Liste">&#8226;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList" title="Liste numérotée">1.</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner à gauche">⟸</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">≡</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner à droite">⟹</button>
+          </div>
+          <div class="rich-tool-sep" aria-hidden="true"></div>
+          <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn" title="Insérer lien">🔗</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn" title="Insérer image">🖼</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn" title="Insérer vidéo">🎬</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn" title="Insérer audio">🎵</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="left" title="Média à gauche">↤</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="center" title="Média centré">↔</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="right" title="Média à droite">↦</button>
+          </div>
+              <div class="rich-tool-sep" aria-hidden="true"></div>
+              <div class="rich-tool-group">
+                <label class="tool-inline" title="Couleur texte">
+                  <input id="rich-color" type="color" value="#f2f2ee" />
+                </label>
+                <label class="tool-inline" title="Taille texte">
+                  <select id="rich-size">
+                    <option value="14">14</option>
+                    <option value="16" selected>16</option>
+                    <option value="18">18</option>
+                    <option value="20">20</option>
+                    <option value="24">24</option>
+                    <option value="28">28</option>
+                  </select>
+                </label>
+              </div>
+	              <div class="rich-tool-sep" aria-hidden="true"></div>
+	              <div class="rich-tool-group">
+	                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="undo" title="Annuler">&#8630;</button>
+	                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="redo" title="Rétablir">&#8631;</button>
+	                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="removeFormat" title="Effacer format">Tx</button>
+	              </div>
+	            </div>
+	          </div>
           <div id="rich-editor" class="rich-editor" contenteditable="true"></div>
           <textarea id="review-body-html" name="bodyHtml" class="hidden"></textarea>
         </div>

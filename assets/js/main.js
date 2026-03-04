@@ -15,9 +15,11 @@ const formTitle = document.getElementById("form-title");
 const addBtn = document.getElementById("new-review");
 const cancelBtn = document.getElementById("cancel-form");
 const blocksList = document.getElementById("blocks-list");
-const addBlockButtons = document.querySelectorAll("[data-add-block]");
+const addBlockBtn = document.getElementById("add-block-btn");
 const previewBox = document.getElementById("review-preview");
 const filterButtonsHost = document.querySelector(".filters");
+const reviewsSortSelect = document.getElementById("reviews-sort");
+const reviewsUserFilterSelect = document.getElementById("reviews-user-filter");
 
 const topList = document.getElementById("tops-manager-list");
 const topForm = document.getElementById("top-form");
@@ -39,6 +41,7 @@ const toolColorApply = document.getElementById("tool-color-apply");
 const toolSize = document.getElementById("tool-size");
 const toolSizeApply = document.getElementById("tool-size-apply");
 const wrapToolButtons = document.querySelectorAll("[data-wrap-tag]");
+const blockActionButtons = document.querySelectorAll("[data-block-action]");
 const contentModeButtons = document.querySelectorAll("[data-content-mode]");
 const blocksEditorSection = document.getElementById("blocks-editor-section");
 const richEditorSection = document.getElementById("rich-editor-section");
@@ -52,6 +55,8 @@ const richVideoBtn = document.getElementById("rich-video-btn");
 const richAudioBtn = document.getElementById("rich-audio-btn");
 const richColsBtn = document.getElementById("rich-cols-btn");
 const richSpoilerBtn = document.getElementById("rich-spoiler-btn");
+const richColor = document.getElementById("rich-color");
+const richSize = document.getElementById("rich-size");
 const reviewBodyHtml = document.getElementById("review-body-html");
 const metaAuthorRow = document.getElementById("meta-author-row");
 const metaDirectorRow = document.getElementById("meta-director-row");
@@ -64,6 +69,8 @@ const DEFAULT_COVER =
   );
 
 let selectedFilter = "all";
+let selectedSort = "date-desc";
+let selectedUserFilter = "all";
 let editingId = null;
 let editingTopId = null;
 let cachedReviews = [];
@@ -72,6 +79,8 @@ let editingAccent = "";
 let currentContentMode = "blocks";
 let currentUser = null;
 const ADMIN_USERNAME = "admin";
+let selectedRichMediaWrapper = null;
+let richMediaResizeState = null;
 
 function isAdminUser(user) {
   return String(user?.username || "").trim().toLowerCase() === ADMIN_USERNAME;
@@ -95,15 +104,58 @@ function ownerBadge(username) {
   return `<span class="owner-badge"><span>${escapeHtml(username)}</span></span>`;
 }
 
+function normalizeUsernameValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 function renderRichText(text) {
   let html = escapeHtml(text);
+  const codeBlocks = [];
+  html = html.replace(/\[code\]([\s\S]*?)\[\/code\]/gi, (_, code) => {
+    const token = `__CODE_BLOCK_${codeBlocks.length}__`;
+    codeBlocks.push(`<pre class="forum-code"><code>${code}</code></pre>`);
+    return token;
+  });
   html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
   html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
   html = html.replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<span class="u-text">$1</span>');
+  html = html.replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<span style="text-decoration:line-through">$1</span>');
+  html = html.replace(/\[quote\]([\s\S]*?)\[\/quote\]/gi, '<blockquote class="forum-quote">$1</blockquote>');
+  html = html.replace(/\[left\]([\s\S]*?)\[\/left\]/gi, '<div style="text-align:left">$1</div>');
+  html = html.replace(/\[center\]([\s\S]*?)\[\/center\]/gi, '<div style="text-align:center">$1</div>');
+  html = html.replace(/\[right\]([\s\S]*?)\[\/right\]/gi, '<div style="text-align:right">$1</div>');
   html = html.replace(/\[color=(#[0-9a-f]{3,8})\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
   html = html.replace(/\[size=(\d{1,2})\]([\s\S]*?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>');
+  html = html.replace(
+    /\[url=(https?:\/\/[^\]\s]+)\]([\s\S]*?)\[\/url\]/gi,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>'
+  );
+  html = html.replace(
+    /\[url\](https?:\/\/[^\[]+)\[\/url\]/gi,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+  html = html.replace(/\[img\](https?:\/\/[^\[]+)\[\/img\]/gi, '<img src="$1" alt="image" />');
+  html = html.replace(/\[hr\]/gi, "<hr>");
+  html = html.replace(/\[list\]([\s\S]*?)\[\/list\]/gi, (_, inner) => {
+    const items = String(inner || "")
+      .split(/\[\*\]/i)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return items.length ? `<ul>${items.map((item) => `<li>${item}</li>`).join("")}</ul>` : "";
+  });
+  html = html.replace(/\[list=1\]([\s\S]*?)\[\/list\]/gi, (_, inner) => {
+    const items = String(inner || "")
+      .split(/\[\*\]/i)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return items.length ? `<ol>${items.map((item) => `<li>${item}</li>`).join("")}</ol>` : "";
+  });
   html = html.replace(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, '<button class="spoiler-text" type="button">$1</button>');
-  return html.replace(/\n/g, "<br>");
+  html = html.replace(/\n/g, "<br>");
+  codeBlocks.forEach((block, idx) => {
+    html = html.replace(`__CODE_BLOCK_${idx}__`, block);
+  });
+  return html;
 }
 
 function bindSpoilers(root) {
@@ -258,6 +310,171 @@ function getBlockFieldsHtml(type, block) {
   `;
 }
 
+function insertAtSelection(text) {
+  if (!activeTextArea) return;
+  const start = activeTextArea.selectionStart ?? 0;
+  const end = activeTextArea.selectionEnd ?? 0;
+  const value = activeTextArea.value;
+  activeTextArea.value = `${value.slice(0, start)}${text}${value.slice(end)}`;
+  activeTextArea.focus();
+  const cursor = start + text.length;
+  activeTextArea.selectionStart = cursor;
+  activeTextArea.selectionEnd = cursor;
+  activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function wrapLinesAsList(ordered = false) {
+  if (!activeTextArea) return;
+  const start = activeTextArea.selectionStart ?? 0;
+  const end = activeTextArea.selectionEnd ?? 0;
+  const value = activeTextArea.value;
+  const selected = value.slice(start, end).trim();
+  if (!selected) {
+    const tag = ordered ? "[list=1]\n[*]Item 1\n[*]Item 2\n[/list]" : "[list]\n[*]Item 1\n[*]Item 2\n[/list]";
+    insertAtSelection(tag);
+    return;
+  }
+  const items = selected
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `[*]${line}`)
+    .join("\n");
+  const open = ordered ? "[list=1]" : "[list]";
+  const wrapped = `${open}\n${items}\n[/list]`;
+  activeTextArea.value = `${value.slice(0, start)}${wrapped}${value.slice(end)}`;
+  activeTextArea.focus();
+  activeTextArea.selectionStart = start;
+  activeTextArea.selectionEnd = start + wrapped.length;
+  activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function applyBlockAction(action) {
+  if (!action) return;
+  if (action === "quote") return wrapSelection("[quote]\n", "\n[/quote]");
+  if (action === "code") return wrapSelection("[code]\n", "\n[/code]");
+  if (action === "strike") return wrapSelection("[s]", "[/s]");
+  if (action === "left") return wrapSelection("[left]", "[/left]");
+  if (action === "center") return wrapSelection("[center]", "[/center]");
+  if (action === "right") return wrapSelection("[right]", "[/right]");
+  if (action === "hr") return insertAtSelection("\n[hr]\n");
+  if (action === "undo") {
+    if (!activeTextArea) return;
+    activeTextArea.focus();
+    document.execCommand("undo");
+    activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+    return;
+  }
+  if (action === "redo") {
+    if (!activeTextArea) return;
+    activeTextArea.focus();
+    document.execCommand("redo");
+    activeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+    return;
+  }
+  if (action === "ul") return wrapLinesAsList(false);
+  if (action === "ol") return wrapLinesAsList(true);
+  if (action === "url") {
+    const url = window.prompt("URL du lien");
+    if (!url) return;
+    if (!activeTextArea) return;
+    const start = activeTextArea.selectionStart ?? 0;
+    const end = activeTextArea.selectionEnd ?? 0;
+    const selected = activeTextArea.value.slice(start, end).trim();
+    const bb = selected ? `[url=${url.trim()}]${selected}[/url]` : `[url]${url.trim()}[/url]`;
+    return insertAtSelection(bb);
+  }
+  if (action === "img") {
+    const url = window.prompt("URL de l'image");
+    if (!url) return;
+    return insertAtSelection(`[img]${url.trim()}[/img]`);
+  }
+}
+
+function applyRichTextColor(color) {
+  if (!richEditor || !color) return;
+  richEditor.focus();
+  const selection = window.getSelection();
+  const selected = selection ? String(selection.toString() || "").trim() : "";
+  if (selected) {
+    document.execCommand("styleWithCSS", false, true);
+    document.execCommand("foreColor", false, color);
+  } else {
+    document.execCommand("insertHTML", false, `<span style="color:${escapeHtml(color)}">Texte</span>`);
+  }
+  renderPreview();
+}
+
+function applyRichTextSize(px) {
+  if (!richEditor || !px) return;
+  const size = Math.max(10, Math.min(72, Number(px) || 16));
+  richEditor.focus();
+  const selection = window.getSelection();
+  const selected = selection ? String(selection.toString() || "").trim() : "";
+  if (selected) {
+    document.execCommand("insertHTML", false, `<span style="font-size:${size}px">${escapeHtml(selected)}</span>`);
+  } else {
+    document.execCommand("insertHTML", false, `<span style="font-size:${size}px">Texte</span>`);
+  }
+  renderPreview();
+}
+
+function placeRichCaretAtPoint(clientX, clientY) {
+  if (!richEditor) return false;
+  const selection = window.getSelection();
+  if (!selection) return false;
+  let range = null;
+
+  if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(clientX, clientY);
+    if (pos && pos.offsetNode) {
+      range = document.createRange();
+      range.setStart(pos.offsetNode, pos.offset);
+      range.collapse(true);
+    }
+  } else if (document.caretRangeFromPoint) {
+    range = document.caretRangeFromPoint(clientX, clientY);
+    if (range) range.collapse(true);
+  }
+
+  if (!range) {
+    const node = document.elementFromPoint(clientX, clientY);
+    if (node && richEditor.contains(node)) {
+      range = document.createRange();
+      const target = node.nodeType === Node.TEXT_NODE ? node : node.lastChild || node;
+      if (target.nodeType === Node.TEXT_NODE) {
+        const len = target.textContent?.length || 0;
+        range.setStart(target, len);
+      } else {
+        range.selectNodeContents(target);
+        range.collapse(false);
+      }
+    } else {
+      range = document.createRange();
+      range.selectNodeContents(richEditor);
+      range.collapse(false);
+    }
+  }
+
+  if (!richEditor.contains(range.startContainer) && range.startContainer !== richEditor) return false;
+
+  selection.removeAllRanges();
+  selection.addRange(range);
+  richEditor.focus();
+  return true;
+}
+
+function shouldIgnoreRichCaretPlacement(target) {
+  return target instanceof HTMLElement && Boolean(target.closest("img,video,audio,iframe,.video-wrap,.rich-media-resize-handle"));
+}
+
+function scheduleRichCaretPlacement(clientX, clientY) {
+  const run = () => placeRichCaretAtPoint(clientX, clientY);
+  run();
+  requestAnimationFrame(run);
+  setTimeout(run, 0);
+}
+
 function readBlocks() {
   if (!blocksList) return [];
   return [...blocksList.querySelectorAll(".block-item")]
@@ -317,7 +534,7 @@ function renderPreview() {
       flow.appendChild(empty);
     } else {
       const node = document.createElement("div");
-      node.className = "preview-block rich-preview";
+      node.className = "rich-preview media-render rich-content";
       node.innerHTML = html;
       bindSpoilers(node);
       flow.appendChild(node);
@@ -356,7 +573,13 @@ function renderPreview() {
 }
 
 function getRichHtml() {
-  const html = richEditor?.innerHTML || reviewBodyHtml?.value || "";
+  if (richEditor) {
+    const clone = richEditor.cloneNode(true);
+    clone.querySelectorAll(".rich-media-resize-handle").forEach((node) => node.remove());
+    clone.querySelectorAll(".rich-media-selected").forEach((node) => node.classList.remove("rich-media-selected"));
+    return String(clone.innerHTML || "").trim();
+  }
+  const html = reviewBodyHtml?.value || "";
   return String(html || "").trim();
 }
 
@@ -386,6 +609,7 @@ function setContentMode(mode) {
 }
 
 function getSelectedMediaWrapper() {
+  if (selectedRichMediaWrapper && richEditor?.contains(selectedRichMediaWrapper)) return selectedRichMediaWrapper;
   if (!richEditor) return null;
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) return null;
@@ -394,29 +618,244 @@ function getSelectedMediaWrapper() {
   if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
   if (!(node instanceof HTMLElement)) return null;
   if (!richEditor.contains(node)) return null;
+  return getMediaWrapperFromNode(node);
+}
 
-  const media = node.closest("img,video,audio,iframe");
-  if (!media) return null;
-  return media.closest("figure,.video-wrap") || media;
+function getMediaWrapperFromNode(node) {
+  if (!(node instanceof HTMLElement)) return null;
+  if (!richEditor || !richEditor.contains(node)) return null;
+  const mediaFromNode = node.closest("img,video,audio,iframe");
+  const media = mediaFromNode instanceof HTMLElement && richEditor.contains(mediaFromNode) ? mediaFromNode : null;
+  if (media instanceof HTMLElement && richEditor.contains(media)) {
+    const tag = media.tagName.toLowerCase();
+    const shell = media.closest(".rich-media-shell");
+    if (shell instanceof HTMLElement && richEditor.contains(shell)) return shell;
+    if (tag === "iframe") {
+      const wrap = media.closest(".video-wrap");
+      if (wrap instanceof HTMLElement && richEditor.contains(wrap)) return wrap;
+    }
+    // For image/video/audio always use a dedicated shell to avoid selecting
+    // a larger block container (figure/p/div) that can include wrapped empty space.
+    return ensureRichMediaShell(media);
+  }
+  const explicitWrap = node.closest(".video-wrap,.rich-media-shell");
+  if (explicitWrap instanceof HTMLElement && richEditor.contains(explicitWrap)) return explicitWrap;
+  const figure = node.closest("figure");
+  if (figure instanceof HTMLElement && richEditor.contains(figure)) {
+    const mediaInFigure = figure.querySelectorAll("img,video,audio,iframe").length;
+    if (mediaInFigure === 1) return figure;
+  }
+  return null;
+}
+
+function ensureRichMediaShell(media) {
+  if (!(media instanceof HTMLElement)) return null;
+  if (!richEditor || !richEditor.contains(media)) return null;
+  const parent = media.parentElement;
+  if (parent?.classList.contains("rich-media-shell")) return parent;
+  const shell = document.createElement("span");
+  shell.className = "rich-media-shell";
+  shell.style.display = "block";
+  media.parentNode?.insertBefore(shell, media);
+  shell.appendChild(media);
+  migrateMediaPresentationToShell(media, shell);
+  return shell;
+}
+
+function migrateMediaPresentationToShell(media, shell) {
+  if (!(media instanceof HTMLElement) || !(shell instanceof HTMLElement)) return;
+  const figure = shell.closest("figure");
+  if (!(figure instanceof HTMLElement) || !figure.contains(media)) return;
+  const isSingleMediaFigure = figure.querySelectorAll("img,video,audio,iframe").length === 1;
+  if (!isSingleMediaFigure) return;
+
+  const clsToMove = [
+    "rich-media-size-small",
+    "rich-media-size-medium",
+    "rich-media-size-large",
+    "rich-media-float-left",
+    "rich-media-float-right",
+    "rich-media-center"
+  ];
+  clsToMove.forEach((cls) => {
+    if (figure.classList.contains(cls)) {
+      shell.classList.add(cls);
+      figure.classList.remove(cls);
+    }
+  });
+
+  if (!shell.style.width && figure.style.width) shell.style.width = figure.style.width;
+  if (!shell.style.maxWidth && figure.style.maxWidth) shell.style.maxWidth = figure.style.maxWidth;
+  if (!shell.style.display && figure.style.display) shell.style.display = figure.style.display;
+  figure.style.width = "";
+  figure.style.maxWidth = "";
+  figure.style.display = "";
+}
+
+function getWrapperMediaElement(wrapper) {
+  if (!(wrapper instanceof HTMLElement)) return null;
+  const tag = wrapper.tagName.toLowerCase();
+  if (tag === "img" || tag === "video" || tag === "audio" || tag === "iframe") return wrapper;
+  const direct = [...wrapper.children].find((child) => {
+    const childTag = child.tagName?.toLowerCase?.() || "";
+    return childTag === "img" || childTag === "video" || childTag === "audio" || childTag === "iframe";
+  });
+  if (direct instanceof HTMLElement) return direct;
+  const nested = wrapper.querySelector("img,video,audio,iframe");
+  return nested instanceof HTMLElement ? nested : null;
+}
+
+function ensureMediaFillsWrapper(wrapper) {
+  const media = getWrapperMediaElement(wrapper);
+  if (!media || media === wrapper) return;
+  const tag = media.tagName.toLowerCase();
+  if (tag === "img" || tag === "video") {
+    media.style.width = "100%";
+    media.style.height = "auto";
+    media.style.maxWidth = "none";
+    return;
+  }
+  if (tag === "audio") {
+    media.style.width = "100%";
+    return;
+  }
+  if (tag === "iframe") {
+    media.style.width = "100%";
+    media.style.maxWidth = "none";
+  }
+}
+
+function clearSelectedMedia() {
+  if (!selectedRichMediaWrapper) return;
+  selectedRichMediaWrapper.classList.remove("rich-media-selected");
+  [...selectedRichMediaWrapper.children].forEach((child) => {
+    if (child.classList?.contains("rich-media-resize-handle")) child.remove();
+  });
+  selectedRichMediaWrapper = null;
+}
+
+function ensureResizeHandle(wrapper) {
+  if (!wrapper || !(wrapper instanceof HTMLElement)) return;
+  let handle = null;
+  [...wrapper.children].forEach((child) => {
+    if (child.classList?.contains("rich-media-resize-handle")) handle = child;
+  });
+  if (handle) return;
+  handle = document.createElement("button");
+  handle.type = "button";
+  handle.className = "rich-media-resize-handle";
+  handle.setAttribute("aria-label", "Redimensionner le média");
+  handle.addEventListener("mousedown", (event) => event.preventDefault());
+  handle.addEventListener("pointerdown", startMediaResize);
+  wrapper.appendChild(handle);
+  positionResizeHandle(wrapper, handle);
+}
+
+function positionResizeHandle(wrapper, explicitHandle = null) {
+  if (!(wrapper instanceof HTMLElement)) return;
+  const handle =
+    explicitHandle ||
+    [...wrapper.children].find((child) => child.classList?.contains("rich-media-resize-handle"));
+  if (!(handle instanceof HTMLElement)) return;
+
+  const media = getWrapperMediaElement(wrapper);
+  if (media && media !== wrapper) {
+    const left = media.offsetLeft + media.offsetWidth - 7;
+    const top = media.offsetTop + media.offsetHeight - 7;
+    handle.style.left = `${Math.max(0, left)}px`;
+    handle.style.top = `${Math.max(0, top)}px`;
+    handle.style.right = "auto";
+    handle.style.bottom = "auto";
+    return;
+  }
+
+  handle.style.left = "auto";
+  handle.style.top = "auto";
+  handle.style.right = "-7px";
+  handle.style.bottom = "-7px";
+}
+
+function selectMedia(wrapper) {
+  if (!wrapper || !richEditor?.contains(wrapper)) return;
+  if (selectedRichMediaWrapper && selectedRichMediaWrapper !== wrapper) {
+    selectedRichMediaWrapper.classList.remove("rich-media-selected");
+    [...selectedRichMediaWrapper.children].forEach((child) => {
+      if (child.classList?.contains("rich-media-resize-handle")) child.remove();
+    });
+  }
+  selectedRichMediaWrapper = wrapper;
+  selectedRichMediaWrapper.classList.add("rich-media-selected");
+  ensureMediaFillsWrapper(selectedRichMediaWrapper);
+  ensureResizeHandle(selectedRichMediaWrapper);
+  positionResizeHandle(selectedRichMediaWrapper);
+}
+
+function startMediaResize(event) {
+  const handle = event.currentTarget;
+  if (!(handle instanceof HTMLElement) || !richEditor) return;
+  const wrapper = handle.parentElement;
+  if (!(wrapper instanceof HTMLElement) || !richEditor.contains(wrapper)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  selectMedia(wrapper);
+  const editorRect = richEditor.getBoundingClientRect();
+  const rect = wrapper.getBoundingClientRect();
+  richMediaResizeState = {
+    wrapper,
+    startX: event.clientX,
+    startWidth: rect.width,
+    minWidth: 120,
+    maxWidth: Math.max(140, editorRect.width - 24)
+  };
+  window.addEventListener("pointermove", onMediaResizeMove);
+  window.addEventListener("pointerup", stopMediaResize);
+}
+
+function onMediaResizeMove(event) {
+  if (!richMediaResizeState) return;
+  const { wrapper, startX, startWidth, minWidth, maxWidth } = richMediaResizeState;
+  const deltaX = event.clientX - startX;
+  const nextWidth = Math.max(minWidth, Math.min(maxWidth, Math.round(startWidth + deltaX)));
+  wrapper.classList.remove("rich-media-size-small", "rich-media-size-medium", "rich-media-size-large");
+  wrapper.style.display = "block";
+  wrapper.style.width = `${nextWidth}px`;
+  wrapper.style.maxWidth = "100%";
+  ensureMediaFillsWrapper(wrapper);
+  positionResizeHandle(wrapper);
+  renderPreview();
+}
+
+function stopMediaResize() {
+  if (!richMediaResizeState) return;
+  richMediaResizeState = null;
+  window.removeEventListener("pointermove", onMediaResizeMove);
+  window.removeEventListener("pointerup", stopMediaResize);
 }
 
 function applyMediaSize(size) {
   const target = getSelectedMediaWrapper();
   if (!target) return;
+  selectMedia(target);
   target.style.display = "block";
+  target.style.width = "";
+  target.style.maxWidth = "";
   target.classList.remove("rich-media-size-small", "rich-media-size-medium", "rich-media-size-large");
   const cls = size === "small" ? "rich-media-size-small" : size === "medium" ? "rich-media-size-medium" : "rich-media-size-large";
   target.classList.add(cls);
+  ensureMediaFillsWrapper(target);
+  positionResizeHandle(target);
   renderPreview();
 }
 
 function applyMediaAlign(align) {
   const target = getSelectedMediaWrapper();
   if (!target) return;
+  selectMedia(target);
   target.style.display = "block";
   target.classList.remove("rich-media-float-left", "rich-media-float-right", "rich-media-center");
   const cls = align === "left" ? "rich-media-float-left" : align === "right" ? "rich-media-float-right" : "rich-media-center";
   target.classList.add(cls);
+  positionResizeHandle(target);
   renderPreview();
 }
 
@@ -643,6 +1082,60 @@ function readTopItems() {
     .filter((item) => item.title || item.reviewId);
 }
 
+function getReviewPublicationTimestamp(item) {
+  const updated = Number(item?.updatedAt);
+  if (Number.isFinite(updated) && updated > 0) return updated;
+  const parsed = Date.parse(String(item?.date || ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getReviewSortScore(item) {
+  return Number.isFinite(Number(item?.score)) ? Number(item.score) : null;
+}
+
+function sortReviews(items) {
+  const sorted = [...items];
+  sorted.sort((a, b) => {
+    const dateA = getReviewPublicationTimestamp(a);
+    const dateB = getReviewPublicationTimestamp(b);
+    const scoreA = getReviewSortScore(a);
+    const scoreB = getReviewSortScore(b);
+    if (selectedSort === "date-asc") return dateA - dateB;
+    if (selectedSort === "score-desc") {
+      const left = scoreA ?? Number.NEGATIVE_INFINITY;
+      const right = scoreB ?? Number.NEGATIVE_INFINITY;
+      if (left !== right) return right - left;
+      return dateB - dateA;
+    }
+    if (selectedSort === "score-asc") {
+      const left = scoreA ?? Number.POSITIVE_INFINITY;
+      const right = scoreB ?? Number.POSITIVE_INFINITY;
+      if (left !== right) return left - right;
+      return dateB - dateA;
+    }
+    return dateB - dateA;
+  });
+  return sorted;
+}
+
+function buildUserFilterOptions(reviews) {
+  if (!reviewsUserFilterSelect) return;
+  const users = [...new Set(reviews.map((r) => normalizeUsernameValue(r.ownerUsername)).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b)
+  );
+  if (selectedUserFilter !== "all" && !users.includes(selectedUserFilter)) {
+    selectedUserFilter = "all";
+  }
+  reviewsUserFilterSelect.innerHTML = `<option value="all">Tous</option>`;
+  users.forEach((username) => {
+    const option = document.createElement("option");
+    option.value = username;
+    option.textContent = username;
+    option.selected = selectedUserFilter === username;
+    reviewsUserFilterSelect.appendChild(option);
+  });
+}
+
 function buildFilterButtons(reviews) {
   if (!filterButtonsHost) return;
   const categories = [...new Set(reviews.map((r) => r.category).filter(Boolean))];
@@ -676,17 +1169,21 @@ async function renderAll() {
     return;
   }
 
-  reviews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const sortedReviews = sortReviews(reviews);
   const managerVisibleReviews = managerList
-    ? (isAdminUser(currentUser) ? reviews : reviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid))
-    : reviews;
+    ? (isAdminUser(currentUser)
+      ? sortedReviews
+      : sortedReviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid))
+    : sortedReviews;
   cachedReviews = managerVisibleReviews;
-  buildFilterButtons(reviews);
+  buildFilterButtons(sortedReviews);
+  buildUserFilterOptions(sortedReviews);
 
   if (reviewsGrid) {
     reviewsGrid.innerHTML = "";
-    reviews
+    sortedReviews
       .filter((item) => selectedFilter === "all" || item.category === selectedFilter)
+      .filter((item) => selectedUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedUserFilter)
       .forEach((item) => reviewsGrid.appendChild(reviewCard(item)));
   }
   if (managerList) {
@@ -837,14 +1334,14 @@ if (topForm) {
 
 if (addBtn) addBtn.addEventListener("click", () => openForm());
 if (cancelBtn) cancelBtn.addEventListener("click", closeForm);
-addBlockButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
+if (addBlockBtn) {
+  addBlockBtn.addEventListener("click", () => {
     if (!blocksList) return;
-    blocksList.appendChild(createBlockRow({ type: btn.dataset.addBlock || "text" }));
+    blocksList.appendChild(createBlockRow({ type: "text" }));
     updateBlockIndex();
     renderPreview();
   });
-});
+}
 if (newTopBtn) newTopBtn.addEventListener("click", () => openTopForm());
 if (cancelTopBtn) cancelTopBtn.addEventListener("click", closeTopForm);
 if (addTopItemBtn) {
@@ -862,6 +1359,9 @@ wrapToolButtons.forEach((btn) => {
     wrapSelection(`[${tag}]`, `[/${tag}]`);
   });
 });
+blockActionButtons.forEach((btn) => {
+  btn.addEventListener("click", () => applyBlockAction(btn.dataset.blockAction || ""));
+});
 if (toolColorApply) {
   toolColorApply.addEventListener("click", () => {
     wrapSelection(`[color=${toolColor?.value || "#f2f2ee"}]`, "[/color]");
@@ -873,12 +1373,67 @@ if (toolSizeApply) {
   });
 }
 
+if (reviewsSortSelect) {
+  reviewsSortSelect.value = selectedSort;
+  reviewsSortSelect.addEventListener("change", async () => {
+    selectedSort = reviewsSortSelect.value || "date-desc";
+    await renderAll();
+  });
+}
+
+if (reviewsUserFilterSelect) {
+  reviewsUserFilterSelect.addEventListener("change", async () => {
+    selectedUserFilter = reviewsUserFilterSelect.value || "all";
+    await renderAll();
+  });
+}
+
 contentModeButtons.forEach((btn) => {
   btn.addEventListener("click", () => setContentMode(btn.dataset.contentMode || "blocks"));
 });
 
 if (richEditor) {
+  richEditor.addEventListener(
+    "dblclick",
+    (event) => {
+      if (shouldIgnoreRichCaretPlacement(event.target)) return;
+      event.preventDefault();
+      scheduleRichCaretPlacement(event.clientX, event.clientY);
+    },
+    true
+  );
+  richEditor.addEventListener(
+    "mousedown",
+    (event) => {
+      if (event.detail !== 2) return;
+      if (shouldIgnoreRichCaretPlacement(event.target)) return;
+      event.preventDefault();
+      scheduleRichCaretPlacement(event.clientX, event.clientY);
+    },
+    true
+  );
+  richEditor.addEventListener(
+    "mouseup",
+    (event) => {
+      if (event.detail !== 2) return;
+      if (shouldIgnoreRichCaretPlacement(event.target)) return;
+      event.preventDefault();
+      scheduleRichCaretPlacement(event.clientX, event.clientY);
+    },
+    true
+  );
+  richEditor.addEventListener("mousedown", (event) => {
+    const target = getMediaWrapperFromNode(event.target);
+    if (target) {
+      selectMedia(target);
+      return;
+    }
+    clearSelectedMedia();
+  });
   richEditor.addEventListener("input", () => {
+    if (selectedRichMediaWrapper && !richEditor.contains(selectedRichMediaWrapper)) {
+      selectedRichMediaWrapper = null;
+    }
     if (reviewBodyHtml) reviewBodyHtml.value = richEditor.innerHTML;
     renderPreview();
   });
@@ -889,10 +1444,21 @@ richCmdButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     if (!richEditor) return;
     richEditor.focus();
-    document.execCommand(btn.dataset.richCmd || "", false, null);
+    document.execCommand(btn.dataset.richCmd || "", false, btn.dataset.richValue || null);
     renderPreview();
   });
 });
+
+if (richColor) {
+  const apply = () => applyRichTextColor(richColor.value || "#f2f2ee");
+  richColor.addEventListener("input", apply);
+  richColor.addEventListener("change", apply);
+}
+
+if (richSize) {
+  const apply = () => applyRichTextSize(richSize.value || "16");
+  richSize.addEventListener("change", apply);
+}
 
 if (richSpoilerBtn) {
   richSpoilerBtn.addEventListener("mousedown", (event) => event.preventDefault());

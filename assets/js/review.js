@@ -85,13 +85,52 @@ function renderDetails(item) {
 
 function renderRichText(text) {
   let html = escapeHtml(text);
+  const codeBlocks = [];
+  html = html.replace(/\[code\]([\s\S]*?)\[\/code\]/gi, (_, code) => {
+    const token = `__CODE_BLOCK_${codeBlocks.length}__`;
+    codeBlocks.push(`<pre class="forum-code"><code>${code}</code></pre>`);
+    return token;
+  });
   html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
   html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
   html = html.replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<span class="u-text">$1</span>');
+  html = html.replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<span style="text-decoration:line-through">$1</span>');
+  html = html.replace(/\[quote\]([\s\S]*?)\[\/quote\]/gi, '<blockquote class="forum-quote">$1</blockquote>');
+  html = html.replace(/\[left\]([\s\S]*?)\[\/left\]/gi, '<div style="text-align:left">$1</div>');
+  html = html.replace(/\[center\]([\s\S]*?)\[\/center\]/gi, '<div style="text-align:center">$1</div>');
+  html = html.replace(/\[right\]([\s\S]*?)\[\/right\]/gi, '<div style="text-align:right">$1</div>');
   html = html.replace(/\[color=(#[0-9a-f]{3,8})\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
   html = html.replace(/\[size=(\d{1,2})\]([\s\S]*?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>');
+  html = html.replace(
+    /\[url=(https?:\/\/[^\]\s]+)\]([\s\S]*?)\[\/url\]/gi,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>'
+  );
+  html = html.replace(
+    /\[url\](https?:\/\/[^\[]+)\[\/url\]/gi,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+  html = html.replace(/\[img\](https?:\/\/[^\[]+)\[\/img\]/gi, '<img src="$1" alt="image" />');
+  html = html.replace(/\[hr\]/gi, "<hr>");
+  html = html.replace(/\[list\]([\s\S]*?)\[\/list\]/gi, (_, inner) => {
+    const items = String(inner || "")
+      .split(/\[\*\]/i)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return items.length ? `<ul>${items.map((item) => `<li>${item}</li>`).join("")}</ul>` : "";
+  });
+  html = html.replace(/\[list=1\]([\s\S]*?)\[\/list\]/gi, (_, inner) => {
+    const items = String(inner || "")
+      .split(/\[\*\]/i)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return items.length ? `<ol>${items.map((item) => `<li>${item}</li>`).join("")}</ol>` : "";
+  });
   html = html.replace(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, '<button class="spoiler-text" type="button">$1</button>');
-  return html.replace(/\n/g, "<br>");
+  html = html.replace(/\n/g, "<br>");
+  codeBlocks.forEach((block, idx) => {
+    html = html.replace(`__CODE_BLOCK_${idx}__`, block);
+  });
+  return html;
 }
 
 function bindSpoilers(root) {
@@ -189,10 +228,12 @@ async function loadReview() {
 
   content.innerHTML = "";
   if ((item.contentMode === "rich" || item.bodyHtml) && String(item.bodyHtml || "").trim()) {
+    content.classList.add("rich-content");
     content.innerHTML = item.bodyHtml;
     bindSpoilers(content);
     return;
   }
+  content.classList.remove("rich-content");
 
   const blocks = Array.isArray(item.blocks) ? item.blocks : [];
   if (!blocks.length) {

@@ -1,4 +1,5 @@
-﻿const topsGrid = document.getElementById("tops-grid");
+const topsGrid = document.getElementById("tops-grid");
+const topsSortSelect = document.getElementById("tops-sort");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const DEFAULT_COVER =
@@ -6,6 +7,8 @@ const DEFAULT_COVER =
   encodeURIComponent(
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>"
   );
+
+let selectedTopSort = "date-desc";
 
 if (menuToggle && menu) {
   menuToggle.addEventListener("click", () => {
@@ -60,14 +63,55 @@ function topCard(item) {
   return article;
 }
 
+function getTopPublicationTimestamp(item) {
+  const updated = Number(item?.updatedAt);
+  return Number.isFinite(updated) && updated > 0 ? updated : 0;
+}
+
+function getTopAverageScore(item, reviewMap) {
+  const scores = (item.items || [])
+    .map((topItem) => (topItem?.reviewId ? reviewMap.get(topItem.reviewId) : null))
+    .map((review) => (Number.isFinite(Number(review?.score)) ? Number(review.score) : null))
+    .filter((score) => score !== null);
+  if (!scores.length) return null;
+  const total = scores.reduce((sum, score) => sum + score, 0);
+  return total / scores.length;
+}
+
+function sortTops(items, reviewMap) {
+  const sorted = [...items];
+  sorted.sort((a, b) => {
+    const dateA = getTopPublicationTimestamp(a);
+    const dateB = getTopPublicationTimestamp(b);
+    const scoreA = getTopAverageScore(a, reviewMap);
+    const scoreB = getTopAverageScore(b, reviewMap);
+    if (selectedTopSort === "date-asc") return dateA - dateB;
+    if (selectedTopSort === "score-desc") {
+      const left = scoreA ?? Number.NEGATIVE_INFINITY;
+      const right = scoreB ?? Number.NEGATIVE_INFINITY;
+      if (left !== right) return right - left;
+      return dateB - dateA;
+    }
+    if (selectedTopSort === "score-asc") {
+      const left = scoreA ?? Number.POSITIVE_INFINITY;
+      const right = scoreB ?? Number.POSITIVE_INFINITY;
+      if (left !== right) return left - right;
+      return dateB - dateA;
+    }
+    return dateB - dateA;
+  });
+  return sorted;
+}
+
 async function renderTops() {
   if (!topsGrid) return;
   try {
     const [tops, reviews] = await Promise.all([window.ReviewsStore.getAllTops(), window.ReviewsStore.getAll()]);
     const reviewMap = new Map(reviews.map((r) => [r.id, r]));
+    const sortedTops = sortTops(tops, reviewMap);
 
     topsGrid.innerHTML = "";
-    tops.forEach((item) => {
+    sortedTops.forEach((item) => {
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
         const first = item.items[0];
         const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;
@@ -78,6 +122,14 @@ async function renderTops() {
   } catch (error) {
     window.alert(`Impossible de charger les tops : ${error.message}`);
   }
+}
+
+if (topsSortSelect) {
+  topsSortSelect.value = selectedTopSort;
+  topsSortSelect.addEventListener("change", async () => {
+    selectedTopSort = topsSortSelect.value || "date-desc";
+    await renderTops();
+  });
 }
 
 renderTops();

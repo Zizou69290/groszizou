@@ -31,6 +31,17 @@
     <section class="container reviews-section">
       <div class="section-head">
         <h2>Tous les tops</h2>
+        <div class="listing-selects">
+          <label class="select-inline" for="tops-sort">
+            Tri
+            <select id="tops-sort">
+              <option value="date-desc">Publication: plus récent</option>
+              <option value="date-asc">Publication: plus ancien</option>
+              <option value="score-desc">Note moyenne: meilleure</option>
+              <option value="score-asc">Note moyenne: moins bonne</option>
+            </select>
+          </label>
+        </div>
       </div>
       <div id="tops-grid" class="reviews-grid"></div>
     </section>
