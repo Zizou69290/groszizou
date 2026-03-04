@@ -146,6 +146,7 @@ window.ReviewsStore = (() => {
       studio: review.studio || "",
       releaseYear: review.releaseYear || "",
       genre: review.genre || "",
+      bgMusic: review.bgMusic || "",
       ownerId: review.ownerId || "",
       ownerUsername: review.ownerUsername || "",
       contentMode: review.contentMode || (review.bodyHtml ? "rich" : "blocks"),

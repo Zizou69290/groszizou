@@ -25,7 +25,12 @@ const content = document.getElementById("review-content");
 const articleHero = document.querySelector(".article-hero-covered");
 const linkActions = document.getElementById("review-link-actions");
 const editLink = document.getElementById("review-edit-link");
+const audioControls = document.getElementById("review-audio-controls");
+const audioToggleBtn = document.getElementById("review-audio-toggle");
+const audioProgressInput = document.getElementById("review-audio-progress");
+const audioVolumeInput = document.getElementById("review-audio-volume");
 let loadedReview = null;
+let backgroundAudio = null;
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -189,11 +194,22 @@ function bindSpoilers(root) {
 function normalizeYouTubeEmbed(url) {
   try {
     const u = new URL(url);
-    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
-      return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
-    }
-    if (u.hostname.includes("youtu.be")) {
-      return `https://www.youtube.com/embed/${u.pathname.replace("/", "")}`;
+    const host = String(u.hostname || "").toLowerCase();
+    const path = String(u.pathname || "");
+    if (host.includes("youtube.com") || host.includes("youtu.be")) {
+      if (u.searchParams.get("v")) {
+        return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
+      }
+      if (host.includes("youtu.be")) {
+        return `https://www.youtube.com/embed/${path.replace("/", "")}`;
+      }
+      if (path.startsWith("/shorts/")) {
+        const id = path.split("/")[2] || "";
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+      if (path.startsWith("/embed/")) {
+        return `https://www.youtube.com/embed/${path.split("/")[2] || ""}`;
+      }
     }
   } catch {
     return url;
@@ -234,7 +250,14 @@ function renderBlock(block) {
     wrapper.innerHTML = `${left}${right}`;
     return wrapper.innerHTML ? wrapper : null;
   }
-  if (block.type === "video") wrapper.innerHTML = `<video controls src="${block.url}"></video>`;
+  if (block.type === "video") {
+    const embedUrl = normalizeYouTubeEmbed(block.url || "");
+    if (embedUrl.includes("youtube.com/embed/")) {
+      wrapper.innerHTML = `<div class="video-wrap"><iframe src="${embedUrl}" title="video" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+    } else {
+      wrapper.innerHTML = `<video controls src="${block.url}"></video>`;
+    }
+  }
   if (block.type === "video-embed") {
     const embedUrl = normalizeYouTubeEmbed(block.url || "");
     wrapper.innerHTML = `<div class="video-wrap"><iframe src="${embedUrl}" title="video" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
@@ -247,6 +270,90 @@ function renderBlock(block) {
     wrapper.appendChild(cap);
   }
   return wrapper.innerHTML ? wrapper : null;
+}
+
+function teardownBackgroundAudio() {
+  if (backgroundAudio) {
+    backgroundAudio.pause();
+    backgroundAudio.src = "";
+    backgroundAudio = null;
+  }
+}
+
+function setupBackgroundAudio(item) {
+  if (!audioControls || !audioToggleBtn || !audioVolumeInput || !audioProgressInput) return;
+  teardownBackgroundAudio();
+
+  const rawUrl = String(item?.bgMusic || "").trim();
+  if (!rawUrl) {
+    audioControls.classList.add("hidden");
+    return;
+  }
+
+  const audio = new Audio(rawUrl);
+  audio.preload = "auto";
+  audio.loop = true;
+  audio.volume = Math.max(0, Math.min(1, Number(audioVolumeInput.value || 45) / 100));
+  backgroundAudio = audio;
+  let seeking = false;
+
+  const syncToggle = () => {
+    audioToggleBtn.textContent = audio.paused ? "\u25B6" : "\u275A\u275A";
+    audioToggleBtn.title = audio.paused ? "Lecture" : "Pause";
+  };
+
+  const tryAutoPlay = async () => {
+    try {
+      await audio.play();
+    } catch {
+      // Autoplay can be blocked by browser policy until user interaction.
+    }
+    syncToggle();
+  };
+
+  audioControls.classList.remove("hidden");
+  audioToggleBtn.onclick = async () => {
+    if (audio.paused) {
+      try {
+        await audio.play();
+      } catch {
+        // Ignore and keep current UI state.
+      }
+    } else {
+      audio.pause();
+    }
+    syncToggle();
+  };
+  audioVolumeInput.oninput = () => {
+    audio.volume = Math.max(0, Math.min(1, Number(audioVolumeInput.value || 45) / 100));
+  };
+  audioProgressInput.value = "0";
+  audioProgressInput.oninput = () => {
+    seeking = true;
+  };
+  audioProgressInput.onchange = () => {
+    if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+      seeking = false;
+      return;
+    }
+    const ratio = Math.max(0, Math.min(100, Number(audioProgressInput.value || 0))) / 100;
+    audio.currentTime = ratio * audio.duration;
+    seeking = false;
+  };
+
+  audio.addEventListener("play", syncToggle);
+  audio.addEventListener("pause", syncToggle);
+  audio.addEventListener("timeupdate", () => {
+    if (seeking) return;
+    if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+    const ratio = (audio.currentTime / audio.duration) * 100;
+    audioProgressInput.value = String(Math.max(0, Math.min(100, ratio)));
+  });
+  audio.addEventListener("ended", () => {
+    audioProgressInput.value = "0";
+  });
+  syncToggle();
+  tryAutoPlay();
 }
 
 async function loadReview() {
@@ -271,6 +378,7 @@ async function loadReview() {
   date.innerHTML = `Publié le ${fmtDate(item.date)}${item.ownerUsername ? ` · ${ownerBadge(item.ownerUsername)}` : ""}`;
   score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
   if (coverBg) coverBg.src = item.cover || DEFAULT_COVER;
+  setupBackgroundAudio(item);
   renderDetails(item);
   renderQuickActions(item);
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");

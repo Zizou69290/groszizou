@@ -744,8 +744,19 @@ function setRichHtml(html) {
 function normalizeYouTubeEmbed(url) {
   try {
     const u = new URL(url);
-    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
-    if (u.hostname.includes("youtu.be")) return `https://www.youtube.com/embed/${u.pathname.replace("/", "")}`;
+    const host = String(u.hostname || "").toLowerCase();
+    const path = String(u.pathname || "");
+    if (host.includes("youtube.com") || host.includes("youtu.be")) {
+      if (u.searchParams.get("v")) return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
+      if (host.includes("youtu.be")) return `https://www.youtube.com/embed/${path.replace("/", "")}`;
+      if (path.startsWith("/shorts/")) {
+        const id = path.split("/")[2] || "";
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+      if (path.startsWith("/embed/")) {
+        return `https://www.youtube.com/embed/${path.split("/")[2] || ""}`;
+      }
+    }
   } catch {
     return url;
   }
@@ -1076,7 +1087,6 @@ function createBlockRow(block = { type: "text", content: "", url: "", caption: "
         <option value="image-text-right">Texte gauche + Image droite</option>
         <option value="two-images">2 images côte à côte</option>
         <option value="video">Vidéo</option>
-        <option value="video-embed">Vidéo embed</option>
         <option value="audio">Audio</option>
       </select>
       <div class="row-actions">
@@ -1427,6 +1437,7 @@ function openForm(item = null) {
   form.elements.studio.value = item?.studio || "";
   form.elements.releaseYear.value = item?.releaseYear || "";
   form.elements.genre.value = item?.genre || "";
+  if (form.elements.bgMusic) form.elements.bgMusic.value = item?.bgMusic || "";
   fillExternalLinksInForm(item);
   configureMetaFields(form.elements.category.value || "jeu");
   setRichHtml(item?.bodyHtml || "");
@@ -1497,6 +1508,7 @@ if (form) {
       studio: selectedCategory === "jeu" ? studioValue : "",
       releaseYear: form.elements.releaseYear.value.trim(),
       genre: form.elements.genre.value.trim(),
+      bgMusic: form.elements.bgMusic?.value.trim() || "",
       externalLinks: readExternalLinksFromForm(),
       contentMode: currentContentMode,
       bodyHtml: currentContentMode === "rich" ? getRichHtml() : "",
