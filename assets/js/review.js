@@ -329,6 +329,12 @@ function setupBackgroundAudio(item) {
     return;
   }
 
+  const showControls = () => {
+    audioControls.classList.remove("hidden");
+    if (articleHero) articleHero.classList.add("has-bg-audio");
+    requestAnimationFrame(alignAudioControlsToLastInfo);
+  };
+
   const audio = new Audio(rawUrl);
   audio.preload = "auto";
   audio.loop = true;
@@ -350,9 +356,7 @@ function setupBackgroundAudio(item) {
     syncToggle();
   };
 
-  audioControls.classList.remove("hidden");
-  if (articleHero) articleHero.classList.add("has-bg-audio");
-  requestAnimationFrame(alignAudioControlsToLastInfo);
+  showControls();
   audioToggleBtn.onclick = async () => {
     if (audio.paused) {
       try {

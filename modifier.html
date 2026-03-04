@@ -61,6 +61,12 @@
             </select>
           </label>
           <label><span class="label-row"><span class="field-label-text">Date de publication</span><span class="field-hint field-required">obligatoire</span></span><input name="date" type="date" required /></label>
+          <label><span class="label-row"><span class="field-label-text">Statut</span><span class="field-hint field-required">obligatoire</span></span>
+            <select name="status" required>
+              <option value="published" selected>Publié</option>
+              <option value="draft">Brouillon</option>
+            </select>
+          </label>
           <label><span class="label-row"><span class="field-label-text">Note (/10)</span><span class="field-hint">optionnel</span></span><input name="score" type="number" min="0" max="10" step="0.1" /></label>
           <label><span class="label-row"><span class="field-label-text">Image de couverture (URL)</span><span class="field-hint">optionnel</span></span><input name="cover" type="url" /></label>
           <label><span class="label-row"><span class="field-label-text">Affiche (URL)</span><span class="field-hint">optionnel</span></span>
@@ -277,6 +283,12 @@
             </select>
           </label>
           <label>Année / période<input name="year" placeholder="2025" /></label>
+          <label>Statut <span class="field-hint field-required">obligatoire</span>
+            <select name="status" required>
+              <option value="published" selected>Publié</option>
+              <option value="draft">Brouillon</option>
+            </select>
+          </label>
           <label>Image de couverture (URL) <span class="field-hint">optionnel</span><input name="cover" type="url" /></label>
         </div>
 

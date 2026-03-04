@@ -13,6 +13,8 @@ window.ReviewsStore = (() => {
   const usersCollection = "users";
   const ADMIN_USERNAME = "admin";
   const USERNAME_RE = /^[a-z0-9._-]{3,24}$/;
+  const STATUS_PUBLISHED = "published";
+  const STATUS_DRAFT = "draft";
 
   let firebaseReady = false;
   let db;
@@ -52,6 +54,10 @@ window.ReviewsStore = (() => {
 
   function normalizeUsername(value) {
     return String(value || "").trim().toLowerCase();
+  }
+
+  function normalizeStatus(value) {
+    return String(value || "").trim().toLowerCase() === STATUS_DRAFT ? STATUS_DRAFT : STATUS_PUBLISHED;
   }
 
   function usernameToEmail(username) {
@@ -147,6 +153,7 @@ window.ReviewsStore = (() => {
       releaseYear: review.releaseYear || "",
       genre: review.genre || "",
       bgMusic: review.bgMusic || "",
+      status: normalizeStatus(review.status),
       ownerId: review.ownerId || "",
       ownerUsername: review.ownerUsername || "",
       contentMode: review.contentMode || (review.bodyHtml ? "rich" : "blocks"),
@@ -180,6 +187,7 @@ window.ReviewsStore = (() => {
       subtitle: top.subtitle || "",
       category: top.category || "autre",
       year: top.year || "",
+      status: normalizeStatus(top.status),
       ownerId: top.ownerId || "",
       ownerUsername: top.ownerUsername || "",
       items,
@@ -339,9 +347,14 @@ window.ReviewsStore = (() => {
       query = query.where("ownerId", "==", options.ownerId);
     }
     const snap = await query.get();
-    return snap.docs
+    const normalized = snap.docs
       .map((doc) => normalizeReview({ id: doc.id, ...doc.data() }))
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const expectedStatus = options.status ? normalizeStatus(options.status) : "";
+    if (expectedStatus) {
+      return normalized.filter((item) => normalizeStatus(item.status) === expectedStatus);
+    }
+    return normalized;
   }
 
   async function getById(id) {
@@ -396,9 +409,14 @@ window.ReviewsStore = (() => {
       query = query.where("ownerId", "==", options.ownerId);
     }
     const snap = await query.get();
-    return snap.docs
+    const normalized = snap.docs
       .map((doc) => normalizeTop({ id: doc.id, ...doc.data() }))
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const expectedStatus = options.status ? normalizeStatus(options.status) : "";
+    if (expectedStatus) {
+      return normalized.filter((item) => normalizeStatus(item.status) === expectedStatus);
+    }
+    return normalized;
   }
 
   async function getTopById(id) {

@@ -549,6 +549,43 @@ textarea {
   flex-wrap: wrap;
 }
 
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(7, 12, 18, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.confirm-dialog {
+  width: min(92vw, 320px);
+  border: 1px solid #2f4555;
+  border-radius: 0.7rem;
+  background: #0f1a22;
+  padding: 0.8rem;
+}
+
+.confirm-title {
+  margin: 0 0 0.22rem;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+}
+
+.confirm-text {
+  margin: 0 0 0.65rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .about {
   padding: 1rem 0 4rem;
 }
@@ -1250,6 +1287,27 @@ textarea {
 .owner-badge {
   display: inline;
   vertical-align: baseline;
+}
+
+.manager-title-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.status-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.status-text.status-published {
+  color: #66c08a;
+}
+
+.status-text.status-draft {
+  color: #c78a4a;
 }
 
 

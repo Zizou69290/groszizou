@@ -123,7 +123,7 @@ async function loadTop() {
 
   const reviewMap = new Map();
   try {
-    const allReviews = await window.ReviewsStore.getAll();
+    const allReviews = await window.ReviewsStore.getAll({ status: "published" });
     allReviews.forEach((review) => reviewMap.set(review.id, review));
   } catch {
     // On continue sans liaison.

@@ -124,6 +124,59 @@ function normalizeSearchValue(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function normalizePublicationStatus(value) {
+  return String(value || "").trim().toLowerCase() === "draft" ? "draft" : "published";
+}
+
+function publicationStatusLabel(value) {
+  return normalizePublicationStatus(value) === "draft" ? "Brouillon" : "Publié";
+}
+
+function confirmReviewDeletion(title) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Confirmer la suppression">
+        <p class="confirm-title">Supprimer cette review ?</p>
+        <p class="confirm-text">"${escapeHtml(title || "Sans titre")}"</p>
+        <div class="confirm-actions">
+          <button type="button" class="action-btn secondary" data-confirm-action="cancel">Annuler</button>
+          <button type="button" class="action-btn danger" data-confirm-action="delete">Supprimer</button>
+        </div>
+      </div>
+    `;
+
+    const cleanup = () => {
+      document.removeEventListener("keydown", onKeyDown);
+      overlay.remove();
+    };
+
+    const close = (confirmed) => {
+      cleanup();
+      resolve(Boolean(confirmed));
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(false);
+      }
+    };
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) close(false);
+    });
+
+    overlay.querySelector('[data-confirm-action="cancel"]')?.addEventListener("click", () => close(false));
+    overlay.querySelector('[data-confirm-action="delete"]')?.addEventListener("click", () => close(true));
+
+    document.addEventListener("keydown", onKeyDown);
+    document.body.appendChild(overlay);
+    overlay.querySelector('[data-confirm-action="cancel"]')?.focus();
+  });
+}
+
 function readExternalLinksFromForm() {
   if (!form) return [];
   const pairs = [
@@ -286,9 +339,13 @@ function managerRow(item) {
   const row = document.createElement("div");
   row.className = "manager-row";
   const ownerMeta = item.ownerUsername ? ` &middot; ${ownerBadge(item.ownerUsername)}` : "";
+  const statusMeta = `<span class="status-text status-${normalizePublicationStatus(item.status)}">${publicationStatusLabel(item.status)}</span>`;
   row.innerHTML = `
     <div>
-      <strong>${escapeHtml(item.title || "Sans titre")}</strong>
+      <div class="manager-title-row">
+        <strong>${escapeHtml(item.title || "Sans titre")}</strong>
+        ${statusMeta}
+      </div>
       <span>${window.ReviewsStore.categories[item.category] || item.category} &middot; ${fmtDate(item.date)}${ownerMeta}</span>
     </div>
     <div class="row-actions">
@@ -299,7 +356,8 @@ function managerRow(item) {
 
   row.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(item));
   row.querySelector('[data-action="delete"]').addEventListener("click", async () => {
-    if (!window.confirm(`Supprimer "${item.title || "Sans titre"}" ?`)) return;
+    const confirmed = await confirmReviewDeletion(item.title || "Sans titre");
+    if (!confirmed) return;
     try {
       await window.ReviewsStore.remove(item.id);
       await renderAll();
@@ -314,9 +372,13 @@ function topRow(item) {
   const row = document.createElement("div");
   row.className = "manager-row";
   const ownerMeta = item.ownerUsername ? ` &middot; ${ownerBadge(item.ownerUsername)}` : "";
+  const statusMeta = `<span class="status-text status-${normalizePublicationStatus(item.status)}">${publicationStatusLabel(item.status)}</span>`;
   row.innerHTML = `
     <div>
-      <strong>${escapeHtml(item.title || "Sans titre")}</strong>
+      <div class="manager-title-row">
+        <strong>${escapeHtml(item.title || "Sans titre")}</strong>
+        ${statusMeta}
+      </div>
       <span>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` &middot; ${item.year}` : ""}${ownerMeta}</span>
     </div>
     <div class="row-actions">
@@ -1374,7 +1436,7 @@ function buildFilterButtons(reviews) {
 async function renderAll() {
   let reviews = [];
   try {
-    reviews = await window.ReviewsStore.getAll();
+    reviews = await window.ReviewsStore.getAll(managerList ? {} : { status: "published" });
   } catch (error) {
     if (reviewsGrid || managerList) window.alert(`Impossible de charger les reviews : ${error.message}`);
     return;
@@ -1427,6 +1489,7 @@ function openForm(item = null) {
   form.elements.title.value = item?.title || "";
   form.elements.category.value = item?.category || "jeu";
   form.elements.date.value = item?.date || "";
+  if (form.elements.status) form.elements.status.value = normalizePublicationStatus(item?.status || "published");
   form.elements.score.value = Number.isFinite(item?.score) ? String(item.score) : "";
   form.elements.cover.value = item?.cover || "";
   form.elements.poster.value = item?.poster || "";
@@ -1467,6 +1530,7 @@ function openTopForm(item = null) {
   topForm.elements.title.value = item?.title || "";
   topForm.elements.category.value = item?.category || "autre";
   topForm.elements.year.value = item?.year || "";
+  if (topForm.elements.status) topForm.elements.status.value = normalizePublicationStatus(item?.status || "published");
   topForm.elements.cover.value = item?.cover || "";
   topForm.elements.subtitle.value = item?.subtitle || "";
   setTopItems(item?.items || []);
@@ -1497,6 +1561,7 @@ if (form) {
       id: editingId || window.ReviewsStore.slugify(title),
       title,
       category: selectedCategory,
+      status: normalizePublicationStatus(form.elements.status?.value || "published"),
       date: form.elements.date.value,
       score: form.elements.score.value === "" ? null : Number(form.elements.score.value),
       cover: form.elements.cover.value.trim(),
@@ -1533,6 +1598,7 @@ if (topForm) {
       id: editingTopId || window.ReviewsStore.slugify(title),
       title,
       category: topForm.elements.category.value || "autre",
+      status: normalizePublicationStatus(topForm.elements.status?.value || "published"),
       year: topForm.elements.year.value.trim(),
       cover: topForm.elements.cover.value.trim(),
       subtitle: topForm.elements.subtitle.value.trim(),

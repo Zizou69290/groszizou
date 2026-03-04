@@ -174,7 +174,10 @@ function topMatchesSearch(item, rawQuery) {
 async function renderTops() {
   if (!topsGrid) return;
   try {
-    const [tops, reviews] = await Promise.all([window.ReviewsStore.getAllTops(), window.ReviewsStore.getAll()]);
+    const [tops, reviews] = await Promise.all([
+      window.ReviewsStore.getAllTops({ status: "published" }),
+      window.ReviewsStore.getAll({ status: "published" })
+    ]);
     const reviewMap = new Map(reviews.map((r) => [r.id, r]));
     const sortedTops = sortTops(tops, reviewMap);
     buildTopFilterButtons(sortedTops);
