@@ -2077,6 +2077,10 @@ a:focus-visible {
   border-radius: 0.7rem;
 }
 
+.manager-page {
+  --manager-field-h: 2.4rem;
+}
+
 .manager-page .review-form h3,
 .manager-page .review-form h4 {
   margin-bottom: 0.6rem;
@@ -2159,6 +2163,34 @@ a:focus-visible {
   font-size: 0.84rem;
 }
 
+.manager-page .section-head .manager-actions > .action-btn {
+  min-height: var(--manager-field-h, 2.4rem);
+  height: var(--manager-field-h, 2.4rem);
+  padding: 0 0.9rem;
+  line-height: 1.05;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  box-sizing: border-box;
+  transform: translateY(-2px);
+}
+
+.manager-page .section-head .manager-actions .select-inline {
+  align-items: center;
+}
+
+.manager-page .section-head .manager-actions .select-inline input,
+.manager-page .section-head .manager-actions .select-inline select {
+  min-height: var(--manager-field-h, 2.4rem);
+  height: var(--manager-field-h, 2.4rem);
+  box-sizing: border-box;
+}
+
+.manager-page .section-head .manager-actions {
+  align-items: center;
+}
+
 .manager-page .content-mode-switch {
   margin: 0.45rem 0 0.8rem;
 }
@@ -2197,10 +2229,6 @@ a:focus-visible {
   .manager-page .form-grid > label,
   .manager-page #review-form .form-grid > label {
     grid-column: span 1;
-  }
-
-  .manager-page .manager-actions .select-inline input[type="search"] {
-    min-width: 130px;
   }
 
   .manager-page #blocks-editor-section .text-tools {
