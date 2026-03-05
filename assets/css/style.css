@@ -522,6 +522,52 @@ label {
   gap: 0.7rem;
 }
 
+.external-links-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.external-links-section {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.external-links-head {
+  justify-content: flex-start;
+  margin: 0;
+}
+
+.external-add-btn {
+  min-height: 1.75rem;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  opacity: 0.9;
+}
+
+.external-link-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.external-link-row > label {
+  margin: 0;
+}
+
+.remove-external-link-btn {
+  min-height: var(--manager-field-h, 2.4rem);
+  height: var(--manager-field-h, 2.4rem);
+  padding: 0 0.74rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  align-self: end;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 input,
 select,
 textarea {
@@ -2026,6 +2072,7 @@ a:focus-visible {
 }
 
 .manager-page .review-form {
+  --manager-field-h: 2.4rem;
   padding: 0.8rem;
   border-radius: 0.7rem;
 }
@@ -2063,6 +2110,27 @@ a:focus-visible {
   gap: 0.5rem;
 }
 
+.manager-page .external-links-head h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.manager-page .external-link-row {
+  align-items: start;
+}
+
+.manager-page .external-link-row > label {
+  margin: 0;
+  gap: 0.24rem;
+}
+
+.manager-page .external-link-row .remove-external-link-btn {
+  align-self: end;
+  margin: 0;
+  min-height: var(--manager-field-h);
+  height: var(--manager-field-h);
+}
+
 .manager-page input,
 .manager-page select,
 .manager-page textarea {
@@ -2070,8 +2138,15 @@ a:focus-visible {
   border-radius: 0.42rem;
 }
 
+.manager-page input,
+.manager-page select {
+  min-height: var(--manager-field-h);
+  height: var(--manager-field-h);
+}
+
 .manager-page textarea {
   min-height: 2.6rem;
+  height: auto;
 }
 
 .manager-page .manager-row {
@@ -2131,6 +2206,14 @@ a:focus-visible {
 }
 
 @media (max-width: 700px) {
+  .external-link-row {
+    grid-template-columns: 1fr;
+  }
+
+  .external-link-row .remove-external-link-btn {
+    justify-self: start;
+  }
+
   .manager-page .form-grid {
     grid-template-columns: 1fr;
   }

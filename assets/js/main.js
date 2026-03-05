@@ -39,6 +39,8 @@ const addBtn = document.getElementById("new-review");
 const cancelBtn = document.getElementById("cancel-form");
 const blocksList = document.getElementById("blocks-list");
 const addBlockBtn = document.getElementById("add-block-btn");
+const externalLinksList = document.getElementById("external-links-list");
+const addExternalLinkBtn = document.getElementById("add-external-link-btn");
 const previewBox = document.getElementById("review-preview");
 const filterButtonsHost = document.querySelector(".filters");
 const reviewsSortSelect = document.getElementById("reviews-sort");
@@ -123,6 +125,7 @@ let pendingEditReviewId = requestedEditReviewId || "";
 let pendingSearchDebounce = null;
 let pendingManagerSearchDebounce = null;
 const blockEditorHistory = new WeakMap();
+const MAX_EXTERNAL_LINKS = 3;
 const REVIEWS_SORT_MODES = new Set(["date-desc", "date-asc", "score-desc", "score-asc"]);
 const isReviewsListingPage = Boolean(reviewsGrid);
 
@@ -255,30 +258,61 @@ function confirmReviewDeletion(title) {
 }
 
 function readExternalLinksFromForm() {
-  if (!form) return [];
-  const pairs = [
-    { label: form.elements.linkLabel1?.value, url: form.elements.linkUrl1?.value },
-    { label: form.elements.linkLabel2?.value, url: form.elements.linkUrl2?.value },
-    { label: form.elements.linkLabel3?.value, url: form.elements.linkUrl3?.value }
-  ];
-  return pairs
+  if (!externalLinksList) return [];
+  return [...externalLinksList.querySelectorAll(".external-link-row")]
     .map((entry) => ({
-      label: String(entry.label || "").trim(),
-      url: String(entry.url || "").trim()
+      label: String(entry.querySelector('[data-link-field="label"]')?.value || "").trim(),
+      url: String(entry.querySelector('[data-link-field="url"]')?.value || "").trim()
     }))
     .filter((entry) => entry.label && entry.url);
 }
 
+function updateExternalLinksUiState() {
+  if (!addExternalLinkBtn || !externalLinksList) return;
+  const count = externalLinksList.querySelectorAll(".external-link-row").length;
+  addExternalLinkBtn.disabled = count >= MAX_EXTERNAL_LINKS;
+}
+
+function refreshExternalLinksLabels() {
+  if (!externalLinksList) return;
+  [...externalLinksList.querySelectorAll(".external-link-row")].forEach((row, idx) => {
+    const num = idx + 1;
+    const nameLabel = row.querySelector('[data-link-label="name"]');
+    const urlLabel = row.querySelector('[data-link-label="url"]');
+    if (nameLabel) nameLabel.textContent = `Nom bouton ${num}`;
+    if (urlLabel) urlLabel.textContent = `Lien bouton ${num}`;
+  });
+}
+
+function createExternalLinkRow(entry = {}) {
+  const row = document.createElement("div");
+  row.className = "external-link-row";
+  row.innerHTML = `
+    <label>
+      <span class="label-row"><span class="field-label-text" data-link-label="name">Nom bouton</span><span class="field-hint">optionnel</span></span>
+      <input data-link-field="label" type="text" placeholder="Ex: Trailer" value="${escapeHtml(entry.label || "")}" />
+    </label>
+    <label>
+      <span class="label-row"><span class="field-label-text" data-link-label="url">Lien bouton</span><span class="field-hint">optionnel</span></span>
+      <input data-link-field="url" type="url" placeholder="https://..." value="${escapeHtml(entry.url || "")}" />
+    </label>
+    <button type="button" class="action-btn secondary remove-external-link-btn">Supprimer</button>
+  `;
+  row.querySelector(".remove-external-link-btn")?.addEventListener("click", () => {
+    row.remove();
+    refreshExternalLinksLabels();
+    updateExternalLinksUiState();
+  });
+  return row;
+}
+
 function fillExternalLinksInForm(review) {
-  if (!form) return;
-  const links = Array.isArray(review?.externalLinks) ? review.externalLinks : [];
-  const get = (idx, key) => String(links[idx]?.[key] || "").trim();
-  if (form.elements.linkLabel1) form.elements.linkLabel1.value = get(0, "label");
-  if (form.elements.linkUrl1) form.elements.linkUrl1.value = get(0, "url");
-  if (form.elements.linkLabel2) form.elements.linkLabel2.value = get(1, "label");
-  if (form.elements.linkUrl2) form.elements.linkUrl2.value = get(1, "url");
-  if (form.elements.linkLabel3) form.elements.linkLabel3.value = get(2, "label");
-  if (form.elements.linkUrl3) form.elements.linkUrl3.value = get(2, "url");
+  if (!externalLinksList) return;
+  externalLinksList.innerHTML = "";
+  const links = Array.isArray(review?.externalLinks) ? review.externalLinks.slice(0, MAX_EXTERNAL_LINKS) : [];
+  links.forEach((entry) => externalLinksList.appendChild(createExternalLinkRow(entry)));
+  refreshExternalLinksLabels();
+  updateExternalLinksUiState();
 }
 
 function confirmDiscardChanges(kind) {
@@ -1699,6 +1733,7 @@ function closeForm(force = false) {
   setContentMode("blocks");
   setRichHtml("");
   if (blocksList) blocksList.innerHTML = "";
+  fillExternalLinksInForm(null);
   reviewFormDirty = false;
   renderPreview();
 }
@@ -1813,6 +1848,15 @@ if (addBlockBtn) {
     blocksList.appendChild(createBlockRow({ type: "text" }));
     updateBlockIndex();
     renderPreview();
+  });
+}
+if (addExternalLinkBtn && externalLinksList) {
+  addExternalLinkBtn.addEventListener("click", () => {
+    const count = externalLinksList.querySelectorAll(".external-link-row").length;
+    if (count >= MAX_EXTERNAL_LINKS) return;
+    externalLinksList.appendChild(createExternalLinkRow());
+    refreshExternalLinksLabels();
+    updateExternalLinksUiState();
   });
 }
 if (newTopBtn) newTopBtn.addEventListener("click", () => openTopForm());
@@ -2184,6 +2228,7 @@ if (logoutBtn) {
 
 if (blocksList) setBlocks([]);
 if (topItemsList) setTopItems([]);
+fillExternalLinksInForm(null);
 if (form) configureMetaFields(form.elements.category.value || "film");
 setContentMode("blocks");
 renderAll();

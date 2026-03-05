@@ -87,29 +87,11 @@
           <label><span class="label-row"><span class="field-label-text">Musique de fond (URL)</span><span class="field-hint">optionnel</span></span>
             <input name="bgMusic" type="url" placeholder="https://..." />
           </label>
-          <div class="link-pair-row">
-            <label><span class="label-row"><span class="field-label-text">Nom bouton 1</span><span class="field-hint">optionnel</span></span>
-              <input name="linkLabel1" type="text" placeholder="Ex: Trailer" />
-            </label>
-            <label><span class="label-row"><span class="field-label-text">Lien bouton 1</span><span class="field-hint">optionnel</span></span>
-              <input name="linkUrl1" type="url" placeholder="https://..." />
-            </label>
-          </div>
-          <div class="link-pair-row">
-            <label><span class="label-row"><span class="field-label-text">Nom bouton 2</span><span class="field-hint">optionnel</span></span>
-              <input name="linkLabel2" type="text" placeholder="Ex: Letterboxd" />
-            </label>
-            <label><span class="label-row"><span class="field-label-text">Lien bouton 2</span><span class="field-hint">optionnel</span></span>
-              <input name="linkUrl2" type="url" placeholder="https://..." />
-            </label>
-          </div>
-          <div class="link-pair-row">
-            <label><span class="label-row"><span class="field-label-text">Nom bouton 3</span><span class="field-hint">optionnel</span></span>
-              <input name="linkLabel3" type="text" placeholder="Ex: IMDb" />
-            </label>
-            <label><span class="label-row"><span class="field-label-text">Lien bouton 3</span><span class="field-hint">optionnel</span></span>
-              <input name="linkUrl3" type="url" placeholder="https://..." />
-            </label>
+          <div class="external-links-section">
+            <div class="media-head external-links-head">
+              <button type="button" id="add-external-link-btn" class="action-btn secondary external-add-btn">+ Ajouter un bouton</button>
+            </div>
+            <div id="external-links-list" class="external-links-list"></div>
           </div>
         </div>
 
