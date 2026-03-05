@@ -3,6 +3,7 @@ const topsFiltersHost = document.getElementById("tops-filters");
 const topsSortSelect = document.getElementById("tops-sort");
 const topsSearchInput = document.getElementById("tops-search");
 const topsUserFilterSelect = document.getElementById("tops-user-filter");
+const topsResetBtn = document.getElementById("tops-reset");
 const topsResultsMeta = document.getElementById("tops-results-meta");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
@@ -138,15 +139,34 @@ function normalizeUsernameValue(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function topCategoryLabelWithCount(category, count) {
+  const labels = {
+    film: count > 1 ? "Films" : "Film",
+    serie: count > 1 ? "Séries" : "Série",
+    livre: count > 1 ? "Livres" : "Livre",
+    musique: count > 1 ? "Musiques" : "Musique",
+    jeu: count > 1 ? "Jeux vidéo" : "Jeu vidéo"
+  };
+  const base = labels[category] || window.ReviewsStore?.categories?.[category] || category || "Autre";
+  return `${base} (${count})`;
+}
+
 function buildTopFilterButtons(tops) {
   if (!topsFiltersHost) return;
   const categories = [...new Set(tops.map((t) => t.category).filter(Boolean))];
+  const countByCategory = tops.reduce((acc, item) => {
+    const key = String(item?.category || "");
+    if (!key) return acc;
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
   if (selectedTopFilter !== "all" && !categories.includes(selectedTopFilter)) {
     selectedTopFilter = "all";
   }
-  topsFiltersHost.innerHTML = `<button class="filter-btn${selectedTopFilter === "all" ? " active" : ""}" data-filter="all">Tout</button>`;
+  topsFiltersHost.innerHTML = `<button class="filter-btn${selectedTopFilter === "all" ? " active" : ""}" data-filter="all">Tout (${tops.length})</button>`;
   categories.forEach((cat) => {
-    const name = window.ReviewsStore.categories[cat] || cat;
+    const count = Number(countByCategory[cat] || 0);
+    const name = topCategoryLabelWithCount(cat, count);
     topsFiltersHost.insertAdjacentHTML(
       "beforeend",
       `<button class="filter-btn${selectedTopFilter === cat ? " active" : ""}" data-filter="${cat}">${name}</button>`
@@ -224,6 +244,17 @@ function renderListingLoadingState() {
   }
 }
 
+async function resetTopListingFilters() {
+  selectedTopSort = "date-desc";
+  selectedTopSearch = "";
+  selectedTopFilter = "all";
+  selectedTopUserFilter = "all";
+  if (topsSortSelect) topsSortSelect.value = selectedTopSort;
+  if (topsSearchInput) topsSearchInput.value = "";
+  if (topsUserFilterSelect) topsUserFilterSelect.value = selectedTopUserFilter;
+  await renderTops();
+}
+
 async function renderTops() {
   if (!topsGrid) return;
   renderListingLoadingState();
@@ -235,14 +266,15 @@ async function renderTops() {
     ]);
     const reviewMap = new Map(reviews.map((r) => [r.id, r]));
     const sortedTops = sortTops(tops, reviewMap);
-    buildTopFilterButtons(sortedTops);
+    const facetedTops = sortedTops
+      .filter((item) => selectedTopUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedTopUserFilter)
+      .filter((item) => topMatchesSearch(item, selectedTopSearch));
+    buildTopFilterButtons(facetedTops);
     buildTopUserFilterOptions(sortedTops);
 
     topsGrid.innerHTML = "";
-    const visibleTops = sortedTops
-      .filter((item) => selectedTopFilter === "all" || item.category === selectedTopFilter)
-      .filter((item) => selectedTopUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedTopUserFilter)
-      .filter((item) => topMatchesSearch(item, selectedTopSearch));
+    const visibleTops = facetedTops
+      .filter((item) => selectedTopFilter === "all" || item.category === selectedTopFilter);
     visibleTops.forEach((item) => {
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
         const first = item.items[0];
@@ -290,6 +322,12 @@ if (topsUserFilterSelect) {
   topsUserFilterSelect.addEventListener("change", async () => {
     selectedTopUserFilter = topsUserFilterSelect.value || "all";
     await renderTops();
+  });
+}
+
+if (topsResetBtn) {
+  topsResetBtn.addEventListener("click", () => {
+    resetTopListingFilters();
   });
 }
 

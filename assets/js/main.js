@@ -44,6 +44,7 @@ const filterButtonsHost = document.querySelector(".filters");
 const reviewsSortSelect = document.getElementById("reviews-sort");
 const reviewsUserFilterSelect = document.getElementById("reviews-user-filter");
 const reviewsSearchInput = document.getElementById("reviews-search");
+const reviewsResetBtn = document.getElementById("reviews-reset");
 const reviewsResultsMeta = document.getElementById("reviews-results-meta");
 const managerReviewsSortSelect = document.getElementById("manager-reviews-sort");
 
@@ -149,6 +150,18 @@ function normalizeSearchValue(value) {
 
 function normalizePublicationStatus(value) {
   return String(value || "").trim().toLowerCase() === "draft" ? "draft" : "published";
+}
+
+function categoryLabelWithCount(category, count) {
+  const labels = {
+    film: count > 1 ? "Films" : "Film",
+    serie: count > 1 ? "Séries" : "Série",
+    livre: count > 1 ? "Livres" : "Livre",
+    musique: count > 1 ? "Musiques" : "Musique",
+    jeu: count > 1 ? "Jeux vidéo" : "Jeu vidéo"
+  };
+  const base = labels[category] || window.ReviewsStore?.categories?.[category] || category || "Autre";
+  return `${base} (${count})`;
 }
 
 function publicationStatusLabel(value) {
@@ -1388,6 +1401,17 @@ function sortReviews(items, mode = selectedSort) {
   return sorted;
 }
 
+async function resetListingFilters() {
+  selectedFilter = "all";
+  selectedSort = "date-desc";
+  selectedUserFilter = "all";
+  selectedReviewsSearch = "";
+  if (reviewsSortSelect) reviewsSortSelect.value = selectedSort;
+  if (reviewsUserFilterSelect) reviewsUserFilterSelect.value = selectedUserFilter;
+  if (reviewsSearchInput) reviewsSearchInput.value = "";
+  await renderAll();
+}
+
 function reviewMatchesSearch(item, rawQuery) {
   const query = normalizeSearchValue(rawQuery);
   if (!query) return true;
@@ -1475,12 +1499,19 @@ function buildUserFilterOptions(reviews) {
 function buildFilterButtons(reviews) {
   if (!filterButtonsHost) return;
   const categories = [...new Set(reviews.map((r) => r.category).filter(Boolean))];
+  const countByCategory = reviews.reduce((acc, item) => {
+    const key = String(item?.category || "");
+    if (!key) return acc;
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
   if (selectedFilter !== "all" && !categories.includes(selectedFilter)) {
     selectedFilter = "all";
   }
-  filterButtonsHost.innerHTML = `<button class="filter-btn${selectedFilter === "all" ? " active" : ""}" data-filter="all">Tout</button>`;
+  filterButtonsHost.innerHTML = `<button class="filter-btn${selectedFilter === "all" ? " active" : ""}" data-filter="all">Tout (${reviews.length})</button>`;
   categories.forEach((cat) => {
-    const name = window.ReviewsStore.categories[cat] || cat;
+    const count = Number(countByCategory[cat] || 0);
+    const name = categoryLabelWithCount(cat, count);
     filterButtonsHost.insertAdjacentHTML(
       "beforeend",
       `<button class="filter-btn${selectedFilter === cat ? " active" : ""}" data-filter="${cat}">${name}</button>`
@@ -1519,15 +1550,16 @@ async function renderAll() {
       : sortReviews(sortedReviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid), selectedManagerReviewSort))
     : sortedReviews;
   cachedReviews = managerVisibleReviews;
-  buildFilterButtons(sortedReviews);
+  const facetedReviews = sortedReviews
+    .filter((item) => selectedUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedUserFilter)
+    .filter((item) => reviewMatchesSearch(item, selectedReviewsSearch));
+  buildFilterButtons(facetedReviews);
   buildUserFilterOptions(sortedReviews);
 
   if (reviewsGrid) {
     reviewsGrid.innerHTML = "";
-    const visibleReviews = sortedReviews
-      .filter((item) => selectedFilter === "all" || item.category === selectedFilter)
-      .filter((item) => selectedUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedUserFilter)
-      .filter((item) => reviewMatchesSearch(item, selectedReviewsSearch));
+    const visibleReviews = facetedReviews
+      .filter((item) => selectedFilter === "all" || item.category === selectedFilter);
     visibleReviews.forEach((item) => reviewsGrid.appendChild(reviewCard(item)));
     if (!visibleReviews.length) {
       reviewsGrid.appendChild(createListingState("Bah y'a plus rien là, t'as abusé sur les filtres"));
@@ -1756,7 +1788,33 @@ if (reviewsSearchInput) {
       renderAll();
     }, 150);
   });
+  reviewsSearchInput.addEventListener("keydown", async (event) => {
+    if (event.key !== "Escape") return;
+    if (!reviewsSearchInput.value) return;
+    reviewsSearchInput.value = "";
+    selectedReviewsSearch = "";
+    await renderAll();
+  });
 }
+
+if (reviewsResetBtn) {
+  reviewsResetBtn.addEventListener("click", () => {
+    resetListingFilters();
+  });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "/") return;
+  if (!reviewsSearchInput) return;
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  const target = event.target;
+  const tag = String(target?.tagName || "").toLowerCase();
+  const isTypingTarget = tag === "input" || tag === "textarea" || tag === "select" || target?.isContentEditable;
+  if (isTypingTarget) return;
+  event.preventDefault();
+  reviewsSearchInput.focus();
+  reviewsSearchInput.select();
+});
 
 if (managerReviewsSortSelect) {
   managerReviewsSortSelect.value = selectedManagerReviewSort;
