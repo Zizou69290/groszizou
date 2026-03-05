@@ -1530,7 +1530,7 @@ async function renderAll() {
       .filter((item) => reviewMatchesSearch(item, selectedReviewsSearch));
     visibleReviews.forEach((item) => reviewsGrid.appendChild(reviewCard(item)));
     if (!visibleReviews.length) {
-      reviewsGrid.appendChild(createListingState("Aucun résultat avec ces filtres. Essayez d'élargir la recherche."));
+      reviewsGrid.appendChild(createListingState("Bah y'a plus rien là, t'as abusé sur les filtres"));
     }
     if (reviewsResultsMeta) {
       const count = visibleReviews.length;
