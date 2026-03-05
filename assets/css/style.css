@@ -2068,7 +2068,7 @@ a:focus-visible {
 
 /* Manager UX compact + sticky tools */
 .manager-page .manager-actions .select-inline input[type="search"] {
-  min-width: 170px;
+  min-width: 128px;
 }
 
 .manager-page .review-form {
@@ -2164,16 +2164,17 @@ a:focus-visible {
 }
 
 .manager-page .section-head .manager-actions > .action-btn {
-  min-height: var(--manager-field-h, 2.4rem);
-  height: var(--manager-field-h, 2.4rem);
-  padding: 0 0.9rem;
+  min-height: 2.05rem;
+  height: 2.05rem;
+  padding: 0 0.76rem;
+  font-size: 0.8rem;
   line-height: 1.05;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   align-self: center;
   box-sizing: border-box;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .manager-page .section-head .manager-actions .select-inline {
@@ -2182,8 +2183,9 @@ a:focus-visible {
 
 .manager-page .section-head .manager-actions .select-inline input,
 .manager-page .section-head .manager-actions .select-inline select {
-  min-height: var(--manager-field-h, 2.4rem);
-  height: var(--manager-field-h, 2.4rem);
+  min-height: 2.05rem;
+  height: 2.05rem;
+  padding: 0.38rem 0.45rem;
   box-sizing: border-box;
 }
 
