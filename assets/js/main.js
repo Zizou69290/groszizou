@@ -3,11 +3,31 @@ const menu = document.getElementById("menu");
 const pageParams = new URLSearchParams(window.location.search);
 const requestedEditReviewId = String(pageParams.get("edit") || "").trim();
 
+function closeMenu() {
+  if (!menu) return;
+  menu.classList.remove("open");
+  if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
+}
+
 if (menuToggle && menu) {
+  menuToggle.setAttribute("aria-expanded", "false");
   menuToggle.addEventListener("click", () => {
-    menu.classList.toggle("open");
+    const next = !menu.classList.contains("open");
+    menu.classList.toggle("open", next);
+    menuToggle.setAttribute("aria-expanded", next ? "true" : "false");
+  });
+  document.addEventListener("click", (event) => {
+    if (!menu.classList.contains("open")) return;
+    if (menu.contains(event.target) || menuToggle.contains(event.target)) return;
+    closeMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMenu();
   });
 }
+
+const activeMenuLink = document.querySelector(`.menu a[href="${window.location.pathname.split("/").pop() || "index.html"}"]`);
+if (activeMenuLink) activeMenuLink.setAttribute("aria-current", "page");
 
 const reviewsGrid = document.getElementById("reviews-grid");
 const managerSection = document.getElementById("manager");
@@ -24,6 +44,7 @@ const filterButtonsHost = document.querySelector(".filters");
 const reviewsSortSelect = document.getElementById("reviews-sort");
 const reviewsUserFilterSelect = document.getElementById("reviews-user-filter");
 const reviewsSearchInput = document.getElementById("reviews-search");
+const reviewsResultsMeta = document.getElementById("reviews-results-meta");
 const managerReviewsSortSelect = document.getElementById("manager-reviews-sort");
 
 const topList = document.getElementById("tops-manager-list");
@@ -93,6 +114,7 @@ const ADMIN_USERNAME = "admin";
 let selectedRichMediaWrapper = null;
 let richMediaResizeState = null;
 let pendingEditReviewId = requestedEditReviewId || "";
+let pendingSearchDebounce = null;
 const blockEditorHistory = new WeakMap();
 
 function isAdminUser(user) {
@@ -1401,6 +1423,37 @@ function sortManagerTops(items, mode = selectedManagerTopSort) {
   return sorted;
 }
 
+function createListingState(message) {
+  const node = document.createElement("div");
+  node.className = "listing-state";
+  node.textContent = message;
+  return node;
+}
+
+function createSkeletonCard() {
+  const article = document.createElement("article");
+  article.className = "review-card skeleton";
+  article.setAttribute("aria-hidden", "true");
+  article.innerHTML = `
+    <img alt="" src="${DEFAULT_COVER}" />
+    <div class="card-body">
+      <div class="skeleton-line meta"></div>
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line text"></div>
+      <div class="skeleton-line text short"></div>
+    </div>
+  `;
+  return article;
+}
+
+function renderListingLoadingState() {
+  if (!reviewsGrid) return;
+  reviewsGrid.innerHTML = "";
+  for (let i = 0; i < 6; i += 1) {
+    reviewsGrid.appendChild(createSkeletonCard());
+  }
+}
+
 function buildUserFilterOptions(reviews) {
   if (!reviewsUserFilterSelect) return;
   const users = [...new Set(reviews.map((r) => normalizeUsernameValue(r.ownerUsername)).filter(Boolean))].sort((a, b) =>
@@ -1445,10 +1498,17 @@ function buildFilterButtons(reviews) {
 
 async function renderAll() {
   let reviews = [];
+  if (reviewsGrid) renderListingLoadingState();
+  if (reviewsResultsMeta) reviewsResultsMeta.textContent = "Chargement des contenus...";
   try {
     reviews = await window.ReviewsStore.getAll(managerList ? {} : { status: "published" });
   } catch (error) {
     if (reviewsGrid || managerList) window.alert(`Impossible de charger les reviews : ${error.message}`);
+    if (reviewsGrid) {
+      reviewsGrid.innerHTML = "";
+      reviewsGrid.appendChild(createListingState("Impossible de charger les reviews pour le moment."));
+    }
+    if (reviewsResultsMeta) reviewsResultsMeta.textContent = "Erreur de chargement.";
     return;
   }
 
@@ -1464,11 +1524,20 @@ async function renderAll() {
 
   if (reviewsGrid) {
     reviewsGrid.innerHTML = "";
-    sortedReviews
+    const visibleReviews = sortedReviews
       .filter((item) => selectedFilter === "all" || item.category === selectedFilter)
       .filter((item) => selectedUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedUserFilter)
-      .filter((item) => reviewMatchesSearch(item, selectedReviewsSearch))
-      .forEach((item) => reviewsGrid.appendChild(reviewCard(item)));
+      .filter((item) => reviewMatchesSearch(item, selectedReviewsSearch));
+    visibleReviews.forEach((item) => reviewsGrid.appendChild(reviewCard(item)));
+    if (!visibleReviews.length) {
+      reviewsGrid.appendChild(createListingState("Aucun résultat avec ces filtres. Essayez d'élargir la recherche."));
+    }
+    if (reviewsResultsMeta) {
+      const count = visibleReviews.length;
+      const reviewLabel = count > 1 ? "reviews" : "review";
+      const dispoLabel = count > 1 ? "dispos" : "dispo";
+      reviewsResultsMeta.textContent = `${count} super ${reviewLabel} ${dispoLabel}.`;
+    }
   }
   if (managerList) {
     managerList.innerHTML = "";
@@ -1680,9 +1749,12 @@ if (reviewsUserFilterSelect) {
 }
 
 if (reviewsSearchInput) {
-  reviewsSearchInput.addEventListener("input", async () => {
+  reviewsSearchInput.addEventListener("input", () => {
     selectedReviewsSearch = reviewsSearchInput.value || "";
-    await renderAll();
+    window.clearTimeout(pendingSearchDebounce);
+    pendingSearchDebounce = window.setTimeout(() => {
+      renderAll();
+    }, 150);
   });
 }
 

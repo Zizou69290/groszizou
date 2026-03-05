@@ -3,11 +3,31 @@ const id = params.get("id");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 
+function closeMenu() {
+  if (!menu) return;
+  menu.classList.remove("open");
+  if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
+}
+
 if (menuToggle && menu) {
+  menuToggle.setAttribute("aria-expanded", "false");
   menuToggle.addEventListener("click", () => {
-    menu.classList.toggle("open");
+    const next = !menu.classList.contains("open");
+    menu.classList.toggle("open", next);
+    menuToggle.setAttribute("aria-expanded", next ? "true" : "false");
+  });
+  document.addEventListener("click", (event) => {
+    if (!menu.classList.contains("open")) return;
+    if (menu.contains(event.target) || menuToggle.contains(event.target)) return;
+    closeMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMenu();
   });
 }
+
+const activeMenuLink = document.querySelector('.menu a[href="tops.html"]');
+if (activeMenuLink) activeMenuLink.setAttribute("aria-current", "page");
 
 const title = document.getElementById("top-title");
 const category = document.getElementById("top-category");

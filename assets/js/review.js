@@ -8,11 +8,31 @@ const DEFAULT_COVER =
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>"
   );
 
+function closeMenu() {
+  if (!menu) return;
+  menu.classList.remove("open");
+  if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
+}
+
 if (menuToggle && menu) {
+  menuToggle.setAttribute("aria-expanded", "false");
   menuToggle.addEventListener("click", () => {
-    menu.classList.toggle("open");
+    const next = !menu.classList.contains("open");
+    menu.classList.toggle("open", next);
+    menuToggle.setAttribute("aria-expanded", next ? "true" : "false");
+  });
+  document.addEventListener("click", (event) => {
+    if (!menu.classList.contains("open")) return;
+    if (menu.contains(event.target) || menuToggle.contains(event.target)) return;
+    closeMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMenu();
   });
 }
+
+const activeMenuLink = document.querySelector('.menu a[href="index.html"]');
+if (activeMenuLink) activeMenuLink.setAttribute("aria-current", "page");
 
 const title = document.getElementById("review-title");
 const category = document.getElementById("review-category");

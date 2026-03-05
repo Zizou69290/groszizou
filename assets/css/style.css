@@ -1719,3 +1719,170 @@ textarea {
   margin: 0;
   color: var(--muted);
 }
+
+/* Lightweight visual polish for listings */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(8, 14, 19, 0.14), rgba(8, 14, 19, 0));
+  z-index: -1;
+}
+
+.menu a {
+  transition: color 0.18s ease;
+}
+
+.menu a[aria-current="page"] {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.26rem;
+}
+
+.listing-intro {
+  margin-bottom: 1.2rem;
+}
+
+.listing-title {
+  margin: 0;
+  max-width: none;
+  font-size: clamp(1.75rem, 3.3vw, 2.7rem);
+  line-height: 1;
+}
+
+.listing-title-accent {
+  color: var(--text);
+}
+
+.listing-meta {
+  margin: 0.55rem 0 0;
+  color: var(--accent-2);
+  font-size: 0.92rem;
+}
+
+.listing-meta-floating {
+  margin: -0.25rem 0 0.95rem;
+  text-align: right;
+}
+
+.action-btn,
+.filter-btn,
+.auth-nav-btn,
+.menu-toggle,
+.review-card {
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.action-btn:hover,
+.filter-btn:hover,
+.auth-nav-btn:hover {
+  transform: translateY(-1px);
+}
+
+.review-card:hover {
+  transform: translateY(-4px);
+  border-color: #456276;
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.32);
+}
+
+.reviews-grid {
+  align-items: stretch;
+}
+
+.listing-controls input[type="search"] {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(242, 95, 41, 0.42);
+  outline-offset: 1px;
+  border-color: #4f6f82;
+}
+
+.listing-state {
+  grid-column: 1 / -1;
+  border: 1px dashed #3a5668;
+  border-radius: 0.8rem;
+  background: rgba(18, 32, 42, 0.72);
+  color: var(--muted);
+  padding: 1rem;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.review-card.skeleton {
+  pointer-events: none;
+}
+
+.review-card.skeleton img,
+.review-card.skeleton .skeleton-line {
+  animation: pulse 1.2s ease-in-out infinite;
+  background: linear-gradient(90deg, #253846, #32495a, #253846);
+  background-size: 220% 100%;
+}
+
+.review-card.skeleton .card-body {
+  gap: 0.5rem;
+}
+
+.skeleton-line {
+  border-radius: 0.3rem;
+}
+
+.skeleton-line.meta {
+  height: 0.7rem;
+  width: 62%;
+}
+
+.skeleton-line.title {
+  height: 1rem;
+  width: 88%;
+}
+
+.skeleton-line.text {
+  height: 0.82rem;
+  width: 100%;
+}
+
+.skeleton-line.text.short {
+  width: 72%;
+}
+
+@keyframes pulse {
+  0% {
+    background-position: 0 50%;
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    background-position: 100% 50%;
+    opacity: 0.78;
+  }
+}
+
+@media (max-width: 700px) {
+  .topbar {
+    align-items: center;
+  }
+
+  .brand {
+    font-size: 1.3rem;
+  }
+
+  .listing-title {
+    font-size: clamp(1.4rem, 7.2vw, 1.9rem);
+  }
+
+  .listing-meta-floating {
+    text-align: left;
+    margin-top: 0;
+  }
+}

@@ -3,6 +3,7 @@ const topsFiltersHost = document.getElementById("tops-filters");
 const topsSortSelect = document.getElementById("tops-sort");
 const topsSearchInput = document.getElementById("tops-search");
 const topsUserFilterSelect = document.getElementById("tops-user-filter");
+const topsResultsMeta = document.getElementById("tops-results-meta");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const DEFAULT_COVER =
@@ -15,12 +16,33 @@ let selectedTopSort = "date-desc";
 let selectedTopSearch = "";
 let selectedTopFilter = "all";
 let selectedTopUserFilter = "all";
+let pendingSearchDebounce = null;
+
+function closeMenu() {
+  if (!menu) return;
+  menu.classList.remove("open");
+  if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
+}
 
 if (menuToggle && menu) {
+  menuToggle.setAttribute("aria-expanded", "false");
   menuToggle.addEventListener("click", () => {
-    menu.classList.toggle("open");
+    const next = !menu.classList.contains("open");
+    menu.classList.toggle("open", next);
+    menuToggle.setAttribute("aria-expanded", next ? "true" : "false");
+  });
+  document.addEventListener("click", (event) => {
+    if (!menu.classList.contains("open")) return;
+    if (menu.contains(event.target) || menuToggle.contains(event.target)) return;
+    closeMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMenu();
   });
 }
+
+const activeMenuLink = document.querySelector(`.menu a[href="${window.location.pathname.split("/").pop() || "tops.html"}"]`);
+if (activeMenuLink) activeMenuLink.setAttribute("aria-current", "page");
 
 function escapeHtml(text) {
   return String(text || "")
@@ -171,8 +193,41 @@ function topMatchesSearch(item, rawQuery) {
   return haystack.includes(query);
 }
 
+function createListingState(message) {
+  const node = document.createElement("div");
+  node.className = "listing-state";
+  node.textContent = message;
+  return node;
+}
+
+function createSkeletonCard() {
+  const article = document.createElement("article");
+  article.className = "review-card skeleton";
+  article.setAttribute("aria-hidden", "true");
+  article.innerHTML = `
+    <img alt="" src="${DEFAULT_COVER}" />
+    <div class="card-body">
+      <div class="skeleton-line meta"></div>
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line text"></div>
+      <div class="skeleton-line text short"></div>
+    </div>
+  `;
+  return article;
+}
+
+function renderListingLoadingState() {
+  if (!topsGrid) return;
+  topsGrid.innerHTML = "";
+  for (let i = 0; i < 6; i += 1) {
+    topsGrid.appendChild(createSkeletonCard());
+  }
+}
+
 async function renderTops() {
   if (!topsGrid) return;
+  renderListingLoadingState();
+  if (topsResultsMeta) topsResultsMeta.textContent = "Chargement des contenus...";
   try {
     const [tops, reviews] = await Promise.all([
       window.ReviewsStore.getAllTops({ status: "published" }),
@@ -184,20 +239,32 @@ async function renderTops() {
     buildTopUserFilterOptions(sortedTops);
 
     topsGrid.innerHTML = "";
-    sortedTops
+    const visibleTops = sortedTops
       .filter((item) => selectedTopFilter === "all" || item.category === selectedTopFilter)
       .filter((item) => selectedTopUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedTopUserFilter)
-      .filter((item) => topMatchesSearch(item, selectedTopSearch))
-      .forEach((item) => {
+      .filter((item) => topMatchesSearch(item, selectedTopSearch));
+    visibleTops.forEach((item) => {
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
         const first = item.items[0];
         const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;
         item.displayCover = linked?.cover || linked?.poster || "";
       }
       topsGrid.appendChild(topCard(item));
-      });
+    });
+    if (!visibleTops.length) {
+      topsGrid.appendChild(createListingState("Aucun top ne correspond à vos filtres."));
+    }
+    if (topsResultsMeta) {
+      const count = visibleTops.length;
+      const topLabel = count > 1 ? "tops" : "top";
+      const dispoLabel = count > 1 ? "dispos" : "dispo";
+      topsResultsMeta.textContent = `${count} super ${topLabel} ${dispoLabel}.`;
+    }
   } catch (error) {
     window.alert(`Impossible de charger les tops : ${error.message}`);
+    topsGrid.innerHTML = "";
+    topsGrid.appendChild(createListingState("Impossible de charger les tops pour le moment."));
+    if (topsResultsMeta) topsResultsMeta.textContent = "Erreur de chargement.";
   }
 }
 
@@ -210,9 +277,12 @@ if (topsSortSelect) {
 }
 
 if (topsSearchInput) {
-  topsSearchInput.addEventListener("input", async () => {
+  topsSearchInput.addEventListener("input", () => {
     selectedTopSearch = topsSearchInput.value || "";
-    await renderTops();
+    window.clearTimeout(pendingSearchDebounce);
+    pendingSearchDebounce = window.setTimeout(() => {
+      renderTops();
+    }, 150);
   });
 }
 
