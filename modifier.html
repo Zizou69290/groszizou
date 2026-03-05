@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
-<body>
+<body class="manager-page">
   <div class="noise"></div>
 
   <header class="hero">
@@ -36,6 +36,10 @@
       <div class="section-head">
         <h2>Gestion des reviews</h2>
         <div class="manager-actions">
+          <label class="select-inline" for="manager-reviews-search">
+            Recherche
+            <input id="manager-reviews-search" type="search" placeholder="Titre, catégorie, auteur..." />
+          </label>
           <label class="select-inline" for="manager-reviews-sort">
             Tri
             <select id="manager-reviews-sort">
@@ -70,25 +74,16 @@
             </select>
           </label>
           <label><span class="label-row"><span class="field-label-text">Note (/10)</span><span class="field-hint">optionnel</span></span><input name="score" type="number" min="0" max="10" step="0.1" /></label>
-          <label><span class="label-row"><span class="field-label-text">Image de couverture (URL)</span><span class="field-hint">optionnel</span></span><input name="cover" type="url" /></label>
-          <label><span class="label-row"><span class="field-label-text">Affiche (URL)</span><span class="field-hint">optionnel</span></span>
-            <input name="poster" type="url" />
-          </label>
-          <label id="meta-author-row"><span class="label-row"><span class="field-label-text">Auteur / Artiste</span><span class="field-hint">optionnel</span></span>
-            <input name="author" type="text" placeholder="Ex: Frank Herbert" />
-          </label>
           <label id="meta-director-row"><span class="label-row"><span class="field-label-text">Réalisation</span><span class="field-hint">optionnel</span></span>
             <input name="director" type="text" placeholder="Ex: Denis Villeneuve" />
-          </label>
-          <label id="meta-studio-row"><span class="label-row"><span class="field-label-text">Studio / Développeur</span><span class="field-hint">optionnel</span></span>
-            <input name="studio" type="text" placeholder="Ex: FromSoftware" />
           </label>
           <label><span class="label-row"><span class="field-label-text">Année de sortie</span><span class="field-hint">optionnel</span></span>
             <input name="releaseYear" type="text" placeholder="Ex: 2025" />
           </label>
-          <label><span class="label-row"><span class="field-label-text">Genre</span><span class="field-hint">optionnel</span></span>
-            <input name="genre" type="text" placeholder="Ex: Action, RPG, Sci-Fi" />
+          <label><span class="label-row"><span class="field-label-text">Affiche (URL)</span><span class="field-hint">optionnel</span></span>
+            <input name="poster" type="url" />
           </label>
+          <label><span class="label-row"><span class="field-label-text">Couverture (URL)</span><span class="field-hint">optionnel</span></span><input name="cover" type="url" /></label>
           <label><span class="label-row"><span class="field-label-text">Musique de fond (URL)</span><span class="field-hint">optionnel</span></span>
             <input name="bgMusic" type="url" placeholder="https://..." />
           </label>
@@ -163,10 +158,10 @@
             <button type="button" class="action-btn secondary tool-btn" id="tool-highlight-apply" title="Appliquer surlignage">&#10003;</button>
           </div>
           <div class="rich-tool-group">
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="left" title="Aligner à gauche">L</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="center" title="Centrer">C</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="right" title="Aligner à droite">R</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="justify" title="Justifier">J</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="left" title="Aligner à gauche">&larr;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="center" title="Centrer">&harr;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="right" title="Aligner à droite">&rarr;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="justify" title="Justifier">&#9776;</button>
           </div>
           <div class="rich-tool-group">
             <button type="button" class="action-btn secondary tool-btn" data-block-action="ol" title="Liste numérotée">1.</button>
@@ -197,19 +192,19 @@
           <div class="rich-tool-group">
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList" title="Liste">&#8226;</button>
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList" title="Liste numérotée">1.</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner à gauche">⟸</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">â‰¡</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner à droite">⟹</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner à gauche">&larr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">&harr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner à droite">&rarr;</button>
           </div>
           <div class="rich-tool-sep" aria-hidden="true"></div>
           <div class="rich-tool-group">
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn" title="Insérer lien">🔗</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn" title="Insérer image">🖼</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn" title="Insérer vidéo">🎬</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn" title="Insérer audio">🎵</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="left" title="Média à gauche">↤</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="center" title="Média centré">↔</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="right" title="Média à droite">↦</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn" title="Insérer lien">Link</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn" title="Insérer image">Img</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn" title="Insérer vidéo">Vid</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn" title="Insérer audio">Aud</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="left" title="Média à gauche">&larr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="center" title="Média centré">&harr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="right" title="Média à droite">&rarr;</button>
           </div>
               <div class="rich-tool-sep" aria-hidden="true"></div>
               <div class="rich-tool-group">
@@ -253,6 +248,10 @@
       <div class="section-head">
         <h2>Gestion des tops</h2>
         <div class="manager-actions">
+          <label class="select-inline" for="manager-tops-search">
+            Recherche
+            <input id="manager-tops-search" type="search" placeholder="Titre, catégorie, année..." />
+          </label>
           <label class="select-inline" for="manager-tops-sort">
             Tri
             <select id="manager-tops-sort">
@@ -318,6 +317,8 @@
   <script src="assets/js/main.js"></script>
 </body>
 </html>
+
+
 
 
 

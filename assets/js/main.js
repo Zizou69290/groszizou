@@ -1,4 +1,4 @@
-const menuToggle = document.getElementById("menu-toggle");
+﻿const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const pageParams = new URLSearchParams(window.location.search);
 const requestedEditReviewId = String(pageParams.get("edit") || "").trim();
@@ -47,6 +47,7 @@ const reviewsSearchInput = document.getElementById("reviews-search");
 const reviewsResetBtn = document.getElementById("reviews-reset");
 const reviewsResultsMeta = document.getElementById("reviews-results-meta");
 const managerReviewsSortSelect = document.getElementById("manager-reviews-sort");
+const managerReviewsSearchInput = document.getElementById("manager-reviews-search");
 
 const topList = document.getElementById("tops-manager-list");
 const topForm = document.getElementById("top-form");
@@ -56,6 +57,7 @@ const cancelTopBtn = document.getElementById("cancel-top-form");
 const addTopItemBtn = document.getElementById("add-top-item");
 const topItemsList = document.getElementById("top-items-list");
 const managerTopsSortSelect = document.getElementById("manager-tops-sort");
+const managerTopsSearchInput = document.getElementById("manager-tops-search");
 
 const authUsername = document.getElementById("auth-username");
 const authPassword = document.getElementById("auth-password");
@@ -88,9 +90,7 @@ const richSpoilerBtn = document.getElementById("rich-spoiler-btn");
 const richColor = document.getElementById("rich-color");
 const richSize = document.getElementById("rich-size");
 const reviewBodyHtml = document.getElementById("review-body-html");
-const metaAuthorRow = document.getElementById("meta-author-row");
 const metaDirectorRow = document.getElementById("meta-director-row");
-const metaStudioRow = document.getElementById("meta-studio-row");
 
 const DEFAULT_COVER =
   "data:image/svg+xml;utf8," +
@@ -104,8 +104,13 @@ let selectedUserFilter = "all";
 let selectedReviewsSearch = "";
 let selectedManagerReviewSort = "date-desc";
 let selectedManagerTopSort = "date-desc";
+let selectedManagerReviewSearch = "";
+let selectedManagerTopSearch = "";
 let editingId = null;
 let editingTopId = null;
+let reviewFormDirty = false;
+let topFormDirty = false;
+let suppressListingUrlSync = false;
 let cachedReviews = [];
 let activeTextArea = null;
 let editingAccent = "";
@@ -116,7 +121,43 @@ let selectedRichMediaWrapper = null;
 let richMediaResizeState = null;
 let pendingEditReviewId = requestedEditReviewId || "";
 let pendingSearchDebounce = null;
+let pendingManagerSearchDebounce = null;
 const blockEditorHistory = new WeakMap();
+const REVIEWS_SORT_MODES = new Set(["date-desc", "date-asc", "score-desc", "score-asc"]);
+const isReviewsListingPage = Boolean(reviewsGrid);
+
+function applyReviewsListingStateFromUrl() {
+  if (!isReviewsListingPage) return;
+  const params = new URLSearchParams(window.location.search);
+  const nextFilter = String(params.get("cat") || "all").trim() || "all";
+  const nextSort = String(params.get("sort") || "date-desc").trim();
+  const nextUser = String(params.get("user") || "all").trim() || "all";
+  const nextSearch = String(params.get("q") || "");
+  selectedFilter = nextFilter;
+  selectedSort = REVIEWS_SORT_MODES.has(nextSort) ? nextSort : "date-desc";
+  selectedUserFilter = nextUser;
+  selectedReviewsSearch = nextSearch;
+  if (reviewsSortSelect) reviewsSortSelect.value = selectedSort;
+  if (reviewsUserFilterSelect) reviewsUserFilterSelect.value = selectedUserFilter;
+  if (reviewsSearchInput) reviewsSearchInput.value = selectedReviewsSearch;
+}
+
+function syncReviewsListingStateToUrl() {
+  if (!isReviewsListingPage || suppressListingUrlSync) return;
+  const params = new URLSearchParams(window.location.search);
+  if (selectedFilter && selectedFilter !== "all") params.set("cat", selectedFilter);
+  else params.delete("cat");
+  if (selectedSort && selectedSort !== "date-desc") params.set("sort", selectedSort);
+  else params.delete("sort");
+  if (selectedUserFilter && selectedUserFilter !== "all") params.set("user", selectedUserFilter);
+  else params.delete("user");
+  const search = String(selectedReviewsSearch || "").trim();
+  if (search) params.set("q", search);
+  else params.delete("q");
+  const query = params.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
+  window.history.replaceState(null, "", nextUrl);
+}
 
 function isAdminUser(user) {
   return String(user?.username || "").trim().toLowerCase() === ADMIN_USERNAME;
@@ -240,6 +281,20 @@ function fillExternalLinksInForm(review) {
   if (form.elements.linkUrl3) form.elements.linkUrl3.value = get(2, "url");
 }
 
+function confirmDiscardChanges(kind) {
+  return window.confirm(`Des changements non enregistres existent sur ce ${kind}. Continuer sans enregistrer ?`);
+}
+
+function markReviewFormDirty() {
+  if (!form || form.classList.contains("hidden")) return;
+  reviewFormDirty = true;
+}
+
+function markTopFormDirty() {
+  if (!topForm || topForm.classList.contains("hidden")) return;
+  topFormDirty = true;
+}
+
 async function openRequestedReviewForEdit() {
   if (!pendingEditReviewId || !window.ReviewsStore?.getById) return;
   const reviewId = pendingEditReviewId;
@@ -332,9 +387,9 @@ function wrapSelection(openTag, closeTag) {
 }
 
 function scoreToStars(score) {
-  if (!Number.isFinite(score)) return "☆☆☆☆☆";
+  if (!Number.isFinite(score)) return "\u2606\u2606\u2606\u2606\u2606";
   const full = Math.max(0, Math.min(5, Math.round(score / 2)));
-  return "★".repeat(full) + "☆".repeat(5 - full);
+  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
 }
 
 function reviewCard(item) {
@@ -386,11 +441,13 @@ function managerRow(item) {
     </div>
     <div class="row-actions">
       <button class="action-btn secondary" data-action="edit">Éditer</button>
+      <button class="action-btn secondary" data-action="duplicate">Dupliquer</button>
       <button class="action-btn danger" data-action="delete">Supprimer</button>
     </div>
   `;
 
   row.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(item));
+  row.querySelector('[data-action="duplicate"]').addEventListener("click", () => openForm(item, { duplicate: true }));
   row.querySelector('[data-action="delete"]').addEventListener("click", async () => {
     const confirmed = await confirmReviewDeletion(item.title || "Sans titre");
     if (!confirmed) return;
@@ -419,11 +476,13 @@ function topRow(item) {
     </div>
     <div class="row-actions">
       <button class="action-btn secondary" data-action="edit-top">Éditer</button>
+      <button class="action-btn secondary" data-action="duplicate-top">Dupliquer</button>
       <button class="action-btn danger" data-action="delete-top">Supprimer</button>
     </div>
   `;
 
   row.querySelector('[data-action="edit-top"]').addEventListener("click", () => openTopForm(item));
+  row.querySelector('[data-action="duplicate-top"]').addEventListener("click", () => openTopForm(item, { duplicate: true }));
   row.querySelector('[data-action="delete-top"]').addEventListener("click", async () => {
     if (!window.confirm(`Supprimer le top "${item.title || "Sans titre"}" ?`)) return;
     try {
@@ -1139,44 +1198,9 @@ function insertRichSpoiler() {
 
 function configureMetaFields(category) {
   if (!form) return;
-
-  const show = (el, visible) => {
-    if (!el) return;
-    el.classList.toggle("hidden", !visible);
-  };
-
-  const authorLabel = metaAuthorRow?.querySelector(".field-label-text");
   const directorLabel = metaDirectorRow?.querySelector(".field-label-text");
-  const studioLabel = metaStudioRow?.querySelector(".field-label-text");
-
-  if (category === "film" || category === "serie") {
-    show(metaAuthorRow, false);
-    show(metaStudioRow, false);
-    show(metaDirectorRow, true);
-    if (directorLabel) directorLabel.textContent = "Réalisation";
-  } else if (category === "jeu") {
-    show(metaAuthorRow, false);
-    show(metaDirectorRow, false);
-    show(metaStudioRow, true);
-    if (studioLabel) studioLabel.textContent = "Studio de développement";
-  } else if (category === "livre") {
-    show(metaDirectorRow, false);
-    show(metaStudioRow, false);
-    show(metaAuthorRow, true);
-    if (authorLabel) authorLabel.textContent = "Auteur";
-  } else if (category === "musique") {
-    show(metaDirectorRow, false);
-    show(metaStudioRow, false);
-    show(metaAuthorRow, true);
-    if (authorLabel) authorLabel.textContent = "Artiste";
-  } else {
-    show(metaAuthorRow, true);
-    show(metaDirectorRow, true);
-    show(metaStudioRow, true);
-    if (authorLabel) authorLabel.textContent = "Auteur / Artiste";
-    if (directorLabel) directorLabel.textContent = "Réalisation";
-    if (studioLabel) studioLabel.textContent = "Studio / Développeur";
-  }
+  if (metaDirectorRow) metaDirectorRow.classList.remove("hidden");
+  if (directorLabel) directorLabel.textContent = "Réalisation";
 }
 
 function createBlockRow(block = { type: "text", content: "", url: "", caption: "" }) {
@@ -1430,6 +1454,41 @@ function reviewMatchesSearch(item, rawQuery) {
   return haystack.includes(query);
 }
 
+function managerReviewMatchesSearch(item, rawQuery) {
+  const query = normalizeSearchValue(rawQuery);
+  if (!query) return true;
+  const haystack = [
+    item?.title,
+    item?.summary,
+    item?.category,
+    item?.date,
+    item?.ownerUsername,
+    item?.author,
+    item?.director,
+    item?.studio,
+    publicationStatusLabel(item?.status)
+  ]
+    .map((value) => normalizeSearchValue(value))
+    .join(" ");
+  return haystack.includes(query);
+}
+
+function managerTopMatchesSearch(item, rawQuery) {
+  const query = normalizeSearchValue(rawQuery);
+  if (!query) return true;
+  const haystack = [
+    item?.title,
+    item?.subtitle,
+    item?.category,
+    item?.year,
+    item?.ownerUsername,
+    publicationStatusLabel(item?.status)
+  ]
+    .map((value) => normalizeSearchValue(value))
+    .join(" ");
+  return haystack.includes(query);
+}
+
 function getTopPublicationTimestamp(item) {
   const updated = Number(item?.updatedAt);
   if (Number.isFinite(updated) && updated > 0) return updated;
@@ -1573,8 +1632,13 @@ async function renderAll() {
   }
   if (managerList) {
     managerList.innerHTML = "";
-    managerVisibleReviews.forEach((item) => managerList.appendChild(managerRow(item)));
+    const managerFilteredReviews = managerVisibleReviews.filter((item) => managerReviewMatchesSearch(item, selectedManagerReviewSearch));
+    managerFilteredReviews.forEach((item) => managerList.appendChild(managerRow(item)));
+    if (!managerFilteredReviews.length) {
+      managerList.appendChild(createListingState("Aucune review ne correspond a cette recherche."));
+    }
   }
+  syncReviewsListingStateToUrl();
 }
 
 async function renderTopsManager() {
@@ -1585,32 +1649,35 @@ async function renderTopsManager() {
       ? tops
       : tops.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid);
     const managerSortedTops = sortManagerTops(managerVisibleTops, selectedManagerTopSort);
+    const managerFilteredTops = managerSortedTops.filter((item) => managerTopMatchesSearch(item, selectedManagerTopSearch));
     topList.innerHTML = "";
-    managerSortedTops.forEach((item) => topList.appendChild(topRow(item)));
+    managerFilteredTops.forEach((item) => topList.appendChild(topRow(item)));
+    if (!managerFilteredTops.length) {
+      topList.appendChild(createListingState("Aucun top ne correspond a cette recherche."));
+    }
   } catch (error) {
     window.alert(`Impossible de charger les tops : ${error.message}`);
   }
 }
 
-function openForm(item = null) {
+function openForm(item = null, options = {}) {
   if (!form) return;
-  editingId = item ? item.id : null;
+  if (!form.classList.contains("hidden") && reviewFormDirty && !confirmDiscardChanges("brouillon")) return;
+  const duplicate = Boolean(options?.duplicate);
+  editingId = item && !duplicate ? item.id : null;
   form.classList.remove("hidden");
-  formTitle.textContent = item ? "Modifier la review" : "Ajouter une review";
-  form.elements.title.value = item?.title || "";
+  formTitle.textContent = duplicate ? "Dupliquer la review" : (item ? "Modifier la review" : "Ajouter une review");
+  form.elements.title.value = duplicate ? `${item?.title || "Sans titre"} (copie)` : (item?.title || "");
   form.elements.category.value = item?.category || "film";
-  form.elements.date.value = item?.date || "";
-  if (form.elements.status) form.elements.status.value = normalizePublicationStatus(item?.status || "published");
+  form.elements.date.value = duplicate ? new Date().toISOString().slice(0, 10) : (item?.date || "");
+  if (form.elements.status) form.elements.status.value = normalizePublicationStatus(duplicate ? "draft" : (item?.status || "published"));
   form.elements.score.value = Number.isFinite(item?.score) ? String(item.score) : "";
   form.elements.cover.value = item?.cover || "";
   form.elements.poster.value = item?.poster || "";
   editingAccent = item?.accent || "";
   form.elements.summary.value = item?.summary || "";
-  form.elements.author.value = item?.author || "";
   form.elements.director.value = item?.director || "";
-  form.elements.studio.value = item?.studio || "";
   form.elements.releaseYear.value = item?.releaseYear || "";
-  form.elements.genre.value = item?.genre || "";
   if (form.elements.bgMusic) form.elements.bgMusic.value = item?.bgMusic || "";
   fillExternalLinksInForm(item);
   configureMetaFields(form.elements.category.value || "film");
@@ -1618,11 +1685,13 @@ function openForm(item = null) {
   const nextMode = item?.contentMode || (item?.bodyHtml ? "rich" : "blocks");
   setContentMode(nextMode);
   setBlocks(item?.blocks || []);
+  reviewFormDirty = false;
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function closeForm() {
+function closeForm(force = false) {
   if (!form) return;
+  if (!force && reviewFormDirty && !confirmDiscardChanges("brouillon")) return;
   editingId = null;
   editingAccent = "";
   form.reset();
@@ -1630,33 +1699,41 @@ function closeForm() {
   setContentMode("blocks");
   setRichHtml("");
   if (blocksList) blocksList.innerHTML = "";
+  reviewFormDirty = false;
   renderPreview();
 }
 
-function openTopForm(item = null) {
+function openTopForm(item = null, options = {}) {
   if (!topForm) return;
-  editingTopId = item ? item.id : null;
+  if (!topForm.classList.contains("hidden") && topFormDirty && !confirmDiscardChanges("top")) return;
+  const duplicate = Boolean(options?.duplicate);
+  editingTopId = item && !duplicate ? item.id : null;
   topForm.classList.remove("hidden");
-  topFormTitle.textContent = item ? "Modifier un top" : "Ajouter un top";
-  topForm.elements.title.value = item?.title || "";
+  topFormTitle.textContent = duplicate ? "Dupliquer un top" : (item ? "Modifier un top" : "Ajouter un top");
+  topForm.elements.title.value = duplicate ? `${item?.title || "Sans titre"} (copie)` : (item?.title || "");
   topForm.elements.category.value = item?.category || "film";
   topForm.elements.year.value = item?.year || "";
-  if (topForm.elements.status) topForm.elements.status.value = normalizePublicationStatus(item?.status || "published");
+  if (topForm.elements.status) topForm.elements.status.value = normalizePublicationStatus(duplicate ? "draft" : (item?.status || "published"));
   topForm.elements.cover.value = item?.cover || "";
   topForm.elements.subtitle.value = item?.subtitle || "";
   setTopItems(item?.items || []);
+  topFormDirty = false;
   topForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function closeTopForm() {
+function closeTopForm(force = false) {
   if (!topForm) return;
+  if (!force && topFormDirty && !confirmDiscardChanges("top")) return;
   editingTopId = null;
   topForm.reset();
   topForm.classList.add("hidden");
   if (topItemsList) topItemsList.innerHTML = "";
+  topFormDirty = false;
 }
 
 if (form) {
+  form.addEventListener("input", markReviewFormDirty);
+  form.addEventListener("change", markReviewFormDirty);
   form.elements.title.addEventListener("input", renderPreview);
   form.elements.score.addEventListener("input", renderPreview);
   form.elements.summary.addEventListener("input", renderPreview);
@@ -1665,9 +1742,7 @@ if (form) {
     event.preventDefault();
     const title = form.elements.title.value.trim() || "Sans titre";
     const selectedCategory = form.elements.category.value || "film";
-    const authorValue = form.elements.author.value.trim();
     const directorValue = form.elements.director.value.trim();
-    const studioValue = form.elements.studio.value.trim();
     const payload = {
       id: editingId || window.ReviewsStore.slugify(title),
       title,
@@ -1679,11 +1754,11 @@ if (form) {
       poster: form.elements.poster.value.trim(),
       accent: editingAccent,
       summary: form.elements.summary.value.trim(),
-      author: selectedCategory === "livre" || selectedCategory === "musique" ? authorValue : "",
-      director: selectedCategory === "film" || selectedCategory === "serie" ? directorValue : "",
-      studio: selectedCategory === "jeu" ? studioValue : "",
+      author: "",
+      director: directorValue,
+      studio: "",
       releaseYear: form.elements.releaseYear.value.trim(),
-      genre: form.elements.genre.value.trim(),
+      genre: "",
       bgMusic: form.elements.bgMusic?.value.trim() || "",
       externalLinks: readExternalLinksFromForm(),
       contentMode: currentContentMode,
@@ -1696,12 +1771,15 @@ if (form) {
       window.alert(`Sauvegarde impossible : ${error.message}`);
       return;
     }
-    closeForm();
+    reviewFormDirty = false;
+    closeForm(true);
     await renderAll();
   });
 }
 
 if (topForm) {
+  topForm.addEventListener("input", markTopFormDirty);
+  topForm.addEventListener("change", markTopFormDirty);
   topForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = topForm.elements.title.value.trim() || "Sans titre";
@@ -1721,7 +1799,8 @@ if (topForm) {
       window.alert(`Sauvegarde top impossible : ${error.message}`);
       return;
     }
-    closeTopForm();
+    topFormDirty = false;
+    closeTopForm(true);
     await renderTopsManager();
   });
 }
@@ -1764,6 +1843,8 @@ if (toolSizeApply) {
 if (toolHighlightApply) {
   toolHighlightApply.addEventListener("click", () => wrapSelection(`[mark=${toolHighlight?.value || "#f7b538"}]`, "[/mark]"));
 }
+
+applyReviewsListingStateFromUrl();
 
 if (reviewsSortSelect) {
   reviewsSortSelect.value = selectedSort;
@@ -1816,6 +1897,34 @@ document.addEventListener("keydown", (event) => {
   reviewsSearchInput.select();
 });
 
+window.addEventListener("popstate", async () => {
+  if (!isReviewsListingPage) return;
+  suppressListingUrlSync = true;
+  applyReviewsListingStateFromUrl();
+  await renderAll();
+  suppressListingUrlSync = false;
+});
+
+document.addEventListener("keydown", (event) => {
+  const isSaveShortcut = (event.ctrlKey || event.metaKey) && String(event.key || "").toLowerCase() === "s";
+  if (!isSaveShortcut) return;
+  if (form && !form.classList.contains("hidden")) {
+    event.preventDefault();
+    form.requestSubmit();
+    return;
+  }
+  if (topForm && !topForm.classList.contains("hidden")) {
+    event.preventDefault();
+    topForm.requestSubmit();
+  }
+});
+
+window.addEventListener("beforeunload", (event) => {
+  if (!reviewFormDirty && !topFormDirty) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
 if (managerReviewsSortSelect) {
   managerReviewsSortSelect.value = selectedManagerReviewSort;
   managerReviewsSortSelect.addEventListener("change", async () => {
@@ -1824,11 +1933,31 @@ if (managerReviewsSortSelect) {
   });
 }
 
+if (managerReviewsSearchInput) {
+  managerReviewsSearchInput.addEventListener("input", () => {
+    selectedManagerReviewSearch = managerReviewsSearchInput.value || "";
+    window.clearTimeout(pendingManagerSearchDebounce);
+    pendingManagerSearchDebounce = window.setTimeout(() => {
+      renderAll();
+    }, 120);
+  });
+}
+
 if (managerTopsSortSelect) {
   managerTopsSortSelect.value = selectedManagerTopSort;
   managerTopsSortSelect.addEventListener("change", async () => {
     selectedManagerTopSort = managerTopsSortSelect.value || "date-desc";
     await renderTopsManager();
+  });
+}
+
+if (managerTopsSearchInput) {
+  managerTopsSearchInput.addEventListener("input", () => {
+    selectedManagerTopSearch = managerTopsSearchInput.value || "";
+    window.clearTimeout(pendingManagerSearchDebounce);
+    pendingManagerSearchDebounce = window.setTimeout(() => {
+      renderTopsManager();
+    }, 120);
   });
 }
 
@@ -2058,6 +2187,7 @@ if (topItemsList) setTopItems([]);
 if (form) configureMetaFields(form.elements.category.value || "film");
 setContentMode("blocks");
 renderAll();
+
 
 
 

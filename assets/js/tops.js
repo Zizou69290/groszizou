@@ -18,6 +18,40 @@ let selectedTopSearch = "";
 let selectedTopFilter = "all";
 let selectedTopUserFilter = "all";
 let pendingSearchDebounce = null;
+let suppressTopsUrlSync = false;
+const TOPS_SORT_MODES = new Set(["date-desc", "date-asc", "score-desc", "score-asc"]);
+
+function applyTopsListingStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const nextFilter = String(params.get("cat") || "all").trim() || "all";
+  const nextSort = String(params.get("sort") || "date-desc").trim();
+  const nextUser = String(params.get("user") || "all").trim() || "all";
+  const nextSearch = String(params.get("q") || "");
+  selectedTopFilter = nextFilter;
+  selectedTopSort = TOPS_SORT_MODES.has(nextSort) ? nextSort : "date-desc";
+  selectedTopUserFilter = nextUser;
+  selectedTopSearch = nextSearch;
+  if (topsSortSelect) topsSortSelect.value = selectedTopSort;
+  if (topsUserFilterSelect) topsUserFilterSelect.value = selectedTopUserFilter;
+  if (topsSearchInput) topsSearchInput.value = selectedTopSearch;
+}
+
+function syncTopsListingStateToUrl() {
+  if (suppressTopsUrlSync) return;
+  const params = new URLSearchParams(window.location.search);
+  if (selectedTopFilter && selectedTopFilter !== "all") params.set("cat", selectedTopFilter);
+  else params.delete("cat");
+  if (selectedTopSort && selectedTopSort !== "date-desc") params.set("sort", selectedTopSort);
+  else params.delete("sort");
+  if (selectedTopUserFilter && selectedTopUserFilter !== "all") params.set("user", selectedTopUserFilter);
+  else params.delete("user");
+  const search = String(selectedTopSearch || "").trim();
+  if (search) params.set("q", search);
+  else params.delete("q");
+  const query = params.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
+  window.history.replaceState(null, "", nextUrl);
+}
 
 function closeMenu() {
   if (!menu) return;
@@ -292,6 +326,7 @@ async function renderTops() {
       const dispoLabel = count > 1 ? "dispos" : "dispo";
       topsResultsMeta.textContent = `${count} super ${topLabel} ${dispoLabel}.`;
     }
+    syncTopsListingStateToUrl();
   } catch (error) {
     window.alert(`Impossible de charger les tops : ${error.message}`);
     topsGrid.innerHTML = "";
@@ -299,6 +334,8 @@ async function renderTops() {
     if (topsResultsMeta) topsResultsMeta.textContent = "Erreur de chargement.";
   }
 }
+
+applyTopsListingStateFromUrl();
 
 if (topsSortSelect) {
   topsSortSelect.value = selectedTopSort;
@@ -330,5 +367,12 @@ if (topsResetBtn) {
     resetTopListingFilters();
   });
 }
+
+window.addEventListener("popstate", async () => {
+  suppressTopsUrlSync = true;
+  applyTopsListingStateFromUrl();
+  await renderTops();
+  suppressTopsUrlSync = false;
+});
 
 renderTops();
