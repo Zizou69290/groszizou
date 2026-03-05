@@ -2190,8 +2190,12 @@ a:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .manager-page #review-form .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .manager-page .form-grid > label,
-  .manager-page #review-form .form-grid > label:nth-child(-n+4) {
+  .manager-page #review-form .form-grid > label {
     grid-column: span 1;
   }
 
@@ -2215,6 +2219,10 @@ a:focus-visible {
   }
 
   .manager-page .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-page #review-form .form-grid {
     grid-template-columns: 1fr;
   }
 }
