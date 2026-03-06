@@ -1128,6 +1128,7 @@ textarea {
 
   .menu {
     position: fixed;
+    left: auto;
     right: 3vw;
     top: 68px;
     background: #172732;
@@ -1137,11 +1138,14 @@ textarea {
     display: none;
     flex-direction: column;
     align-items: stretch;
-    width: clamp(220px, 62vw, 260px);
+    width: fit-content;
+    min-width: min(84vw, 220px);
+    max-width: min(84vw, 290px);
     gap: 0.12rem;
     max-height: calc(100vh - 84px);
     overflow-y: auto;
     z-index: 12050;
+    transform: none;
   }
 
   .menu > li {
@@ -1157,7 +1161,7 @@ textarea {
   .menu > li > a {
     display: block;
     width: 100%;
-    text-align: left;
+    text-align: center;
     padding: 0.4rem 0.45rem;
     border-radius: 0.45rem;
   }
@@ -1190,7 +1194,7 @@ textarea {
     padding: 0.34rem 0.45rem;
     border-radius: 0;
     background: transparent;
-    text-align: left;
+    text-align: center;
   }
 
   .menu-item-has-submenu .submenu a:hover {
@@ -1314,7 +1318,7 @@ textarea {
     color: var(--muted);
     text-decoration: none;
     padding: 0.45rem 0.5rem;
-    text-align: left;
+    text-align: center;
     font: inherit;
     line-height: 1.2;
     cursor: pointer;
