@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aide</title>
+    <link rel="stylesheet" href="aide.css"> <!-- Lier le fichier CSS spécifique à cette page -->
+    <link rel="icon" href="icon.png" type="image/png"> <!-- Utiliser icon.png pour l'icône de l'onglet -->
+</head>
+<body>
+    <h1>WATCH PARTER !!!!!</h1>
+    <!-- Ajoutez ici le contenu de la page d'aide -->
+    <div class="search-container">
+        <input type="text" id="filmSearchInput" placeholder="Nom du film">
+        <button id="filmSearchBtn">Chercher</button>
+    </div>
+    <script>
+        document.getElementById('filmSearchBtn').addEventListener('click', function() {
+            const filmName = document.getElementById('filmSearchInput').value;
+            if (filmName.trim()) {
+                window.open(`https://letterboxd.com/search/${encodeURIComponent(filmName)}/`, '_blank');
+            }
+        });
+    </script>
+</body>
+</html>
