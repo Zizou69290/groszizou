@@ -27,7 +27,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 1px solid #28a745;
+    border: 1px solid #f25f29;
     object-fit: cover;
     z-index: 3;
     display: block;
@@ -71,7 +71,7 @@
     z-index: 2;
 }
 #filmList li button.change-poster-btn:hover {
-    color: #28a745;
+    color: #f25f29;
     opacity: 1;
     background: none;
 }
@@ -137,7 +137,7 @@ body {
 h1 {
     margin: 18px 0 8px 0;
     font-size: 2.8em;
-    color: #28a745;
+    color: #f25f29;
     text-align: center;
     font-family: 'CustomFont', 'Roboto', Arial, sans-serif;
     letter-spacing: 1.5px;
@@ -170,13 +170,68 @@ h1 {
     margin-bottom: 8px;
 }
 
-.watchparter-current-user {
-    color: #b8c2cc;
-    font-size: 0.92em;
-    padding: 6px 10px;
+.watchparter-hidden-controls {
+    display: none !important;
+}
+
+.watch-parter-native-page #topFormRow {
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.35rem;
+}
+
+.watch-parter-native-page #filmForm {
+    margin: 0;
+    gap: 0.5rem;
+}
+
+.watch-parter-native-page #filmInput {
+    min-width: min(48vw, 290px);
     border: 1px solid #355163;
-    border-radius: 7px;
-    background: #1b262f;
+    border-radius: 0.5rem;
+    background: #1a2b36;
+    color: #f2f2ee;
+    padding: 0.62rem 0.7rem;
+    font-size: 0.95rem;
+}
+
+.watch-parter-native-page #filmInput:focus {
+    border-color: #4f6f82;
+    outline: 2px solid rgba(242, 95, 41, 0.35);
+    outline-offset: 1px;
+}
+
+.watch-parter-native-page #filmForm button {
+    border: 0;
+    border-radius: 0.5rem;
+    padding: 0.62rem 0.9rem;
+    background: linear-gradient(120deg, #f25f29, #f7b538);
+    color: #121212;
+    font-size: 0.94rem;
+    font-weight: 700;
+}
+
+.watchparter-searchbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0.1rem 0 0.55rem;
+}
+
+.watchparter-search-input {
+    width: min(92vw, 280px);
+    border: 1px solid #355163;
+    border-radius: 0.5rem;
+    background: #1a2b36;
+    color: #f2f2ee;
+    padding: 0.56rem 0.68rem;
+    font-size: 0.92rem;
+}
+
+.watchparter-search-input:focus {
+    border-color: #4f6f82;
+    outline: 2px solid rgba(242, 95, 41, 0.35);
+    outline-offset: 1px;
 }
 
 #userSelector {
@@ -201,7 +256,7 @@ h1 {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 1.5px solid #28a745;
+    border: 1.5px solid #f25f29;
     display: none;
     object-fit: cover;
     margin-left: 0;
@@ -218,7 +273,7 @@ h1 {
     padding: 6px 10px;
     font-size: 1em;
     border-radius: 5px;
-    border: 1.5px solid #28a745;
+    border: 1.5px solid #f25f29;
     background: #23272b;
     color: #e0e0e0;
     outline: none;
@@ -239,7 +294,7 @@ h1 {
     width: 180px;
     font-size: 1em;
     border-radius: 5px;
-    border: 1.5px solid #28a745;
+    border: 1.5px solid #f25f29;
     background: #23272b;
     color: #e0e0e0;
     outline: none;
@@ -250,14 +305,14 @@ h1 {
     font-size: 1em;
     border: none;
     border-radius: 5px;
-    background-color: #28a745;
+    background-color: #f25f29;
     color: white;
     cursor: pointer;
     transition: background 0.2s;
 }
 
 #filmForm button:hover {
-    background: #218838;
+    background: #d94f22;
 }
 
 /* Liste déroulante de suggestions de films */
@@ -268,7 +323,7 @@ h1 {
     top: 100%; /* Affiche la liste sous le champ de recherche */
     z-index: 100;
     background: #23272b;
-    border: 1.5px solid #28a745;
+    border: 1.5px solid #f25f29;
     border-radius: 0 0 7px 7px;
     margin-top: 2px;
     list-style: none;
@@ -292,8 +347,8 @@ h1 {
 }
 
 .film-suggestion-box li:hover {
-    background: #28a74533;
-    color: #28a745;
+    background: rgba(242,95,41,0.2);
+    color: #f25f29;
 }
 
 /* Liste des films */
@@ -405,7 +460,7 @@ h1 {
 #filmList li a {
     text-decoration: none;
     font-size: 0.95em;
-    color: #28a745;
+    color: #f25f29;
     transition: color 0.2s;
 }
 
@@ -447,7 +502,7 @@ h1 {
 }
 
 #randomFilmBtn:hover {
-    background: #218838;
+    background: #d94f22;
 }
 
 #randomFilmDisplay {
@@ -500,7 +555,7 @@ h1 {
 #duelHeader #duelRound {
     font-size: 1.1em;
     font-weight: 600;
-    color: #28a745;
+    color: #f25f29;
 }
 
 .films-row {
@@ -601,7 +656,7 @@ h1 {
 #duelContainer .links a {
     text-decoration: none;
     font-size: 0.95em;
-    color: #28a745;
+    color: #f25f29;
     transition: color 0.2s;
 }
 
@@ -633,7 +688,7 @@ h1 {
     font-size: 1em;
     border: none;
     border-radius: 5px;
-    background-color: #28a745;
+    background-color: #f25f29;
     color: white;
     cursor: pointer;
     transition: background 0.2s;
@@ -644,7 +699,7 @@ h1 {
 }
 
 #duelContainer .duel-vote-btn:hover {
-    background: #218838;
+    background: #d94f22;
 }
 
 /* Gagnant du duel, à droite à la place du bloc duel */
@@ -671,7 +726,7 @@ h1 {
 }
 
 #duelWinnerSimple #winnerTitleSimple {
-    color: #28a745;
+    color: #f25f29;
     font-weight: 700;
     font-size: 1.35em;
     text-align: center;
@@ -699,7 +754,7 @@ h1 {
     position: fixed;
     top: 10px;
     right: 10px;
-    background-color: #28a745;
+    background-color: #f25f29;
     color: white;
     padding: 8px 16px;
     border-radius: 5px;
@@ -736,7 +791,7 @@ h1 {
     width: 180px;
     font-size: 1em;
     border-radius: 5px;
-    border: 1.5px solid #28a745;
+    border: 1.5px solid #f25f29;
     background: #23272b;
     color: #e0e0e0;
     outline: none;
@@ -1029,7 +1084,7 @@ h1 {
     object-fit: contain;
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    border: 2px solid #28a74533;
+    border: 2px solid rgba(242,95,41,0.2);
     background: #181818;
     display: block;
 }
@@ -1080,14 +1135,14 @@ h1 {
 
 /* Classe pour les liens verts */
 .green-link {
-    color: #28a745 !important;
+    color: #f25f29 !important;
     text-decoration: underline;
     cursor: pointer;
     transition: color 0.2s;
 }
 
 .green-link:hover {
-    color: #218838 !important;
+    color: #d94f22 !important;
 }
 
 /* Style pour le texte 'Aller au Duel' */
@@ -1099,7 +1154,7 @@ h1 {
 
 /* Style pour le bouton vert 'Duel de Films' */
 .duel-btn-green {
-    background: #28a745;
+    background: #f25f29;
     color: #fff;
     border: none;
     border-radius: 7px;
@@ -1112,7 +1167,7 @@ h1 {
     transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 .duel-btn-green:hover {
-    background: #218838;
+    background: #d94f22;
     color: #fff;
     box-shadow: 0 4px 16px rgba(40,167,69,0.13);
 }
@@ -1340,7 +1395,7 @@ h1 {
     background: #181818;
 }
 .film-modal-infos h2 {
-    color: #28a745;
+    color: #f25f29;
     font-size: 1.25em;
     margin: 0 0 6px 0 !important;
 }
@@ -1371,15 +1426,15 @@ h1 {
 .film-modal-links a {
     text-decoration: none;
     font-size: 1em;
-    color: #28a745;
+    color: #f25f29;
     padding: 8px 16px;
-    border: 1px solid #28a745;
+    border: 1px solid #f25f29;
     border-radius: 5px;
     transition: background 0.2s, color 0.2s;
 }
 
 .film-modal-links a:hover {
-    background: #28a745;
+    background: #f25f29;
     color: #fff;
 }
 
@@ -1393,13 +1448,13 @@ h1 {
     color: #fff;
 }
 .film-modal-trailer-title {
-    color: #28a745;
+    color: #f25f29;
     font-weight: 600;
     font-size: 1.08em;
     margin: 10px 0 4px 0;
 }
 .film-modal-screenshots-title {
-    color: #28a745;
+    color: #f25f29;
     font-weight: 600;
     font-size: 1.08em;
     margin: 10px 0 4px 0;
@@ -1452,7 +1507,7 @@ h1 {
 
 .tab-button {
     background-color: #23272b;
-    border: 1px solid #28a745;
+    border: 1px solid #f25f29;
     color: #b0b0b0;
     padding: 10px 20px;
     border-radius: 5px;
@@ -1462,15 +1517,15 @@ h1 {
 }
 
 .tab-button:hover {
-    background-color: #28a745;
+    background-color: #f25f29;
     color: #fff;
-    border-color: #28a745;
+    border-color: #f25f29;
 }
 
 .tab-button.active {
-    background-color: #28a745;
+    background-color: #f25f29;
     color: #fff;
-    border-color: #28a745;
+    border-color: #f25f29;
     cursor: default;
 }
 
@@ -1581,7 +1636,7 @@ h1 {
 
 .film-modal-screenshots-list img:hover {
     transform: scale(1.05);
-    border: 2px solid #28a745;
+    border: 2px solid #f25f29;
 }
 
 /* Poster option container (in modal) showing language badge + poster */
@@ -1622,7 +1677,7 @@ h1 {
         max-width: 29vw;
     }
 }
-.poster-option img:hover { transform: scale(1.06); border-color: #28a745; }
+.poster-option img:hover { transform: scale(1.06); border-color: #f25f29; }
 .poster-lang-badge {
     display: none;
 }
@@ -1686,7 +1741,7 @@ h1 {
     padding: 6px 10px;
     font-size: 1em;
     border-radius: 5px;
-    border: 1.5px solid #28a745;
+    border: 1.5px solid #f25f29;
     background: #23272b;
     color: #e0e0e0;
     outline: none;
@@ -1698,7 +1753,7 @@ h1 {
     font-size: 0.95em;
     border: none;
     border-radius: 5px;
-    background-color: #28a745;
+    background-color: #f25f29;
     color: white;
     cursor: pointer;
     transition: background 0.2s;
@@ -1706,7 +1761,7 @@ h1 {
 }
 
 .bingo-btn:hover {
-    background: #218838;
+    background: #d94f22;
 }
 
 .bingo-grid {
@@ -1752,12 +1807,12 @@ h1 {
 
 .bingo-cell:hover {
     background: #353a40;
-    border-color: #28a745;
+    border-color: #f25f29;
     transform: scale(1.05);
 }
 
 .bingo-cell.checked {
-    background: #28a745;
+    background: #f25f29;
     border-color: #1e7e34;
     color: white;
 }
@@ -1866,3 +1921,444 @@ h1 {
 }
 
 
+
+/* ===== SuperSite visual alignment ===== */
+.watch-parter-native-page {
+    --wp-accent: #f25f29;
+    --wp-accent-soft: #f7b538;
+    --wp-surface: #13202a;
+    --wp-surface-2: #1a2b36;
+    --wp-border: #355163;
+    --wp-text: #f2f2ee;
+    --wp-muted: #b8c2cc;
+    background:
+        radial-gradient(circle at 10% 0%, #203847 0%, transparent 40%),
+        radial-gradient(circle at 90% 20%, #3b2622 0%, transparent 38%),
+        #0e151b !important;
+    color: var(--wp-text);
+}
+
+.watch-parter-native-page #mainTopContainer {
+    max-width: 860px;
+}
+
+.watch-parter-native-page #topFormRow {
+    justify-content: center;
+}
+
+.watch-parter-native-page #filmForm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.watch-parter-native-page #filmInput,
+.watch-parter-native-page .watchparter-search-input {
+    border: 1px solid var(--wp-border) !important;
+    border-radius: 0.5rem;
+    background: var(--wp-surface-2) !important;
+    color: var(--wp-text) !important;
+}
+
+.watch-parter-native-page #filmInput::placeholder,
+.watch-parter-native-page .watchparter-search-input::placeholder {
+    color: #8fa1af;
+}
+
+.watch-parter-native-page #filmForm button,
+.watch-parter-native-page .duel-btn-green,
+.watch-parter-native-page #randomFilmBtn,
+.watch-parter-native-page .bingo-btn,
+.watch-parter-native-page #shareWinnersBtn {
+    border: 0 !important;
+    border-radius: 0.5rem;
+    background: linear-gradient(120deg, var(--wp-accent), var(--wp-accent-soft)) !important;
+    color: #121212 !important;
+    font-weight: 700;
+}
+
+.watch-parter-native-page #duelContainer,
+.watch-parter-native-page #bingoContainer,
+.watch-parter-native-page .film-modal-content {
+    border: 1px solid #2f4555 !important;
+    background: var(--wp-surface) !important;
+}
+
+.watch-parter-native-page #filmList li .details,
+.watch-parter-native-page #randomFilmDisplay,
+.watch-parter-native-page #duelContainer .duel-details,
+.watch-parter-native-page #duelContainer .duel-date {
+    color: var(--wp-muted) !important;
+}
+
+.watch-parter-native-page #filmList li a,
+.watch-parter-native-page #duelContainer .links a,
+.watch-parter-native-page .film-modal-link-btn {
+    color: var(--wp-accent-soft) !important;
+}
+
+.watch-parter-native-page #duelContainer #duelTitle,
+.watch-parter-native-page #duelContainer #duelRound,
+.watch-parter-native-page .bingo-control-group label {
+    color: var(--wp-accent-soft) !important;
+}
+
+.watch-parter-native-page #bingoSizeSelect {
+    border: 1px solid var(--wp-border) !important;
+    background: var(--wp-surface-2) !important;
+    color: var(--wp-text) !important;
+}
+
+.watch-parter-native-page #filmListSearchBarContainer {
+    margin-top: 0.15rem;
+}
+
+/* Duel/Bingo pages: hide add + search fields (navigation is in header) */
+.watch-parter-native-page[data-watch-parter-mode="duel"] #topFormRow,
+.watch-parter-native-page[data-watch-parter-mode="duel"] #filmListSearchBarContainer,
+.watch-parter-native-page[data-watch-parter-mode="bingo"] #topFormRow,
+.watch-parter-native-page[data-watch-parter-mode="bingo"] #filmListSearchBarContainer {
+    display: none !important;
+}
+
+/* ===== Watch Parter final alignment (SuperSite) ===== */
+.watch-parter-native-page #topFormRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    flex-wrap: nowrap;
+    margin-bottom: 0.45rem;
+}
+
+.watch-parter-native-page #filmForm {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+.watch-parter-native-page #filmInput {
+    width: clamp(210px, 26vw, 280px);
+    min-width: 0;
+    padding: 0.5rem 0.62rem;
+    font-size: 0.9rem;
+}
+
+.watch-parter-native-page #filmListSearchBarContainer {
+    width: auto;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.watch-parter-native-page .watchparter-searchbar {
+    margin: 0;
+}
+
+.watch-parter-native-page #filmListSearchInput,
+.watch-parter-native-page .watchparter-search-input {
+    width: clamp(210px, 25vw, 270px);
+    min-width: 0;
+    padding: 0.5rem 0.62rem;
+    font-size: 0.9rem;
+    border: 1px solid #355163 !important;
+    border-radius: 0.5rem;
+    background: #1a2b36 !important;
+    color: #f2f2ee !important;
+}
+
+.watch-parter-native-page #filmListSearchInput:focus,
+.watch-parter-native-page .watchparter-search-input:focus {
+    border-color: #4f6f82 !important;
+    outline: 2px solid rgba(242, 95, 41, 0.35);
+    outline-offset: 1px;
+}
+
+.watch-parter-native-page #filmList li,
+.watch-parter-native-page #duelContainer,
+.watch-parter-native-page #bingoContainer,
+.watch-parter-native-page .film-modal-content,
+.watch-parter-native-page .film-modal-screenshots-section,
+.watch-parter-native-page .poster-option {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+.watch-parter-native-page #filmList li {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.watch-parter-native-page #filmList li .poster-wrapper,
+.watch-parter-native-page #filmList li .poster-wrapper img {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.watch-parter-native-page .film-modal-tabs {
+    border-bottom-color: #355163 !important;
+}
+
+.watch-parter-native-page .tab-button {
+    color: #b8c2cc !important;
+}
+
+.watch-parter-native-page .tab-button.active {
+    color: #f2f2ee !important;
+    border-bottom-color: #f25f29 !important;
+}
+
+@media (max-width: 900px) {
+    .watch-parter-native-page #topFormRow {
+        flex-wrap: wrap;
+    }
+
+    .watch-parter-native-page #filmInput,
+    .watch-parter-native-page #filmListSearchInput,
+    .watch-parter-native-page .watchparter-search-input {
+        width: min(86vw, 420px);
+        min-width: 0;
+    }
+
+    .watch-parter-native-page #topFormRow {
+        gap: 0.5rem;
+    }
+}
+
+/* ===== Watch Parter color tuning ===== */
+.watch-parter-native-page {
+    font-family: var(--font-body), sans-serif !important;
+    color: var(--text) !important;
+}
+
+.watch-parter-native-page h1,
+.watch-parter-native-page h2,
+.watch-parter-native-page h3,
+.watch-parter-native-page #duelTitle,
+.watch-parter-native-page #duelRound {
+    font-family: var(--font-heading), sans-serif !important;
+}
+
+.watch-parter-native-page #duelHeader #duelRound {
+    color: #f25f29 !important;
+}
+
+.watch-parter-native-page .film-modal-links {
+    border-top: 1px solid #355163 !important;
+}
+
+.watch-parter-native-page .film-modal-links a,
+.watch-parter-native-page #duelContainer .links a {
+    text-decoration: none;
+    border-radius: 0.45rem;
+    padding: 0.32rem 0.62rem;
+    border: 1px solid transparent;
+    font-weight: 600;
+}
+
+.watch-parter-native-page .film-modal-links .letterboxd-link,
+.watch-parter-native-page #duelContainer .links .letterboxd-link {
+    color: #66c08a !important;
+    border-color: rgba(102, 192, 138, 0.55) !important;
+}
+
+.watch-parter-native-page .film-modal-links .letterboxd-link:hover,
+.watch-parter-native-page #duelContainer .links .letterboxd-link:hover {
+    background: rgba(102, 192, 138, 0.18);
+    color: #8ad9ab !important;
+    text-decoration: none;
+}
+
+.watch-parter-native-page .film-modal-links .trailer-link,
+.watch-parter-native-page #duelContainer .links .trailer-link {
+    color: #ff6b6b !important;
+    border-color: rgba(255, 107, 107, 0.58) !important;
+}
+
+.watch-parter-native-page .film-modal-links .trailer-link:hover,
+.watch-parter-native-page #duelContainer .links .trailer-link:hover {
+    background: rgba(255, 107, 107, 0.17);
+    color: #ff8b8b !important;
+    text-decoration: none;
+}
+
+.watch-parter-native-page #filmList li .poster-wrapper .added-by-user-icon {
+    border: 2px solid rgba(20, 32, 43, 0.88);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(242, 95, 41, 0.24);
+}
+
+.watch-parter-native-page #duelContainer .film {
+    cursor: default !important;
+}
+
+.watch-parter-native-page #duelContainer .film-poster-clickable {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+}
+
+.watch-parter-native-page #duelContainer .film-poster-clickable img {
+    cursor: pointer;
+}
+
+/* Sur les pages watchlist/courter, le duel en bas est cache (accessible via header) */
+.watch-parter-native-page[data-watch-parter-mode="watchlist"] #bottomDuelWrapper,
+.watch-parter-native-page[data-watch-parter-mode="courter"] #bottomDuelWrapper {
+    display: none !important;
+}
+
+/* Unified text color: match Super Site white text */
+.watch-parter-native-page,
+.watch-parter-native-page p,
+.watch-parter-native-page span,
+.watch-parter-native-page label,
+.watch-parter-native-page h1,
+.watch-parter-native-page h2,
+.watch-parter-native-page h3,
+.watch-parter-native-page h4,
+.watch-parter-native-page .duel-title,
+.watch-parter-native-page .duel-date,
+.watch-parter-native-page .duel-details,
+.watch-parter-native-page #duelHeader #duelRound,
+.watch-parter-native-page #duelHeader #duelTitle,
+.watch-parter-native-page .film-modal-infos h2,
+.watch-parter-native-page .film-modal-details,
+.watch-parter-native-page .film-modal-synopsis,
+.watch-parter-native-page .film-modal-crew,
+.watch-parter-native-page .film-modal-trailer-title,
+.watch-parter-native-page .film-modal-screenshots-title,
+.watch-parter-native-page .bingo-control-group label,
+.watch-parter-native-page #randomFilmDisplay {
+    color: var(--text) !important;
+}
+
+/* ===== Watch Parter modal typography + tabs ===== */
+.watch-parter-native-page .film-modal-tabs {
+    border-bottom-color: #355163 !important;
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.65rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.42rem;
+}
+
+.watch-parter-native-page .tab-button {
+    font-family: var(--font-body), sans-serif !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    color: #d7e0e8 !important;
+    background: rgba(21, 34, 45, 0.92) !important;
+    border: 1px solid #3e5a6c !important;
+    border-radius: 0.5rem !important;
+    padding: 0.46rem 0.78rem !important;
+    min-width: 96px;
+    font-weight: 700;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.watch-parter-native-page .tab-button:hover {
+    transform: translateY(-1px);
+    border-color: #f25f29 !important;
+    background: rgba(29, 46, 59, 0.95) !important;
+}
+
+.watch-parter-native-page .tab-button.active {
+    color: #121212 !important;
+    border-color: transparent !important;
+    border-bottom-color: transparent !important;
+    background: linear-gradient(120deg, #f25f29, #f7b538) !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+}
+
+.watch-parter-native-page .film-modal-infos h2 {
+    font-family: var(--font-heading), sans-serif !important;
+    font-size: clamp(1.35rem, 1.75vw, 1.8rem) !important;
+    line-height: 1.12;
+    letter-spacing: 0.01em;
+    margin: 0.25rem 0 0.45rem !important;
+    color: var(--text) !important;
+}
+
+.watch-parter-native-page .film-modal-details {
+    font-size: clamp(0.92rem, 1.02vw, 1.01rem) !important;
+    line-height: 1.4 !important;
+    color: var(--text) !important;
+    opacity: 0.94;
+    margin-bottom: 0.35rem !important;
+}
+
+.watch-parter-native-page .film-modal-synopsis {
+    font-size: clamp(0.9rem, 0.98vw, 0.98rem) !important;
+    line-height: 1.5 !important;
+    color: var(--text) !important;
+    opacity: 0.92;
+    margin-bottom: 0.5rem !important;
+}
+
+.watch-parter-native-page .film-modal-crew {
+    font-size: 0.88rem !important;
+    line-height: 1.38 !important;
+    color: var(--text) !important;
+    opacity: 0.82;
+}
+
+@media (min-width: 901px) {
+    .watch-parter-native-page .film-modal-content {
+        max-height: calc(100vh - 70px) !important;
+        padding: 0.65rem 0.85rem 0.85rem !important;
+        overflow-y: auto !important;
+    }
+
+    .watch-parter-native-page .film-modal-main-content {
+        max-height: none !important;
+        overflow-y: visible !important;
+        gap: 0.7rem;
+    }
+
+    .watch-parter-native-page .film-modal-poster-container {
+        padding: 0.32rem !important;
+    }
+
+    .watch-parter-native-page .film-modal-poster-container iframe.film-modal-trailer-iframe {
+        height: min(36vh, 300px) !important;
+    }
+
+    .watch-parter-native-page .film-modal-poster-container img.film-modal-poster {
+        max-height: min(46vh, 360px) !important;
+    }
+
+    .watch-parter-native-page .film-modal-links {
+        margin-top: 0.55rem !important;
+        padding-top: 0.55rem !important;
+    }
+
+    .watch-parter-native-page .film-modal-links a {
+        font-size: 0.9rem !important;
+        padding: 0.34rem 0.64rem !important;
+    }
+}
+
+/* Modal trailer: enforce stable 16:9 rendering */
+.watch-parter-native-page .film-modal-poster-container {
+    width: min(90vw, 900px);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.watch-parter-native-page .film-modal-poster-container iframe.film-modal-trailer-iframe {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 16 / 9 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    border-radius: 0.7rem;
+}

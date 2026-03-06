@@ -485,12 +485,16 @@ function displayDuelFilms() {
     film2Div.onmouseenter = null;
     film2Div.onmouseleave = null;
 
-    // Limiter la zone de vote à l'affiche uniquement
+    // Limiter la zone de vote strictement a l'image du poster
     const film1PosterClickable = film1Div.querySelector('.film-poster-clickable');
     const film2PosterClickable = film2Div.querySelector('.film-poster-clickable');
-    film1PosterClickable.style.cursor = 'pointer';
-    film2PosterClickable.style.cursor = 'pointer';
-    film1PosterClickable.onclick = (e) => {
+    const film1PosterImg = document.getElementById("film1Poster");
+    const film2PosterImg = document.getElementById("film2Poster");
+    if (film1PosterClickable) film1PosterClickable.style.cursor = 'default';
+    if (film2PosterClickable) film2PosterClickable.style.cursor = 'default';
+    if (film1PosterImg) film1PosterImg.style.cursor = 'pointer';
+    if (film2PosterImg) film2PosterImg.style.cursor = 'pointer';
+    if (film1PosterImg) film1PosterImg.onclick = (e) => {
         e.stopPropagation();
         film1Div.classList.add("selected");
         film2Div.classList.add("grayed-out");
@@ -503,7 +507,7 @@ function displayDuelFilms() {
             startDuel();
         }, 500);
     };
-    film2PosterClickable.onclick = (e) => {
+    if (film2PosterImg) film2PosterImg.onclick = (e) => {
         e.stopPropagation();
         film2Div.classList.add("selected");
         film1Div.classList.add("grayed-out");
@@ -572,20 +576,16 @@ function showDuelOnTop() {
     duelWrapper.style.marginTop = '18px';
     mainTopContainer.insertAdjacentElement('afterend', duelWrapper);
     filmList.style.display = 'none';
-    toggleDuelBtn.textContent = '◀️ Retour à la liste';
+    if (toggleDuelBtn) toggleDuelBtn.textContent = '◀️ Retour à la liste';
 }
 
 function showListOnTop() {
     mainTopContainer.insertAdjacentElement('afterend', filmList);
     filmList.style.display = '';
-    toggleDuelBtn.textContent = isCourterMode() ? '⚔️ Duel Courter' : '⚔️ Duel de Films';
+    if (toggleDuelBtn) toggleDuelBtn.textContent = isCourterMode() ? '⚔️ Duel Courter' : '⚔️ Duel de Films';
 }
 
 function updateModeUI() {
-    const titleEl = document.getElementById('mainTitle');
-    if (titleEl) {
-        titleEl.textContent = isCourterMode() ? 'WATCH COURTER' : 'WATCH PARTER';
-    }
     const toggleModeBtn = document.getElementById('toggleWatchCourterBtn');
     if (toggleModeBtn) {
         toggleModeBtn.textContent = isCourterMode() ? '🎬 Watch Parter' : '⏱️ Watch Courter';
@@ -599,7 +599,7 @@ function updateModeUI() {
     }
     const filmInputField = document.getElementById('filmInput');
     if (filmInputField) {
-        filmInputField.placeholder = isCourterMode() ? 'Film court / série' : 'Nom du film';
+        filmInputField.placeholder = isCourterMode() ? 'Ajouter un court/série' : 'Ajouter un film';
     }
 }
 
@@ -617,14 +617,16 @@ function applyMode(newMode) {
     loadFilmsForDuel();
 }
 
-toggleDuelBtn.addEventListener('click', function() {
-    duelMode = !duelMode;
-    if (duelMode) {
-        showDuelOnTop();
-    } else {
-        showListOnTop();
-    }
-});
+if (toggleDuelBtn) {
+    toggleDuelBtn.addEventListener('click', function() {
+        duelMode = !duelMode;
+        if (duelMode) {
+            showDuelOnTop();
+        } else {
+            showListOnTop();
+        }
+    });
+}
 
 // 📌 Barre de recherche avec suggestions TMDB
 const filmInput = document.getElementById('filmInput');
@@ -925,7 +927,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const filmForm = document.getElementById("filmForm");
     const randomFilmBtn = document.getElementById("randomFilmBtn");
     const toggleWatchCourterBtn = document.getElementById("toggleWatchCourterBtn");
-    const currentUserLabel = document.getElementById("watchparter-current-user");
 
     // Restaurer le mode (liste principale ou Watch Courter)
     const storedMode = localStorage.getItem('watchparter_mode');
@@ -961,27 +962,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const randomFilmDisplay = document.getElementById("randomFilmDisplay");
 
-    function updateCurrentUserLabel() {
-        if (!currentUserLabel) return;
-        const username = getSupersiteUsername();
-        currentUserLabel.textContent = username
-            ? `Connecte : @${username}`
-            : "Connecte-toi via le header SuperSite";
-    }
-    updateCurrentUserLabel();
-    if (window.ReviewsStore?.onAuthChanged) {
-        window.ReviewsStore.onAuthChanged(updateCurrentUserLabel);
-    }
-
     // Ajout du champ de recherche au-dessus de la liste des films
     function addFilmListSearchBar() {
         if (document.getElementById('filmListSearchBar')) return;
         const searchBar = document.createElement('div');
         searchBar.id = 'filmListSearchBar';
-        searchBar.style.display = 'flex';
-        searchBar.style.alignItems = 'center';
-        searchBar.style.gap = '8px';
-        searchBar.style.margin = '0 0 8px 0';
+        searchBar.className = 'watchparter-searchbar';
         // Positionnement : dans le nouveau conteneur
         const searchBarContainer = document.getElementById('filmListSearchBarContainer');
         if (searchBarContainer) {
@@ -990,14 +976,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'filmListSearchInput';
-        input.placeholder = 'Rechercher dans la liste...';
-        input.style.padding = '6px 10px';
-        input.style.borderRadius = '5px';
-        input.style.border = '1.5px solid #28a745';
-        input.style.background = '#23272b';
-        input.style.color = '#e0e0e0';
-        input.style.fontSize = '1em';
-        input.style.width = '180px';
+        input.className = 'watchparter-search-input';
+        input.placeholder = 'Rechercher dans la liste';
         input.addEventListener('input', chargerFilms);
         searchBar.appendChild(input);
     }

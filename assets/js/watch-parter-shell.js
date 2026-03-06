@@ -1,22 +1,17 @@
 function buildWatchParterAppMarkup() {
   return `
-    <h1 id="mainTitle">WATCH PARTER</h1>
-
     <div id="mainTopContainer">
       <div id="topFormRow">
-        <div id="watchparter-current-user" class="watchparter-current-user">Connecte-toi via le header SuperSite</div>
         <form id="filmForm">
           <input type="text" id="filmInput" placeholder="Nom du film" required>
-          <button type="submit">Ajouter</button>
         </form>
+        <div id="filmListSearchBarContainer"></div>
       </div>
-      <div id="duelCollectionRow" class="duel-collection-row">
-        <button id="toggleWatchCourterBtn" class="duel-btn-green">Watch Courter</button>
-        <button id="toggleDuelBtn" class="duel-btn-green">Duel de films</button>
-        <a href="https://letterboxd.com/groszizou/list/collection/" target="_blank" id="collectionBtn" class="duel-btn-green" style="text-decoration:none;display:inline-block;">Collection</a>
-        <button id="toggleBingoBtn" class="duel-btn-green">Bingo</button>
+      <div class="watchparter-hidden-controls" aria-hidden="true">
+        <button id="toggleWatchCourterBtn" type="button" class="duel-btn-green">Watch Courter</button>
+        <button id="toggleDuelBtn" type="button" class="duel-btn-green">Duel de films</button>
+        <button id="toggleBingoBtn" type="button" class="duel-btn-green">Bingo</button>
       </div>
-      <div id="filmListSearchBarContainer"></div>
     </div>
 
     <ul id="filmList"></ul>
