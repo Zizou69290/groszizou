@@ -395,7 +395,7 @@ h1 {
     margin: 0 auto;
 }
 
-#filmList li .poster-wrapper img {
+#filmList li .poster-wrapper img:not(.added-by-user-icon) {
     display: block;
     width: 100%;
     height: auto;
@@ -2361,4 +2361,179 @@ h1 {
     min-height: 0 !important;
     max-height: none !important;
     border-radius: 0.7rem;
+}
+
+/* ===== Final mobile safety overrides (Watch Parter) ===== */
+@media (max-width: 900px) {
+    html,
+    body.watch-parter-native-page {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    body.watch-parter-native-page {
+        overflow-x: hidden !important;
+        position: relative;
+    }
+
+    .watch-parter-native-page main,
+    .watch-parter-native-page .watch-parter-main,
+    .watch-parter-native-page #watchparter-app-root {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page #watchparter-app-root * {
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page img,
+    .watch-parter-native-page iframe,
+    .watch-parter-native-page video,
+    .watch-parter-native-page canvas {
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page p,
+    .watch-parter-native-page span,
+    .watch-parter-native-page h1,
+    .watch-parter-native-page h2,
+    .watch-parter-native-page h3,
+    .watch-parter-native-page h4,
+    .watch-parter-native-page h5,
+    .watch-parter-native-page h6,
+    .watch-parter-native-page button,
+    .watch-parter-native-page a,
+    .watch-parter-native-page label {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .watch-parter-native-page #mainTopContainer,
+    .watch-parter-native-page #topFormRow,
+    .watch-parter-native-page #filmList,
+    .watch-parter-native-page #bottomDuelWrapper,
+    .watch-parter-native-page #duelContainer,
+    .watch-parter-native-page #duelWinnerSimple,
+    .watch-parter-native-page #bingoSection,
+    .watch-parter-native-page #bingoContainer {
+        width: min(96vw, 760px) !important;
+        max-width: 96vw !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page #topFormRow {
+        align-items: stretch !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+    }
+
+    .watch-parter-native-page #filmForm,
+    .watch-parter-native-page #filmListSearchBarContainer {
+        width: min(96vw, 560px) !important;
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page #filmInput,
+    .watch-parter-native-page #filmListSearchInput,
+    .watch-parter-native-page .watchparter-search-input {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page #filmList {
+        padding-left: 0.3rem !important;
+        padding-right: 0.3rem !important;
+        justify-content: center !important;
+    }
+
+    .watch-parter-native-page #filmList li {
+        width: clamp(104px, 28vw, 148px) !important;
+        max-width: clamp(104px, 28vw, 148px) !important;
+        min-width: 0 !important;
+    }
+
+    .watch-parter-native-page #filmList li .poster-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page #filmList li .poster-wrapper img:not(.added-by-user-icon) {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 2 / 3;
+        object-fit: cover;
+    }
+
+    .watch-parter-native-page #duelContainer .films-row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 0.7rem !important;
+    }
+
+    .watch-parter-native-page #duelContainer .film {
+        width: min(44vw, 220px) !important;
+        max-width: min(44vw, 220px) !important;
+        min-width: 0 !important;
+    }
+
+    .watch-parter-native-page #duelContainer .film-poster-clickable,
+    .watch-parter-native-page #duelContainer .film-poster-clickable img {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page #duelContainer .links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem;
+    }
+
+    .watch-parter-native-page #duelContainer .links a,
+    .watch-parter-native-page .film-modal-links a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 88px;
+        padding: 0.32rem 0.58rem !important;
+        white-space: nowrap;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+        line-height: 1.1;
+    }
+
+    .watch-parter-native-page .film-modal-content {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        max-height: calc(100vh - 34px) !important;
+        overflow-y: auto !important;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 500px) {
+    .watch-parter-native-page #filmList li {
+        width: clamp(96px, 29vw, 128px) !important;
+        max-width: clamp(96px, 29vw, 128px) !important;
+    }
+
+    .watch-parter-native-page #duelContainer .film {
+        width: min(46vw, 180px) !important;
+        max-width: min(46vw, 180px) !important;
+    }
+
+    .watch-parter-native-page #bingoGrid .bingo-cell,
+    .watch-parter-native-page .bingo-grid .bingo-cell {
+        min-height: 64px !important;
+        padding: 0.35rem !important;
+    }
 }

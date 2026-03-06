@@ -17,6 +17,38 @@
     return username ? `${escapeHtml(username)}` : "Mon compte";
   }
 
+  function isMobileNav() {
+    return Boolean(window.matchMedia && window.matchMedia("(max-width: 700px)").matches);
+  }
+
+  function syncMobileWatchParterMenu() {
+    const menu = document.getElementById("menu");
+    const parentLink = document.querySelector('.menu-item-has-submenu > a[href="watch-parter.html"], .menu-item-has-submenu > a[data-watch-parter-parent="1"]');
+    if (!menu || !parentLink) return;
+
+    if (!parentLink.dataset.originalText) parentLink.dataset.originalText = parentLink.textContent || "Watch Parter";
+    if (!parentLink.dataset.originalHref) parentLink.dataset.originalHref = parentLink.getAttribute("href") || "watch-parter.html";
+    parentLink.dataset.watchParterParent = "1";
+
+    const mobile = isMobileNav();
+    menu.classList.toggle("mobile-watchparter-mode", mobile);
+
+    const courterLink = menu.querySelector('.menu-item-has-submenu .submenu a[href="watch-parter-courter.html"]');
+    if (courterLink) {
+      if (!courterLink.dataset.originalText) courterLink.dataset.originalText = courterLink.textContent || "Watchlist Courter";
+      courterLink.textContent = mobile ? "Watch Courter" : courterLink.dataset.originalText;
+    }
+
+    if (mobile) {
+      parentLink.textContent = "Watch Parter";
+      parentLink.setAttribute("href", "watch-parter-watchlist.html");
+      return;
+    }
+
+    parentLink.textContent = parentLink.dataset.originalText;
+    parentLink.setAttribute("href", parentLink.dataset.originalHref);
+  }
+
   function renderGuestPanel() {
     return `
       <div class="auth-popover-title">Connexion</div>
@@ -103,17 +135,25 @@
   }
 
   function wireUserEvents() {
-    const logoutBtn = slot.querySelector("#auth-pop-logout");
-    if (!logoutBtn) return;
+    const logoutButtons = [
+      slot.querySelector("#auth-pop-logout"),
+      slot.querySelector("#auth-mobile-logout")
+    ].filter(Boolean);
+    if (!logoutButtons.length) return;
 
-    logoutBtn.addEventListener("click", async () => {
+    const handleLogout = async (event) => {
+      event.preventDefault();
       try {
         await window.ReviewsStore.signOut();
         panelOpen = false;
       } catch (error) {
         window.alert(`D\u00E9connexion impossible : ${error.message}`);
       }
-    });
+    };
+
+    for (const button of logoutButtons) {
+      button.addEventListener("click", handleLogout);
+    }
   }
 
   function wireEvents() {
@@ -135,13 +175,24 @@
   }
 
   function render() {
+    syncMobileWatchParterMenu();
     const username = currentProfile?.username || currentUser?.username || "";
     const label = currentUser ? accountLabel(username) : "Connexion";
+    const mobileShortcuts = currentUser
+      ? `
+      <div class="auth-mobile-shortcuts">
+        <a href="modifier.html" class="auth-mobile-menu-link">Gestionnaire</a>
+        <button id="auth-mobile-logout" type="button" class="auth-mobile-menu-link">D\u00E9connexion</button>
+      </div>
+    `
+      : "";
+    const mobileLoggedView = currentUser && isMobileNav();
 
     slot.innerHTML = `
-      <button id="auth-nav-toggle" class="auth-nav-btn" type="button" aria-expanded="${panelOpen ? "true" : "false"}">
+      ${mobileLoggedView ? "" : `<button id="auth-nav-toggle" class="auth-nav-btn" type="button" aria-expanded="${panelOpen ? "true" : "false"}">
         ${label}
-      </button>
+      </button>`}
+      ${mobileLoggedView ? mobileShortcuts : ""}
       ${panelOpen ? `<div class="auth-popover">${renderPanelContent()}</div>` : ""}
     `;
     wireEvents();
@@ -155,6 +206,12 @@
 
   window.ReviewsStore.onAuthChanged(async () => {
     await refreshProfile();
+    render();
+  });
+
+  window.addEventListener("resize", () => {
+    syncMobileWatchParterMenu();
+    if (currentUser && isMobileNav()) panelOpen = false;
     render();
   });
 

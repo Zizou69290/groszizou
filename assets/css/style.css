@@ -211,6 +211,10 @@ img {
   appearance: none;
 }
 
+.auth-mobile-shortcuts {
+  display: none;
+}
+
 .menu-sep {
   color: #5f7586;
 }
@@ -1089,6 +1093,26 @@ textarea {
 }
 
 @media (max-width: 700px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    position: relative;
+  }
+
+  .hero,
+  .hero .container,
+  main,
+  .container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
   .listing-controls {
     flex-wrap: wrap;
     gap: 0.6rem;
@@ -1103,15 +1127,39 @@ textarea {
   }
 
   .menu {
-    position: absolute;
-    right: 4vw;
-    top: 74px;
+    position: fixed;
+    right: 3vw;
+    top: 68px;
     background: #172732;
     border: 1px solid #2f4555;
     border-radius: 0.7rem;
-    padding: 0.8rem;
+    padding: 0.4rem;
     display: none;
     flex-direction: column;
+    align-items: stretch;
+    width: clamp(220px, 62vw, 260px);
+    gap: 0.12rem;
+    max-height: calc(100vh - 84px);
+    overflow-y: auto;
+    z-index: 12050;
+  }
+
+  .menu > li {
+    width: 100%;
+  }
+
+  .menu > li.menu-item-has-submenu {
+    margin-top: 0.22rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid #2f4555;
+  }
+
+  .menu > li > a {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.4rem 0.45rem;
+    border-radius: 0.45rem;
   }
 
   .menu.open {
@@ -1125,8 +1173,8 @@ textarea {
   .menu-item-has-submenu .submenu {
     position: static;
     min-width: 0;
-    margin-top: 0.3rem;
-    padding: 0.2rem 0 0.15rem 0.7rem;
+    margin-top: 0.12rem;
+    padding: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -1134,14 +1182,33 @@ textarea {
     display: block;
   }
 
+  .menu.mobile-watchparter-mode .menu-item-has-submenu .submenu li:first-child {
+    display: none;
+  }
+
   .menu-item-has-submenu .submenu a {
-    padding: 0.28rem 0;
+    padding: 0.34rem 0.45rem;
     border-radius: 0;
     background: transparent;
+    text-align: left;
   }
 
   .menu-item-has-submenu .submenu a:hover {
     background: transparent;
+  }
+
+  .auth-menu-slot {
+    width: 100%;
+    margin-top: 0.28rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid #2f4555;
+  }
+
+  .auth-nav-btn {
+    width: 100%;
+    transform: none;
+    justify-content: center;
+    min-height: 2.15rem;
   }
 
   .review-card {
@@ -1175,23 +1242,87 @@ textarea {
 
   .listing-selects {
     width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "reset tri user"
+      "search search search";
+    align-items: end;
+    gap: 0.45rem;
   }
 
   .select-inline {
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.18rem;
+    white-space: normal;
+    min-width: 0;
+  }
+
+  .listing-selects > label[for$="-search"] {
+    grid-area: search;
     width: 100%;
-    justify-content: space-between;
+  }
+
+  .listing-selects > label[for$="-sort"] {
+    grid-area: tri;
+  }
+
+  .listing-selects > label[for$="-user-filter"] {
+    grid-area: user;
   }
 
   .select-inline select {
     min-width: 0;
-    flex: 1;
-    max-width: 72%;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .select-inline input[type="search"] {
     min-width: 0;
-    flex: 1;
-    max-width: 72%;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .listing-selects > .icon-btn {
+    grid-area: reset;
+    width: 2.2rem;
+    min-width: 2.2rem;
+    max-width: 2.2rem;
+    min-height: 2.2rem;
+    padding: 0;
+    justify-self: start;
+  }
+
+  .auth-mobile-shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .auth-mobile-menu-link {
+    width: 100%;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.45rem 0.5rem;
+    text-align: left;
+    font: inherit;
+    line-height: 1.2;
+    cursor: pointer;
+  }
+
+  .auth-mobile-menu-link:hover {
+    color: var(--text);
+    background: rgba(53, 81, 99, 0.45);
   }
 
   .auth-grid {
