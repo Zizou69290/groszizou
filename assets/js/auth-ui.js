@@ -23,11 +23,11 @@
 
   function syncMobileWatchParterMenu() {
     const menu = document.getElementById("menu");
-    const parentLink = document.querySelector('.menu-item-has-submenu > a[href="watch-parter.html"], .menu-item-has-submenu > a[data-watch-parter-parent="1"]');
+    const parentLink = document.querySelector('.menu-item-has-submenu > a[href="watch-parter-watchlist.html"], .menu-item-has-submenu > a[href="watch-parter.html"], .menu-item-has-submenu > a[data-watch-parter-parent="1"]');
     if (!menu || !parentLink) return;
 
     if (!parentLink.dataset.originalText) parentLink.dataset.originalText = parentLink.textContent || "Watch Parter";
-    if (!parentLink.dataset.originalHref) parentLink.dataset.originalHref = parentLink.getAttribute("href") || "watch-parter.html";
+    if (!parentLink.dataset.originalHref) parentLink.dataset.originalHref = parentLink.getAttribute("href") || "watch-parter-watchlist.html";
     parentLink.dataset.watchParterParent = "1";
 
     const mobile = isMobileNav();
@@ -35,7 +35,7 @@
 
     const courterLink = menu.querySelector('.menu-item-has-submenu .submenu a[href="watch-parter-courter.html"]');
     if (courterLink) {
-      if (!courterLink.dataset.originalText) courterLink.dataset.originalText = courterLink.textContent || "Watchlist Courter";
+      if (!courterLink.dataset.originalText) courterLink.dataset.originalText = courterLink.textContent || "Watchlist Courts";
       courterLink.textContent = mobile ? "Watch Courter" : courterLink.dataset.originalText;
     }
 

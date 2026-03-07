@@ -32,6 +32,6 @@ if (directMatch) directMatch.setAttribute("aria-current", "page");
 
 const isWatchParterPage = currentPage === "watch-parter.html" || currentPage.startsWith("watch-parter-");
 if (isWatchParterPage) {
-  const parentLink = document.querySelector('.menu-item-has-submenu > a[href="watch-parter.html"]');
+  const parentLink = document.querySelector('.menu-item-has-submenu > a[href="watch-parter-watchlist.html"], .menu-item-has-submenu > a[href="watch-parter.html"]');
   if (parentLink) parentLink.setAttribute("aria-current", "page");
 }

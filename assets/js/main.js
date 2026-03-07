@@ -463,7 +463,7 @@ function reviewCard(item) {
 function managerRow(item) {
   const row = document.createElement("div");
   row.className = "manager-row";
-  const ownerMeta = item.ownerUsername ? ` &middot; ${ownerBadge(item.ownerUsername)}` : "";
+  const ownerMeta = item.ownerUsername ? ` &middot; ${escapeHtml(item.ownerUsername)}` : "";
   const statusMeta = `<span class="status-text status-${normalizePublicationStatus(item.status)}">${publicationStatusLabel(item.status)}</span>`;
   row.innerHTML = `
     <div>
@@ -471,7 +471,7 @@ function managerRow(item) {
         <strong>${escapeHtml(item.title || "Sans titre")}</strong>
         ${statusMeta}
       </div>
-      <span>${window.ReviewsStore.categories[item.category] || item.category} &middot; ${fmtDate(item.date)}${ownerMeta}</span>
+      <span class="manager-meta">${window.ReviewsStore.categories[item.category] || item.category} &middot; ${fmtDate(item.date)}${ownerMeta}</span>
     </div>
     <div class="row-actions">
       <button class="action-btn secondary" data-action="edit">Éditer</button>

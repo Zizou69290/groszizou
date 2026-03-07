@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperSite - Création</title>
+  <title>SuperSite - CrÃ©ation</title>
   <link rel="icon" type="image/png" href="pouce.png" />
-  <meta name="description" content="Créer et gérer ses reviews et tops." />
+  <meta name="description" content="CrÃ©er et gÃ©rer ses reviews et tops." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -22,10 +22,10 @@
         <li><a href="index.html">Reviews</a></li>
         <li><a href="tops.html">Tops</a></li>
         <li class="menu-item-has-submenu">
-          <a href="watch-parter.html">Watch Parter</a>
+          <a href="watch-parter-watchlist.html">Watch Parter</a>
           <ul class="submenu" aria-label="Sous-menu Watch Parter">
             <li><a href="watch-parter-watchlist.html">Watchlist</a></li>
-            <li><a href="watch-parter-courter.html">Watchlist Courter</a></li>
+            <li><a href="watch-parter-courter.html">Watchlist Courts</a></li>
             <li><a href="watch-parter-duel.html">Duel de films</a></li>
             <li><a href="watch-parter-bingo.html">Bingo</a></li>
           </ul>
@@ -38,7 +38,7 @@
 
   <main>
     <section class="container manager-section">
-      <p id="manager-guest-message" class="manager-guest-note hidden">Y'a rien à voir ici, connecte-toi</p>
+      <p id="manager-guest-message" class="manager-guest-note hidden">Y'a rien Ã  voir ici, connecte-toi</p>
     </section>
 
     <section id="manager" class="container manager-section hidden">
@@ -46,13 +46,11 @@
         <h2>Gestion des reviews</h2>
         <div class="manager-actions">
           <label class="select-inline" for="manager-reviews-search">
-            Recherche
-            <input id="manager-reviews-search" type="search" placeholder="Titre, catégorie, auteur..." />
+            <input id="manager-reviews-search" type="search" placeholder="Rechercher" aria-label="Rechercher une review" />
           </label>
           <label class="select-inline" for="manager-reviews-sort">
-            Tri
-            <select id="manager-reviews-sort">
-              <option value="date-desc">Plus récent</option>
+            <select id="manager-reviews-sort" aria-label="Trier les reviews">
+              <option value="date-desc">Plus r&eacute;cent</option>
               <option value="date-asc">Plus ancien</option>
             </select>
           </label>
@@ -66,11 +64,11 @@
         <h3 id="form-title">Ajouter une review</h3>
         <div class="form-grid">
           <label><span class="label-row"><span class="field-label-text">Titre</span><span class="field-hint field-required">obligatoire</span></span><input name="title" required /></label>
-          <label><span class="label-row"><span class="field-label-text">Catégorie</span><span class="field-hint field-required">obligatoire</span></span>
+          <label><span class="label-row"><span class="field-label-text">CatÃ©gorie</span><span class="field-hint field-required">obligatoire</span></span>
             <select name="category" required>
-              <option value="jeu">Jeu-vidéo</option>
+              <option value="jeu">Jeu-vidÃ©o</option>
               <option value="film" selected>Film</option>
-              <option value="serie">Série</option>
+              <option value="serie">SÃ©rie</option>
               <option value="musique">Musique</option>
               <option value="livre">Livre</option>
             </select>
@@ -78,15 +76,15 @@
           <label><span class="label-row"><span class="field-label-text">Date de publication</span><span class="field-hint field-required">obligatoire</span></span><input name="date" type="date" required /></label>
           <label><span class="label-row"><span class="field-label-text">Statut</span><span class="field-hint field-required">obligatoire</span></span>
             <select name="status" required>
-              <option value="published" selected>Publié</option>
+              <option value="published" selected>PubliÃ©</option>
               <option value="draft">Brouillon</option>
             </select>
           </label>
           <label><span class="label-row"><span class="field-label-text">Note (/10)</span><span class="field-hint">optionnel</span></span><input name="score" type="number" min="0" max="10" step="0.1" /></label>
-          <label id="meta-director-row"><span class="label-row"><span class="field-label-text">Réalisation</span><span class="field-hint">optionnel</span></span>
+          <label id="meta-director-row"><span class="label-row"><span class="field-label-text">RÃ©alisation</span><span class="field-hint">optionnel</span></span>
             <input name="director" type="text" placeholder="Ex: Denis Villeneuve" />
           </label>
-          <label><span class="label-row"><span class="field-label-text">Année de sortie</span><span class="field-hint">optionnel</span></span>
+          <label><span class="label-row"><span class="field-label-text">AnnÃ©e de sortie</span><span class="field-hint">optionnel</span></span>
             <input name="releaseYear" type="text" placeholder="Ex: 2025" />
           </label>
           <label><span class="label-row"><span class="field-label-text">Affiche (URL)</span><span class="field-hint">optionnel</span></span>
@@ -104,13 +102,13 @@
           </div>
         </div>
 
-        <label><span class="label-row"><span class="field-label-text">Résumé</span><span class="field-hint">optionnel</span></span>
+        <label><span class="label-row"><span class="field-label-text">RÃ©sumÃ©</span><span class="field-hint">optionnel</span></span>
           <textarea name="summary" rows="2"></textarea>
         </label>
 
-        <div class="content-mode-switch" role="group" aria-label="Mode d'édition">
+        <div class="content-mode-switch" role="group" aria-label="Mode d'Ã©dition">
           <button type="button" class="action-btn secondary mode-btn active" data-content-mode="blocks">Mode blocs</button>
-          <button type="button" class="action-btn secondary mode-btn" data-content-mode="rich">Éditeur libre (pas conseillé, inshallah bientôt)</button>
+          <button type="button" class="action-btn secondary mode-btn" data-content-mode="rich">Ã‰diteur libre (pas conseillÃ©, inshallah bientÃ´t)</button>
         </div>
 
         <div id="blocks-editor-section">
@@ -121,8 +119,8 @@
           <div class="rich-tool-group">
             <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="b" title="Gras"><strong>B</strong></button>
             <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="i" title="Italique"><em>I</em></button>
-            <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="u" title="Souligné"><span class="u-text">U</span></button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="strike" title="Barré"><span style="text-decoration:line-through">S</span></button>
+            <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="u" title="SoulignÃ©"><span class="u-text">U</span></button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="strike" title="BarrÃ©"><span style="text-decoration:line-through">S</span></button>
             <button type="button" class="action-btn secondary tool-btn" data-wrap-tag="spoiler" title="Spoiler">&#128065;</button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="quote" title="Citation">&#10077;</button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="url" title="Lien">&#128279;</button>
@@ -149,14 +147,14 @@
             <button type="button" class="action-btn secondary tool-btn" id="tool-highlight-apply" title="Appliquer surlignage">&#10003;</button>
           </div>
           <div class="rich-tool-group">
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="left" title="Aligner à gauche">&larr;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="left" title="Aligner Ã  gauche">&larr;</button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="center" title="Centrer">&harr;</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="right" title="Aligner à droite">&rarr;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="right" title="Aligner Ã  droite">&rarr;</button>
             <button type="button" class="action-btn secondary tool-btn" data-block-action="justify" title="Justifier">&#9776;</button>
           </div>
           <div class="rich-tool-group">
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="ol" title="Liste numérotée">1.</button>
-            <button type="button" class="action-btn secondary tool-btn" data-block-action="ul" title="Liste à puces">&#8226;</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="ol" title="Liste numÃ©rotÃ©e">1.</button>
+            <button type="button" class="action-btn secondary tool-btn" data-block-action="ul" title="Liste Ã  puces">&#8226;</button>
           </div>
           <div class="rich-tool-group">
             <button type="button" class="action-btn secondary tool-btn" data-block-action="undo" title="Annuler">&#8630;</button>
@@ -169,33 +167,33 @@
 
         <div id="rich-editor-section" class="hidden">
           <div class="media-head">
-            <h4>Éditeur libre</h4>
+            <h4>Ã‰diteur libre</h4>
             <div class="manager-actions rich-toolbar">
               <div class="rich-tool-group">
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="bold" title="Gras"><strong>B</strong></button>
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="italic" title="Italique"><em>I</em></button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="underline" title="Souligné"><span class="u-text">U</span></button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="strikeThrough" title="Barré"><span style="text-decoration:line-through">S</span></button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="underline" title="SoulignÃ©"><span class="u-text">U</span></button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="strikeThrough" title="BarrÃ©"><span style="text-decoration:line-through">S</span></button>
             <button type="button" class="action-btn secondary rich-tool-btn" id="rich-spoiler-btn" title="Spoiler">&#128065;</button>
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="formatBlock" data-rich-value="blockquote" title="Citation">&#10077;</button>
           </div>
           <div class="rich-tool-sep" aria-hidden="true"></div>
           <div class="rich-tool-group">
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertUnorderedList" title="Liste">&#8226;</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList" title="Liste numérotée">1.</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner à gauche">&larr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="insertOrderedList" title="Liste numÃ©rotÃ©e">1.</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyLeft" title="Aligner Ã  gauche">&larr;</button>
             <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyCenter" title="Centrer">&harr;</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner à droite">&rarr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="justifyRight" title="Aligner Ã  droite">&rarr;</button>
           </div>
           <div class="rich-tool-sep" aria-hidden="true"></div>
           <div class="rich-tool-group">
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn" title="Insérer lien">Link</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn" title="Insérer image">Img</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn" title="Insérer vidéo">Vid</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn" title="Insérer audio">Aud</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="left" title="Média à gauche">&larr;</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="center" title="Média centré">&harr;</button>
-            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="right" title="Média à droite">&rarr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-link-btn" title="InsÃ©rer lien">Link</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-image-btn" title="InsÃ©rer image">Img</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-video-btn" title="InsÃ©rer vidÃ©o">Vid</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" id="rich-audio-btn" title="InsÃ©rer audio">Aud</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="left" title="MÃ©dia Ã  gauche">&larr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="center" title="MÃ©dia centrÃ©">&harr;</button>
+            <button type="button" class="action-btn secondary rich-tool-btn" data-media-align="right" title="MÃ©dia Ã  droite">&rarr;</button>
           </div>
               <div class="rich-tool-sep" aria-hidden="true"></div>
               <div class="rich-tool-group">
@@ -216,7 +214,7 @@
 	              <div class="rich-tool-sep" aria-hidden="true"></div>
 	              <div class="rich-tool-group">
 	                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="undo" title="Annuler">&#8630;</button>
-	                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="redo" title="Rétablir">&#8631;</button>
+	                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="redo" title="RÃ©tablir">&#8631;</button>
 	                <button type="button" class="action-btn secondary rich-tool-btn" data-rich-cmd="removeFormat" title="Effacer format">Tx</button>
 	              </div>
 	            </div>
@@ -225,7 +223,7 @@
           <textarea id="review-body-html" name="bodyHtml" class="hidden"></textarea>
         </div>
 
-        <h4>Prévisualisation live</h4>
+        <h4>PrÃ©visualisation live</h4>
         <div id="review-preview" class="preview-card"></div>
 
         <div class="form-actions">
@@ -240,13 +238,11 @@
         <h2>Gestion des tops</h2>
         <div class="manager-actions">
           <label class="select-inline" for="manager-tops-search">
-            Recherche
-            <input id="manager-tops-search" type="search" placeholder="Titre, catégorie, année..." />
+            <input id="manager-tops-search" type="search" placeholder="Rechercher" aria-label="Rechercher un top" />
           </label>
           <label class="select-inline" for="manager-tops-sort">
-            Tri
-            <select id="manager-tops-sort">
-              <option value="date-desc">Plus récent</option>
+            <select id="manager-tops-sort" aria-label="Trier les tops">
+              <option value="date-desc">Plus r&eacute;cent</option>
               <option value="date-asc">Plus ancien</option>
             </select>
           </label>
@@ -261,20 +257,20 @@
 
         <div class="form-grid">
           <label>Titre <span class="field-hint field-required">obligatoire</span><input name="title" required /></label>
-          <label>Catégorie <span class="field-hint field-required">obligatoire</span>
+          <label>CatÃ©gorie <span class="field-hint field-required">obligatoire</span>
             <select name="category" required>
-              <option value="jeu">Jeux-vidéo</option>
+              <option value="jeu">Jeux-vidÃ©o</option>
               <option value="film" selected>Films</option>
-              <option value="serie">Séries</option>
+              <option value="serie">SÃ©ries</option>
               <option value="musique">Musiques</option>
               <option value="livre">Livres</option>
               <option value="autre">Autre</option>
             </select>
           </label>
-          <label>Année / période<input name="year" placeholder="2025" /></label>
+          <label>AnnÃ©e / pÃ©riode<input name="year" placeholder="2025" /></label>
           <label>Statut <span class="field-hint field-required">obligatoire</span>
             <select name="status" required>
-              <option value="published" selected>Publié</option>
+              <option value="published" selected>PubliÃ©</option>
               <option value="draft">Brouillon</option>
             </select>
           </label>
@@ -308,6 +304,7 @@
   <script src="assets/js/main.js"></script>
 </body>
 </html>
+
 
 
 

@@ -94,9 +94,10 @@ img {
   position: absolute;
   top: 100%;
   left: 0;
-  min-width: 220px;
+  min-width: 0;
+  width: max-content;
   margin: 0;
-  padding: 0.45rem;
+  padding: 0.35rem;
   list-style: none;
   border: 1px solid #2f4555;
   border-radius: 0.7rem;
@@ -112,10 +113,11 @@ img {
 
 .submenu a {
   display: block;
-  padding: 0.42rem 0.5rem;
+  padding: 0.38rem 0.44rem;
   border-radius: 0.45rem;
   color: var(--muted);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .submenu a:hover {
@@ -511,6 +513,13 @@ h1 {
   display: block;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.manager-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
 }
 
 .row-actions {
@@ -2378,6 +2387,8 @@ a:focus-visible {
 
 .manager-page .section-head .manager-actions .select-inline {
   align-items: center;
+  gap: 0;
+  margin-bottom: 0;
 }
 
 .manager-page .section-head .manager-actions .select-inline input,
