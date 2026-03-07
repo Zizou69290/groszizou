@@ -71,8 +71,9 @@ function buildWatchParterAppMarkup() {
       <div class="film-modal-content">
         <button class="film-modal-close">x</button>
         <div class="film-modal-tabs">
-          <button class="tab-button active" data-tab="details">Details</button>
+          <button class="tab-button active" data-tab="details">D&eacute;tails</button>
           <button class="tab-button" data-tab="posters">Affiches</button>
+          <a id="modal-letterboxd-btn" class="tab-button tab-link-letterboxd" href="#" target="_blank" rel="noopener noreferrer">Letterboxd</a>
         </div>
         <div id="tab-details" class="tab-content active">
           <div class="film-modal-main-content">
@@ -84,7 +85,7 @@ function buildWatchParterAppMarkup() {
               <p id="modalDetails" class="film-modal-details"></p>
               <p id="modalSynopsis" class="film-modal-synopsis"></p>
               <p id="modalCrew" class="film-modal-crew"></p>
-              <div id="modalLinks" class="film-modal-links"></div>
+              <div id="modalLinks" class="film-modal-links" aria-hidden="true"></div>
             </div>
           </div>
         </div>

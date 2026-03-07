@@ -720,9 +720,10 @@ const modalDetails = document.getElementById("modalDetails");
 const modalSynopsis = document.getElementById("modalSynopsis");
 const modalCrew = document.getElementById("modalCrew");
 const modalLinks = document.getElementById("modalLinks");
+const modalLetterboxdBtn = document.getElementById("modal-letterboxd-btn");
 const modalAlternativePosters = document.getElementById("modalAlternativePosters");
 
-const tabButtons = filmDetailModal.querySelectorAll(".tab-button");
+const tabButtons = filmDetailModal.querySelectorAll(".tab-button[data-tab]");
 const tabDetailsContent = document.getElementById("tab-details");
 const tabPostersContent = document.getElementById("tab-posters");
 
@@ -815,21 +816,10 @@ async function showFilmModal(film) {
         // Hide crew section (no longer needed)
         modalCrew.textContent = "";
 
-        // Links (Letterboxd and Trailer)
-        modalLinks.innerHTML = '';
-        const letterboxdLink = document.createElement("a");
-        letterboxdLink.href = `https://letterboxd.com/search/${encodeURIComponent(film.nom)}/`;
-        letterboxdLink.textContent = "Letterboxd";
-        letterboxdLink.target = "_blank";
-        letterboxdLink.className = "letterboxd-link";
-        modalLinks.appendChild(letterboxdLink);
-
-        const trailerLink = document.createElement("a");
-        trailerLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(film.nom + ' trailer vostfr')}`;
-        trailerLink.textContent = "Trailer";
-        trailerLink.target = "_blank";
-        trailerLink.className = "trailer-link";
-        modalLinks.appendChild(trailerLink);
+        // Header quick link (outside tabs): Letterboxd
+        if (modalLetterboxdBtn) {
+            modalLetterboxdBtn.href = `https://letterboxd.com/search/${encodeURIComponent(film.nom)}/`;
+        }
 
         // Alternative Posters
         if (data.images && data.images.posters && data.images.posters.length > 0) {
@@ -898,7 +888,7 @@ function openTab(tabName) {
         tabContent.classList.remove("active");
     });
     // Deactivate all tab buttons
-    document.querySelectorAll(".tab-button").forEach(tabButton => {
+    document.querySelectorAll(".tab-button[data-tab]").forEach(tabButton => {
         tabButton.classList.remove("active");
     });
 
