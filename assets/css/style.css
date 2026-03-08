@@ -347,6 +347,21 @@ h1 {
   flex: 0 0 auto;
 }
 
+.listing-selects .action-btn {
+  min-height: 2.2rem;
+}
+
+#quick-create-review {
+  min-width: 2.2rem;
+  width: 2.2rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
 .select-inline {
   display: inline-flex;
   align-items: center;
@@ -929,6 +944,10 @@ textarea {
   color: #f0f4f8;
 }
 
+#review-title {
+  max-width: min(100%, 30ch);
+}
+
 .article-meta {
   display: flex;
   gap: 1rem;
@@ -1339,10 +1358,10 @@ textarea {
   .listing-selects {
     width: 100%;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
     grid-template-areas:
-      "reset tri user"
-      "search search search";
+      "reset tri user create"
+      "search search search search";
     align-items: end;
     gap: 0.45rem;
   }
@@ -1392,6 +1411,11 @@ textarea {
     min-height: 2.2rem;
     padding: 0;
     justify-self: start;
+  }
+
+  #quick-create-review {
+    grid-area: create;
+    justify-self: end;
   }
 
   .auth-mobile-shortcuts {
@@ -2011,6 +2035,7 @@ textarea {
 .media-render .rich-media-shell {
   display: block;
   max-width: 100%;
+  vertical-align: top;
 }
 
 .rich-editor .rich-media-shell > img,
@@ -2087,6 +2112,10 @@ textarea {
 .rich-editor .rich-media-selected > video,
 .rich-editor .rich-media-selected > audio,
 .rich-editor .rich-media-selected > iframe {
+  box-shadow: 0 0 0 2px #4f7388;
+}
+
+.rich-editor .rich-media-selected > .video-wrap {
   box-shadow: 0 0 0 2px #4f7388;
 }
 
@@ -2364,6 +2393,25 @@ a:focus-visible {
   -webkit-box-orient: vertical;
 }
 
+.review-card.is-draft {
+  border-color: #5d6871;
+  background:
+    radial-gradient(circle at 90% -8%, rgba(170, 178, 186, 0.14), transparent 42%),
+    linear-gradient(180deg, #24313b, #1b2731);
+  filter: saturate(0.62);
+}
+
+.draft-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #70808f;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.72rem;
+  color: #d7dde2;
+  background: rgba(22, 30, 36, 0.84);
+}
+
 /* Manager UX compact + sticky tools */
 .manager-page .manager-actions .select-inline input[type="search"] {
   min-width: 128px;
@@ -2594,5 +2642,413 @@ a:focus-visible {
 @media (max-width: 700px) {
   .watch-parter-cards {
     grid-template-columns: 1fr;
+  }
+}
+
+.review-studio-page .studio-hero .article-hero-inner {
+  gap: 0.55rem;
+}
+
+.studio-hero-meta-editor,
+.studio-details-inline {
+  margin-top: 0.15rem;
+  gap: 0.45rem;
+}
+
+.studio-taxonomy-inline {
+  margin-top: 0.05rem;
+}
+
+.studio-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  border: 1px solid #3a5668;
+  background: rgba(13, 21, 27, 0.78);
+  border-radius: 0.58rem;
+  padding: 0.22rem 0.42rem;
+  color: #eaf1f6;
+  font-size: 0.76rem;
+}
+
+.studio-meta-chip > span {
+  color: #9fc6dc;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.studio-meta-chip input,
+.studio-meta-chip select {
+  border: 0;
+  background: transparent;
+  color: #f2f7fb;
+  min-height: 1.22rem;
+  height: 1.22rem;
+  padding: 0;
+  width: auto;
+  min-width: 62px;
+  font-size: 0.82rem;
+}
+
+.studio-meta-chip select {
+  min-width: 86px;
+  padding-right: 0.2rem;
+}
+
+.studio-meta-chip input:focus,
+.studio-meta-chip select:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.studio-title-input,
+.studio-summary-input {
+  width: 100%;
+  border: 1px solid #2f4555;
+  border-radius: 0.45rem;
+  background: rgba(11, 19, 25, 0.72);
+  color: var(--text);
+  padding: 0.46rem 0.56rem;
+  font: inherit;
+}
+
+.studio-title-input {
+  font-size: clamp(1.45rem, 2.8vw, 2.2rem);
+  font-weight: 700;
+}
+
+.studio-summary-input {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.studio-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  padding-bottom: 2.2rem;
+}
+
+.studio-media-strip {
+  margin: 0;
+}
+
+.review-studio-page .studio-media-strip {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem;
+}
+
+.review-studio-page .studio-asset-controls {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.studio-asset-group {
+  grid-column: span 4;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.28rem;
+  align-items: center;
+  border: 1px solid #2f4555;
+  border-radius: 0.45rem;
+  padding: 0.3rem 0.35rem;
+  background: #13202a;
+}
+
+.studio-asset-label {
+  font-size: 0.74rem;
+  color: #9fc6dc;
+  font-weight: 600;
+}
+
+.studio-asset-group .action-btn {
+  min-height: 2.05rem;
+  height: 2.05rem;
+  padding: 0 0.68rem;
+  font-size: 0.8rem;
+}
+
+.studio-asset-music {
+  grid-column: span 4;
+  margin: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.review-studio-page .studio-media-strip input {
+  min-height: 1.86rem;
+  height: 1.86rem;
+  padding: 0.34rem 0.42rem;
+  font-size: 0.84rem;
+}
+
+.studio-image-picker-dialog {
+  width: min(920px, 94vw);
+  max-height: 86vh;
+  overflow: auto;
+}
+
+.studio-image-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+  margin: 0.6rem 0 0.8rem;
+}
+
+.studio-image-picker-grid.is-backdrop {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.studio-image-choice {
+  border: 1px solid #2f4555;
+  border-radius: 0.45rem;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: #111c24;
+}
+
+.studio-image-choice img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  display: block;
+}
+
+.studio-image-picker-grid.is-backdrop .studio-image-choice img {
+  aspect-ratio: 16 / 9;
+  height: auto;
+  object-fit: contain;
+  background: #0b151c;
+}
+
+.review-tmdb-synopsis {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid #5f788a;
+  border-radius: 0.35rem;
+  background: rgba(17, 29, 38, 0.72);
+  color: #bbcad5;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.studio-image-choice:hover,
+.studio-image-choice:focus-visible {
+  border-color: #4f7388;
+  outline: none;
+}
+
+.studio-editor-card {
+  border: 1px solid #2f4555;
+  border-radius: 0.8rem;
+  background: #0f1a22;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.studio-editor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.studio-editor {
+  min-height: 55vh;
+}
+
+@media (max-width: 980px) {
+  .review-studio-page .studio-asset-controls {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .studio-asset-group,
+  .studio-asset-music {
+    grid-column: span 2;
+  }
+
+  .studio-editor {
+    min-height: 46vh;
+  }
+}
+
+@media (max-width: 700px) {
+  .review-studio-page .studio-asset-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .studio-asset-group,
+  .studio-asset-music {
+    grid-column: span 1;
+  }
+
+  .studio-asset-group {
+    grid-template-columns: 1fr;
+  }
+
+  .studio-image-choice img {
+    height: 160px;
+  }
+}
+
+/* Studio Review V3 layout */
+.review-studio-page .studio-hidden-form {
+  display: none;
+}
+
+.review-studio-page .studio-fields-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.22fr) minmax(320px, 1fr);
+  gap: 0.42rem;
+  margin-top: 0.1rem;
+}
+
+.review-studio-page .studio-fields-left,
+.review-studio-page .studio-fields-right {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.review-studio-page .studio-fields-row {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.review-studio-page .studio-fields-row-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.review-studio-page .studio-fields-row .studio-meta-chip {
+  border-radius: 0.52rem;
+  padding: 0.2rem 0.38rem;
+  width: 100%;
+  min-height: 1.95rem;
+}
+
+.review-studio-page .studio-fields-row .studio-meta-chip input,
+.review-studio-page .studio-fields-row .studio-meta-chip select,
+.review-studio-page .studio-music-chip input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 1.34rem;
+  height: 1.34rem;
+  line-height: 1.34rem;
+}
+
+.review-studio-page .studio-fields-right .studio-asset-group.compact {
+  grid-template-columns: minmax(50px, auto) minmax(0, 1fr) minmax(0, 1fr);
+  grid-column: auto;
+  border: 1px solid #3a5668;
+  background: rgba(13, 21, 27, 0.78);
+  border-radius: 0.52rem;
+  padding: 0.2rem 0.38rem;
+  min-height: 1.95rem;
+  align-items: center;
+}
+
+.review-studio-page .studio-fields-right .studio-asset-group.compact .action-btn {
+  width: 100%;
+  min-height: 1.34rem;
+  height: 1.34rem;
+  padding: 0 0.32rem;
+  font-size: 0.72rem;
+  border-radius: 0.38rem;
+}
+
+.review-studio-page .studio-asset-btn {
+  background: rgba(7, 14, 20, 0.52);
+  border-color: #3a5668;
+  color: #e4eef5;
+}
+
+.review-studio-page .studio-asset-btn:hover,
+.review-studio-page .studio-asset-btn:focus-visible {
+  border-color: #527b93;
+  background: rgba(11, 20, 28, 0.82);
+  color: #f1f7fb;
+}
+
+.review-studio-page .studio-music-chip {
+  border-radius: 0.52rem;
+  padding: 0.2rem 0.38rem;
+  min-height: 1.95rem;
+  align-items: center;
+}
+
+.review-studio-page .studio-editor-actions {
+  margin-top: 0.12rem;
+}
+
+.review-studio-page .studio-delete-btn {
+  margin-right: auto;
+}
+
+.studio-synopsis-field {
+  margin: 0;
+  gap: 0.24rem;
+}
+
+.studio-synopsis-field textarea {
+  min-height: 2.25rem;
+  resize: vertical;
+}
+
+.studio-text-tools {
+  margin: 0;
+  width: 100%;
+  gap: 0.7rem;
+}
+
+.studio-text-tools .rich-tool-group + .rich-tool-group {
+  margin-left: 0.7rem;
+  padding-left: 0.78rem;
+  position: relative;
+}
+
+.studio-text-tools .rich-tool-group + .rich-tool-group::before {
+  content: "|";
+  position: absolute;
+  left: -0.08rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(156, 180, 197, 0.7);
+  font-weight: 700;
+}
+
+@media (min-width: 1200px) {
+  .studio-text-tools {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 980px) {
+  .review-studio-page .studio-fields-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-studio-page .studio-fields-right .studio-asset-group.compact {
+    grid-template-columns: minmax(62px, auto) 1fr 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  #review-title {
+    max-width: min(100%, 18ch);
+  }
+
+  .review-studio-page .studio-fields-row-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .review-studio-page .studio-fields-right .studio-asset-group.compact {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
   }
 }

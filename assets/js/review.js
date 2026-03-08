@@ -104,7 +104,7 @@ function renderQuickActions(item) {
   });
 
   if (canEdit) {
-    editLink.href = `modifier.html?edit=${encodeURIComponent(item.id)}`;
+    editLink.href = `review-studio.html?edit=${encodeURIComponent(item.id)}`;
     editLink.classList.remove("hidden");
   } else {
     editLink.classList.add("hidden");
@@ -306,6 +306,15 @@ function renderBlock(block) {
   return wrapper.innerHTML ? wrapper : null;
 }
 
+function createTmdbSynopsisNode(item) {
+  const text = String(item?.tmdbOverview || "").trim();
+  if (!text) return null;
+  const node = document.createElement("p");
+  node.className = "review-tmdb-synopsis";
+  node.textContent = text;
+  return node;
+}
+
 function teardownBackgroundAudio() {
   if (backgroundAudio) {
     backgroundAudio.pause();
@@ -450,9 +459,10 @@ async function loadReview() {
   document.documentElement.style.setProperty("--accent", item.accent || "#f25f29");
 
   content.innerHTML = "";
+  const synopsisNode = createTmdbSynopsisNode(item);
   if ((item.contentMode === "rich" || item.bodyHtml) && String(item.bodyHtml || "").trim()) {
     content.classList.add("rich-content");
-    content.innerHTML = item.bodyHtml;
+    content.innerHTML = `${synopsisNode ? synopsisNode.outerHTML : ""}${item.bodyHtml}`;
     bindSpoilers(content);
     return;
   }
@@ -460,8 +470,10 @@ async function loadReview() {
 
   const blocks = Array.isArray(item.blocks) ? item.blocks : [];
   if (!blocks.length) {
-    content.innerHTML = "<p>Bah y'a rien là</p>";
+    if (synopsisNode) content.appendChild(synopsisNode);
+    content.insertAdjacentHTML("beforeend", "<p>Bah y'a rien là</p>");
   } else {
+    if (synopsisNode) content.appendChild(synopsisNode);
     blocks.forEach((block) => {
       const node = renderBlock(block);
       if (node) content.appendChild(node);

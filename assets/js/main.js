@@ -45,6 +45,7 @@ const previewBox = document.getElementById("review-preview");
 const filterButtonsHost = document.querySelector(".filters");
 const reviewsSortSelect = document.getElementById("reviews-sort");
 const reviewsUserFilterSelect = document.getElementById("reviews-user-filter");
+const quickCreateReviewBtn = document.getElementById("quick-create-review");
 const reviewsSearchInput = document.getElementById("reviews-search");
 const reviewsResetBtn = document.getElementById("reviews-reset");
 const reviewsResultsMeta = document.getElementById("reviews-results-meta");
@@ -568,20 +569,25 @@ function reviewCard(item) {
   const article = document.createElement("article");
   article.className = "review-card";
   article.dataset.type = item.category;
+  const isDraft = normalizePublicationStatus(item.status) === "draft";
+  article.classList.toggle("is-draft", isDraft);
   article.tabIndex = 0;
   article.setAttribute("role", "link");
   const accent = item.accent || "#f25f29";
   const target = `review.html?id=${encodeURIComponent(item.id)}`;
 
   const ownerMeta = item.ownerUsername ? `, par ${ownerBadge(item.ownerUsername)}` : "";
+  const metaPrefix = isDraft ? "Brouillon" : "Publié";
+  const draftBadge = isDraft ? '<span class="draft-pill">Brouillon</span>' : "";
   article.innerHTML = `
     <img src="${item.cover || DEFAULT_COVER}" alt="${escapeHtml(item.title || "Review")}" />
     <div class="card-body">
-      <p class="meta">Publié le ${fmtDate(item.date)}${ownerMeta}</p>
+      <p class="meta">${metaPrefix} le ${fmtDate(item.date)}${ownerMeta}</p>
       <h3>${escapeHtml(item.title || "Sans titre")}</h3>
       <p>${escapeHtml(item.summary || "Aucun résumé.")}</p>
       <div class="card-footer">
         <span class="score" style="color:${accent}">${scoreToStars(item.score)}${Number.isFinite(item.score) ? ` (${item.score}/10)` : ""}</span>
+        ${draftBadge}
       </div>
     </div>
   `;
@@ -1868,7 +1874,7 @@ async function renderAll() {
   if (reviewsGrid) renderListingLoadingState();
   if (reviewsResultsMeta) reviewsResultsMeta.textContent = "Chargement des contenus...";
   try {
-    reviews = await window.ReviewsStore.getAll(managerList ? {} : { status: "published" });
+    reviews = await window.ReviewsStore.getAll(managerList ? {} : (currentUser ? {} : { status: "published" }));
   } catch (error) {
     if (reviewsGrid || managerList) window.alert(`Impossible de charger les reviews : ${error.message}`);
     if (reviewsGrid) {
@@ -1886,11 +1892,18 @@ async function renderAll() {
       : sortReviews(sortedReviews.filter((item) => !item.ownerId || item.ownerId === currentUser?.uid), selectedManagerReviewSort))
     : sortedReviews;
   cachedReviews = managerVisibleReviews;
-  const facetedReviews = sortedReviews
+  const listingVisibleReviews = managerList
+    ? sortedReviews
+    : sortedReviews.filter((item) => {
+      const status = normalizePublicationStatus(item.status);
+      if (status === "published") return true;
+      return status === "draft" && Boolean(currentUser?.uid) && item.ownerId === currentUser.uid;
+    });
+  const facetedReviews = listingVisibleReviews
     .filter((item) => selectedUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedUserFilter)
     .filter((item) => reviewMatchesSearch(item, selectedReviewsSearch));
   buildFilterButtons(facetedReviews);
-  buildUserFilterOptions(sortedReviews);
+  buildUserFilterOptions(listingVisibleReviews);
 
   if (reviewsGrid) {
     reviewsGrid.innerHTML = "";
@@ -2249,6 +2262,14 @@ if (managerTopsSearchInput) {
   });
 }
 
+if (quickCreateReviewBtn) {
+  quickCreateReviewBtn.addEventListener("click", (event) => {
+    if (window.ReviewsStore?.getCurrentUser?.()) return;
+    event.preventDefault();
+    window.alert("Connexion requise pour créer une review.");
+  });
+}
+
 contentModeButtons.forEach((btn) => {
   btn.addEventListener("click", () => setContentMode(btn.dataset.contentMode || "blocks"));
 });
@@ -2406,6 +2427,7 @@ if (window.ReviewsStore.onAuthChanged) {
     const unlocked = Boolean(user);
     currentUser = unlocked ? window.ReviewsStore.getCurrentUser() : null;
     if (managerSection) managerSection.classList.toggle("hidden", !unlocked);
+    if (quickCreateReviewBtn) quickCreateReviewBtn.classList.toggle("hidden", !unlocked);
     if (managerGuestMessage) managerGuestMessage.classList.toggle("hidden", unlocked);
     if (logoutBtn) logoutBtn.classList.toggle("hidden", !unlocked);
     if (authStatus) {
