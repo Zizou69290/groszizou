@@ -2165,14 +2165,26 @@ textarea {
 
 .top-review-link {
   display: grid;
-  grid-template-columns: 82px 1fr;
+  grid-template-columns: auto 82px 1fr;
   gap: 0.8rem;
   text-decoration: none;
   color: inherit;
+  align-items: start;
 }
 
 .top-manual-entry {
-  grid-template-columns: 82px 1fr;
+  grid-template-columns: auto 82px 1fr;
+}
+
+.top-item-rank {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #dce8f0;
+  opacity: 0.9;
+  min-width: 1.3ch;
+  text-align: right;
+  padding-top: 0.12rem;
 }
 
 .top-review-link:hover .top-review-content h3 {
@@ -2189,17 +2201,33 @@ textarea {
 
 .top-review-content {
   display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 0.35rem;
+  min-height: 116px;
 }
 
 .top-review-content h3 {
   margin: 0;
+  font-weight: 400;
+  align-self: start;
+}
+
+.top-review-content h3 strong {
+  font-weight: 700;
 }
 
 .top-review-meta,
 .top-review-comment {
   margin: 0;
   color: var(--muted);
+}
+
+.top-review-comment {
+  align-self: center;
+}
+
+.top-review-content .score {
+  align-self: end;
 }
 
 /* Lightweight visual polish for listings */
@@ -2656,7 +2684,7 @@ a:focus-visible {
   flex-direction: column;
   justify-content: flex-start;
   gap: clamp(0.26rem, 0.58vw, 0.42rem);
-  min-height: clamp(230px, 30vw, 320px);
+  min-height: clamp(188px, 24vw, 250px);
 }
 
 .top-page .article-hero-inner > * {
@@ -2669,14 +2697,34 @@ a:focus-visible {
 
 .top-page .hero-links {
   margin-bottom: 0.22rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.top-page .hero-links-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .top-page #top-title {
-  margin-bottom: 0.46rem;
+  max-width: none;
+  line-height: 1;
+  margin-bottom: 0.34rem;
 }
 
 .top-page #top-subtitle {
-  margin-bottom: 0.18rem;
+  margin-bottom: 0.34rem;
+}
+
+.top-page #top-date {
+  color: #f0f4f8;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
+  font-size: 0.98rem;
 }
 
 .top-page .review-details {
@@ -2684,11 +2732,11 @@ a:focus-visible {
 }
 
 .top-page .article-hero-covered {
-  min-height: clamp(210px, 27vw, 286px);
+  min-height: clamp(188px, 24vw, 250px);
 }
 
 .top-page .article-hero-inner {
-  min-height: clamp(210px, 27vw, 286px);
+  min-height: clamp(188px, 24vw, 250px);
 }
 
 .studio-hero-meta-editor,
@@ -3121,7 +3169,16 @@ a:focus-visible {
 
 @media (max-width: 700px) {
   .top-page .article-hero-inner {
-    min-height: clamp(210px, 40vw, 280px);
+    min-height: clamp(180px, 34vw, 230px);
     gap: 0.26rem;
+  }
+
+  .top-page #top-title {
+    white-space: normal;
+  }
+
+  .top-page .hero-links {
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 }

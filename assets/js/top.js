@@ -33,7 +33,6 @@ const title = document.getElementById("top-title");
 const category = document.getElementById("top-category");
 const subtitle = document.getElementById("top-subtitle");
 const topDate = document.getElementById("top-date");
-const topScore = document.getElementById("top-score");
 const topDetails = document.getElementById("top-details");
 const topEditLink = document.getElementById("top-edit-link");
 const list = document.getElementById("top-items");
@@ -70,7 +69,24 @@ function fmtDateFromTimestamp(ts) {
 function itemScoreText(score) {
   if (!Number.isFinite(Number(score))) return "";
   const value = Number(score);
-  return `${scoreToStars(value)} (${value}/10)`;
+  const rounded = Number.isInteger(value) ? String(value) : value.toFixed(1);
+  return `${scoreToStars(value)} (${rounded}/10)`;
+}
+
+function creatorLabelForCategory(category) {
+  const key = String(category || "").trim().toLowerCase();
+  if (key === "jeu") return "Studio";
+  if (key === "livre") return "Auteur";
+  if (key === "musique") return "Artiste";
+  return "Réalisation";
+}
+
+function creatorValueForCategory(category, source = {}) {
+  const key = String(category || "").trim().toLowerCase();
+  if (key === "jeu") return String(source?.studio || source?.director || source?.author || "").trim();
+  if (key === "livre") return String(source?.author || source?.director || source?.studio || "").trim();
+  if (key === "musique") return String(source?.author || source?.studio || source?.director || "").trim();
+  return String(source?.director || source?.studio || source?.author || "").trim();
 }
 
 function escapeHtml(text) {
@@ -119,10 +135,16 @@ function computeTopAverageScore(top, reviewMap) {
   return total / scores.length;
 }
 
-function renderTopDetails(top) {
+function renderTopDetails(top, averageScore = null) {
   if (!topDetails) return;
   const entries = [
-    { label: "Période", value: top?.year || "" }
+    { label: "Période", value: top?.year || "" },
+    {
+      label: "Note moyenne",
+      value: Number.isFinite(Number(averageScore))
+        ? `${scoreToStars(Number(averageScore))} (${Number(averageScore).toFixed(1)}/10)`
+        : ""
+    }
   ].filter((entry) => String(entry.value || "").trim());
   topDetails.innerHTML = "";
   if (!entries.length) {
@@ -145,6 +167,11 @@ function renderLinkedReviewItem(item, index, review) {
   link.className = "top-review-link";
   link.href = `review.html?id=${encodeURIComponent(review.id)}`;
 
+  const rank = document.createElement("span");
+  rank.className = "top-item-rank";
+  rank.textContent = String(index + 1);
+  link.appendChild(rank);
+
   const poster = document.createElement("img");
   poster.className = "top-review-poster";
   poster.src = review.poster || review.cover || DEFAULT_POSTER;
@@ -154,13 +181,20 @@ function renderLinkedReviewItem(item, index, review) {
   const content = document.createElement("div");
   content.className = "top-review-content";
   const h = document.createElement("h3");
-  h.textContent = `${index + 1}. ${review.title || item.title || "Sans titre"}`;
+  const detailParts = [review.title || item.title || "Sans titre"];
+  const linkedYear = String(review?.releaseYear || item?.releaseYear || "").trim();
+  if (linkedYear) detailParts.push(linkedYear);
+  const linkedCreatorValue = creatorValueForCategory(review?.category || "", review) || String(item?.director || "").trim();
+  if (linkedCreatorValue) detailParts.push(linkedCreatorValue);
+  h.innerHTML = `<strong>${escapeHtml(detailParts[0])}</strong>${detailParts.length > 1 ? ` ⸱ ${escapeHtml(detailParts.slice(1).join(" ⸱ "))}` : ""}`;
   content.appendChild(h);
 
-  const meta = document.createElement("p");
-  meta.className = "top-review-meta";
-  meta.textContent = window.ReviewsStore.categories[review.category] || review.category || "Autre";
-  content.appendChild(meta);
+  if (item.comment) {
+    const comment = document.createElement("p");
+    comment.className = "top-review-comment";
+    comment.textContent = item.comment;
+    content.appendChild(comment);
+  }
 
   const linkedScore = Number.isFinite(Number(item?.note)) ? Number(item.note) : review.score;
   const linkedScoreText = itemScoreText(linkedScore);
@@ -171,23 +205,21 @@ function renderLinkedReviewItem(item, index, review) {
     content.appendChild(score);
   }
 
-  if (item.comment) {
-    const comment = document.createElement("p");
-    comment.className = "top-review-comment";
-    comment.textContent = item.comment;
-    content.appendChild(comment);
-  }
-
   link.appendChild(content);
   li.appendChild(link);
   return li;
 }
 
-function renderManualItem(item, index) {
+function renderManualItem(item, index, topCategory = "") {
   const li = document.createElement("li");
   li.className = "top-item";
   const wrapper = document.createElement("div");
   wrapper.className = "top-review-link top-manual-entry";
+
+  const rank = document.createElement("span");
+  rank.className = "top-item-rank";
+  rank.textContent = String(index + 1);
+  wrapper.appendChild(rank);
 
   const poster = document.createElement("img");
   poster.className = "top-review-poster";
@@ -198,28 +230,27 @@ function renderManualItem(item, index) {
   const content = document.createElement("div");
   content.className = "top-review-content";
   const h = document.createElement("h3");
-  h.textContent = `${index + 1}. ${item.title || "Sans titre"}`;
+  const detailParts = [item.title || "Sans titre"];
+  const manualYear = String(item?.releaseYear || "").trim();
+  if (manualYear) detailParts.push(manualYear);
+  const manualCreatorValue = String(item?.director || "").trim();
+  if (manualCreatorValue) detailParts.push(manualCreatorValue);
+  h.innerHTML = `<strong>${escapeHtml(detailParts[0])}</strong>${detailParts.length > 1 ? ` ⸱ ${escapeHtml(detailParts.slice(1).join(" ⸱ "))}` : ""}`;
   content.appendChild(h);
 
-  const details = [item.releaseYear, item.director].filter(Boolean).join(" · ");
-  if (details) {
-    const meta = document.createElement("p");
-    meta.className = "top-review-meta";
-    meta.textContent = details;
-    content.appendChild(meta);
+  if (item.comment) {
+    const p = document.createElement("p");
+    p.className = "top-review-comment";
+    p.textContent = item.comment;
+    content.appendChild(p);
   }
+
   const manualScoreText = itemScoreText(item?.note);
   if (manualScoreText) {
     const score = document.createElement("p");
     score.className = "score";
     score.textContent = manualScoreText;
     content.appendChild(score);
-  }
-  if (item.comment) {
-    const p = document.createElement("p");
-    p.className = "top-review-comment";
-    p.textContent = item.comment;
-    content.appendChild(p);
   }
   wrapper.appendChild(content);
   li.appendChild(wrapper);
@@ -267,13 +298,8 @@ async function loadTop() {
   if (topDate) {
     topDate.innerHTML = `Publié le ${fmtDateFromTimestamp(top.updatedAt)}${top.ownerUsername ? ` · ${ownerBadge(top.ownerUsername)}` : ""}`;
   }
-  if (topScore) {
-    const avg = computeTopAverageScore(top, reviewMap);
-    topScore.textContent = Number.isFinite(avg)
-      ? `Note moyenne : ${scoreToStars(avg)} (${avg.toFixed(1)}/10)`
-      : "Note moyenne : ☆☆☆☆☆";
-  }
-  renderTopDetails(top);
+  const avg = computeTopAverageScore(top, reviewMap);
+  renderTopDetails(top, avg);
   renderTopQuickActions(top);
 
   list.innerHTML = "";
@@ -283,7 +309,7 @@ async function loadTop() {
       list.appendChild(renderLinkedReviewItem(item, index, linkedReview));
       return;
     }
-    list.appendChild(renderManualItem(item, index));
+    list.appendChild(renderManualItem(item, index, top?.category || ""));
   });
 
   if (!list.innerHTML) {

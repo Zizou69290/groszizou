@@ -240,6 +240,22 @@ function getCategoryItemLabel(category) {
   return "Item";
 }
 
+function getCategoryCreatorLabel(category) {
+  const key = String(category || "").trim().toLowerCase();
+  if (key === "jeu") return "Studio";
+  if (key === "livre") return "Auteur";
+  if (key === "musique") return "Artiste";
+  return "Réalisation";
+}
+
+function getCreatorValueFromReview(review, category) {
+  const key = String(category || "").trim().toLowerCase();
+  if (key === "jeu") return String(review?.studio || review?.director || review?.author || "").trim();
+  if (key === "livre") return String(review?.author || review?.director || review?.studio || "").trim();
+  if (key === "musique") return String(review?.author || review?.studio || review?.director || "").trim();
+  return String(review?.director || review?.studio || review?.author || "").trim();
+}
+
 function currentItemLabel() {
   return getCategoryItemLabel(topStudioMetaForm?.elements?.category?.value || "");
 }
@@ -252,11 +268,16 @@ function updateAddItemButtonLabel() {
 function updateTopItemCategoryLabels() {
   if (!topStudioItemsList) return;
   const label = currentItemLabel();
+  const creatorLabel = getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || "");
   [...topStudioItemsList.querySelectorAll(".block-item")].forEach((row) => {
     const labelNode = row.querySelector(".top-title-label");
     if (labelNode) labelNode.textContent = `Nom du ${label}`;
     const input = row.querySelector(".top-title");
     if (input) input.placeholder = `Nom du ${label}`;
+    const creatorNode = row.querySelector(".top-creator-label");
+    if (creatorNode) creatorNode.textContent = creatorLabel;
+    const creatorInput = row.querySelector(".top-director");
+    if (creatorInput) creatorInput.placeholder = `Ex: ${creatorLabel}`;
   });
 }
 
@@ -300,8 +321,8 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
       <label><span class="label-row"><span class="field-label-text">Année</span><span class="field-hint">optionnel</span></span>
         <input class="top-release-year" type="text" placeholder="Ex: 2024" value="${escapeHtml(item.releaseYear || "")}" />
       </label>
-      <label><span class="label-row"><span class="field-label-text">Réalisation</span><span class="field-hint">optionnel</span></span>
-        <input class="top-director" type="text" placeholder="Ex: Denis Villeneuve" value="${escapeHtml(item.director || "")}" />
+      <label><span class="label-row"><span class="field-label-text top-creator-label">${escapeHtml(getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || ""))}</span><span class="field-hint">optionnel</span></span>
+        <input class="top-director" type="text" placeholder="Ex: ${escapeHtml(getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || ""))}" value="${escapeHtml(item.director || "")}" />
       </label>
       <label><span class="label-row"><span class="field-label-text">Commentaire</span><span class="field-hint">optionnel</span></span>
         <input class="top-comment" type="text" placeholder="Commentaire" value="${escapeHtml(item.comment || "")}" />
@@ -333,7 +354,7 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
       if (coverInput) coverInput.value = match.cover || "";
       if (noteInput) noteInput.value = Number.isFinite(Number(match.score)) ? String(Number(match.score)) : "";
       if (releaseYearInput) releaseYearInput.value = match.releaseYear || extractYear(match.date);
-      if (directorInput) directorInput.value = match.director || "";
+      if (directorInput) directorInput.value = getCreatorValueFromReview(match, topStudioMetaForm?.elements?.category?.value || "");
     }
     clearTopTmdbLink();
     markTopFormDirty();
