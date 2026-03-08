@@ -1,4 +1,4 @@
-const params = new URLSearchParams(window.location.search);
+﻿const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
@@ -37,7 +37,11 @@ const topDetails = document.getElementById("top-details");
 const topEditLink = document.getElementById("top-edit-link");
 const list = document.getElementById("top-items");
 const cover = document.getElementById("top-cover-bg");
+const topViewDetailsBtn = document.getElementById("top-view-details");
+const topViewPosterBtn = document.getElementById("top-view-poster");
 let loadedTop = null;
+let loadedReviewMap = new Map();
+let selectedTopItemsView = "details";
 
 const DEFAULT_POSTER =
   "data:image/svg+xml;utf8," +
@@ -51,9 +55,9 @@ const DEFAULT_COVER =
   );
 
 function scoreToStars(score) {
-  if (!Number.isFinite(score)) return "☆☆☆☆☆";
+  if (!Number.isFinite(score)) return "\u2606\u2606\u2606\u2606\u2606";
   const full = Math.max(0, Math.min(5, Math.round(score / 2)));
-  return "★".repeat(full) + "☆".repeat(5 - full);
+  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
 }
 
 function fmtDateFromTimestamp(ts) {
@@ -64,6 +68,38 @@ function fmtDateFromTimestamp(ts) {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+function normalizeTopItemsView(value) {
+  return String(value || "").trim().toLowerCase() === "poster" ? "poster" : "details";
+}
+
+function applyTopItemsViewFromUrl() {
+  const urlView = new URLSearchParams(window.location.search).get("view");
+  selectedTopItemsView = normalizeTopItemsView(urlView);
+}
+
+function syncTopItemsViewToUrl() {
+  const query = new URLSearchParams(window.location.search);
+  if (selectedTopItemsView === "poster") query.set("view", "poster");
+  else query.delete("view");
+  const nextQuery = query.toString();
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash || ""}`;
+  window.history.replaceState(null, "", nextUrl);
+}
+
+function renderTopItemsViewButtons() {
+  if (topViewDetailsBtn) {
+    const isActive = selectedTopItemsView === "details";
+    topViewDetailsBtn.classList.toggle("active", isActive);
+    topViewDetailsBtn.setAttribute("aria-pressed", isActive ? "true" : "false");
+  }
+  if (topViewPosterBtn) {
+    const isActive = selectedTopItemsView === "poster";
+    topViewPosterBtn.classList.toggle("active", isActive);
+    topViewPosterBtn.setAttribute("aria-pressed", isActive ? "true" : "false");
+  }
+  if (list) list.classList.toggle("top-items-view-posters", selectedTopItemsView === "poster");
 }
 
 function itemScoreText(score) {
@@ -78,7 +114,7 @@ function creatorLabelForCategory(category) {
   if (key === "jeu") return "Studio";
   if (key === "livre") return "Auteur";
   if (key === "musique") return "Artiste";
-  return "Réalisation";
+  return "Realisation";
 }
 
 function creatorValueForCategory(category, source = {}) {
@@ -138,7 +174,6 @@ function computeTopAverageScore(top, reviewMap) {
 function renderTopDetails(top, averageScore = null) {
   if (!topDetails) return;
   const entries = [
-    { label: "Période", value: top?.year || "" },
     {
       label: "Note moyenne",
       value: Number.isFinite(Number(averageScore))
@@ -161,6 +196,63 @@ function renderTopDetails(top, averageScore = null) {
 }
 
 function renderLinkedReviewItem(item, index, review) {
+  if (selectedTopItemsView === "poster") {
+    const li = document.createElement("li");
+    li.className = "top-item top-item-poster";
+    const link = document.createElement("a");
+    link.className = "top-poster-card";
+    link.href = `review.html?id=${encodeURIComponent(review.id)}`;
+
+    const rank = document.createElement("span");
+    rank.className = "top-poster-rank";
+    rank.textContent = String(index + 1);
+    link.appendChild(rank);
+
+    const poster = document.createElement("img");
+    poster.className = "top-poster-image";
+    poster.src = review.poster || review.cover || DEFAULT_POSTER;
+    poster.alt = review.title || "Review";
+    link.appendChild(poster);
+
+    const content = document.createElement("div");
+    content.className = "top-poster-content";
+    const h = document.createElement("h3");
+    h.textContent = review.title || item.title || "Sans titre";
+    content.appendChild(h);
+
+    const metaBits = [];
+    const linkedYear = String(review?.releaseYear || item?.releaseYear || "").trim();
+    if (linkedYear) metaBits.push(linkedYear);
+    const linkedCreatorValue = creatorValueForCategory(review?.category || "", review) || String(item?.director || "").trim();
+    if (linkedCreatorValue) metaBits.push(linkedCreatorValue);
+    if (metaBits.length) {
+      const meta = document.createElement("p");
+      meta.className = "top-poster-meta";
+      meta.textContent = metaBits.join(" - ");
+      content.appendChild(meta);
+    }
+
+    if (item.comment) {
+      const comment = document.createElement("p");
+      comment.className = "top-poster-comment";
+      comment.textContent = item.comment;
+      content.appendChild(comment);
+    }
+
+    const linkedScore = Number.isFinite(Number(item?.note)) ? Number(item.note) : review.score;
+    const linkedScoreText = itemScoreText(linkedScore);
+    if (linkedScoreText) {
+      const score = document.createElement("p");
+      score.className = "score";
+      score.textContent = linkedScoreText;
+      content.appendChild(score);
+    }
+
+    link.appendChild(content);
+    li.appendChild(link);
+    return li;
+  }
+
   const li = document.createElement("li");
   li.className = "top-item";
   const link = document.createElement("a");
@@ -186,7 +278,7 @@ function renderLinkedReviewItem(item, index, review) {
   if (linkedYear) detailParts.push(linkedYear);
   const linkedCreatorValue = creatorValueForCategory(review?.category || "", review) || String(item?.director || "").trim();
   if (linkedCreatorValue) detailParts.push(linkedCreatorValue);
-  h.innerHTML = `<strong>${escapeHtml(detailParts[0])}</strong>${detailParts.length > 1 ? ` ⸱ ${escapeHtml(detailParts.slice(1).join(" ⸱ "))}` : ""}`;
+  h.innerHTML = `<strong>${escapeHtml(detailParts[0])}</strong>${detailParts.length > 1 ? ` | ${escapeHtml(detailParts.slice(1).join(" | "))}` : ""}`;
   content.appendChild(h);
 
   if (item.comment) {
@@ -211,6 +303,61 @@ function renderLinkedReviewItem(item, index, review) {
 }
 
 function renderManualItem(item, index, topCategory = "") {
+  if (selectedTopItemsView === "poster") {
+    const li = document.createElement("li");
+    li.className = "top-item top-item-poster";
+    const wrapper = document.createElement("div");
+    wrapper.className = "top-poster-card top-poster-card-static";
+
+    const rank = document.createElement("span");
+    rank.className = "top-poster-rank";
+    rank.textContent = String(index + 1);
+    wrapper.appendChild(rank);
+
+    const poster = document.createElement("img");
+    poster.className = "top-poster-image";
+    poster.src = item.poster || DEFAULT_POSTER;
+    poster.alt = item.title || "Media";
+    wrapper.appendChild(poster);
+
+    const content = document.createElement("div");
+    content.className = "top-poster-content";
+    const h = document.createElement("h3");
+    h.textContent = item.title || "Sans titre";
+    content.appendChild(h);
+
+    const metaBits = [];
+    const manualYear = String(item?.releaseYear || "").trim();
+    if (manualYear) metaBits.push(manualYear);
+    const manualCreatorValue = String(item?.director || "").trim();
+    if (manualCreatorValue) metaBits.push(manualCreatorValue);
+    if (metaBits.length) {
+      const meta = document.createElement("p");
+      meta.className = "top-poster-meta";
+      meta.textContent = metaBits.join(" - ");
+      content.appendChild(meta);
+    }
+
+    if (item.comment) {
+      const comment = document.createElement("p");
+      comment.className = "top-poster-comment";
+      comment.textContent = item.comment;
+      content.appendChild(comment);
+    }
+
+    const manualScoreText = itemScoreText(item?.note);
+    if (manualScoreText) {
+      const score = document.createElement("p");
+      score.className = "score";
+      score.textContent = manualScoreText;
+      content.appendChild(score);
+    }
+
+    wrapper.appendChild(content);
+    li.appendChild(wrapper);
+    return li;
+  }
+
   const li = document.createElement("li");
   li.className = "top-item";
   const wrapper = document.createElement("div");
@@ -224,7 +371,7 @@ function renderManualItem(item, index, topCategory = "") {
   const poster = document.createElement("img");
   poster.className = "top-review-poster";
   poster.src = item.poster || DEFAULT_POSTER;
-  poster.alt = item.title || "Média";
+  poster.alt = item.title || "Media";
   wrapper.appendChild(poster);
 
   const content = document.createElement("div");
@@ -235,7 +382,7 @@ function renderManualItem(item, index, topCategory = "") {
   if (manualYear) detailParts.push(manualYear);
   const manualCreatorValue = String(item?.director || "").trim();
   if (manualCreatorValue) detailParts.push(manualCreatorValue);
-  h.innerHTML = `<strong>${escapeHtml(detailParts[0])}</strong>${detailParts.length > 1 ? ` ⸱ ${escapeHtml(detailParts.slice(1).join(" ⸱ "))}` : ""}`;
+  h.innerHTML = `<strong>${escapeHtml(detailParts[0])}</strong>${detailParts.length > 1 ? ` | ${escapeHtml(detailParts.slice(1).join(" | "))}` : ""}`;
   content.appendChild(h);
 
   if (item.comment) {
@@ -255,6 +402,23 @@ function renderManualItem(item, index, topCategory = "") {
   wrapper.appendChild(content);
   li.appendChild(wrapper);
   return li;
+}
+
+function renderTopItems(top, reviewMap) {
+  if (!list) return;
+  list.innerHTML = "";
+  renderTopItemsViewButtons();
+  (top?.items || []).forEach((item, index) => {
+    const linkedReview = item.reviewId ? reviewMap.get(item.reviewId) : null;
+    if (linkedReview) {
+      list.appendChild(renderLinkedReviewItem(item, index, linkedReview));
+      return;
+    }
+    list.appendChild(renderManualItem(item, index, top?.category || ""));
+  });
+  if (!list.innerHTML) {
+    list.innerHTML = "<li class='top-item'><p>Aucun item.</p></li>";
+  }
 }
 
 async function loadTop() {
@@ -296,25 +460,13 @@ async function loadTop() {
   }
 
   if (topDate) {
-    topDate.innerHTML = `Publié le ${fmtDateFromTimestamp(top.updatedAt)}${top.ownerUsername ? ` · ${ownerBadge(top.ownerUsername)}` : ""}`;
+    topDate.innerHTML = `Publie le ${fmtDateFromTimestamp(top.updatedAt)}${top.ownerUsername ? ` - ${ownerBadge(top.ownerUsername)}` : ""}`;
   }
   const avg = computeTopAverageScore(top, reviewMap);
   renderTopDetails(top, avg);
   renderTopQuickActions(top);
-
-  list.innerHTML = "";
-  (top.items || []).forEach((item, index) => {
-    const linkedReview = item.reviewId ? reviewMap.get(item.reviewId) : null;
-    if (linkedReview) {
-      list.appendChild(renderLinkedReviewItem(item, index, linkedReview));
-      return;
-    }
-    list.appendChild(renderManualItem(item, index, top?.category || ""));
-  });
-
-  if (!list.innerHTML) {
-    list.innerHTML = "<li class='top-item'><p>Aucun item.</p></li>";
-  }
+  loadedReviewMap = reviewMap;
+  renderTopItems(top, reviewMap);
 }
 
 if (window.ReviewsStore?.onAuthChanged) {
@@ -323,4 +475,25 @@ if (window.ReviewsStore?.onAuthChanged) {
   });
 }
 
+if (topViewDetailsBtn) {
+  topViewDetailsBtn.addEventListener("click", () => {
+    if (selectedTopItemsView === "details") return;
+    selectedTopItemsView = "details";
+    syncTopItemsViewToUrl();
+    if (loadedTop) renderTopItems(loadedTop, loadedReviewMap);
+  });
+}
+
+if (topViewPosterBtn) {
+  topViewPosterBtn.addEventListener("click", () => {
+    if (selectedTopItemsView === "poster") return;
+    selectedTopItemsView = "poster";
+    syncTopItemsViewToUrl();
+    if (loadedTop) renderTopItems(loadedTop, loadedReviewMap);
+  });
+}
+
+applyTopItemsViewFromUrl();
+renderTopItemsViewButtons();
 loadTop();
+

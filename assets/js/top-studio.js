@@ -268,13 +268,12 @@ function updateAddItemButtonLabel() {
 
 function updateTopItemCategoryLabels() {
   if (!topStudioItemsList) return;
-  const label = currentItemLabel();
   const creatorLabel = getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || "");
   [...topStudioItemsList.querySelectorAll(".block-item")].forEach((row) => {
     const labelNode = row.querySelector(".top-title-label");
-    if (labelNode) labelNode.textContent = `Nom du ${label}`;
+    if (labelNode) labelNode.textContent = "Nom";
     const input = row.querySelector(".top-title");
-    if (input) input.placeholder = `Nom du ${label}`;
+    if (input) input.placeholder = "Nom";
     const creatorNode = row.querySelector(".top-creator-label");
     if (creatorNode) creatorNode.textContent = creatorLabel;
     const creatorInput = row.querySelector(".top-director");
@@ -307,8 +306,8 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
       <label><span class="label-row"><span class="field-label-text">Review liée</span><span class="field-hint">optionnel</span></span>
         <select class="top-review">${topReviewOptions(item.reviewId || "")}</select>
       </label>
-      <label><span class="label-row"><span class="field-label-text top-title-label">Nom du ${escapeHtml(currentItemLabel())}</span><span class="field-hint">optionnel</span></span>
-        <input class="top-title" type="text" placeholder="Nom du ${escapeHtml(currentItemLabel())}" value="${escapeHtml(item.title || "")}" />
+      <label><span class="label-row"><span class="field-label-text top-title-label">Nom</span><span class="field-hint">optionnel</span></span>
+        <input class="top-title" type="text" placeholder="Nom" value="${escapeHtml(item.title || "")}" />
       </label>
       <label><span class="label-row"><span class="field-label-text">Affiche URL</span><span class="field-hint">optionnel</span></span>
         <input class="top-poster" type="url" placeholder="https://..." value="${escapeHtml(item.poster || "")}" />
@@ -507,7 +506,7 @@ async function tryLoadEditTop() {
   topStudioTitleInput.value = top?.title || "";
   topStudioSubtitleInput.value = top?.subtitle || "";
   topStudioMetaForm.elements.category.value = top?.category || "film";
-  topStudioMetaForm.elements.year.value = top?.year || "";
+  if (topStudioMetaForm.elements.year) topStudioMetaForm.elements.year.value = top?.year || "";
   topStudioMetaForm.elements.status.value = String(top?.status || "draft");
   topStudioMetaForm.elements.cover.value = top?.cover || "";
   setTopItems(top?.items || []);
@@ -533,7 +532,7 @@ function buildPayload(statusOverride = "") {
     subtitle: String(topStudioSubtitleInput?.value || "").trim(),
     category: String(topStudioMetaForm.elements.category.value || "film"),
     status,
-    year: String(topStudioMetaForm.elements.year.value || "").trim(),
+    year: String(topStudioMetaForm.elements.year?.value || "").trim(),
     cover: String(topStudioMetaForm.elements.cover.value || "").trim(),
     items: readTopItems(),
     ownerId: base.ownerId || "",
