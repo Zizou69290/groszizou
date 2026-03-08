@@ -2178,13 +2178,16 @@ textarea {
 
 .top-item-rank {
   font-family: var(--font-heading);
-  font-size: 1.1rem;
+  font-size: 1.35rem;
+  font-weight: 700;
   line-height: 1;
-  color: #dce8f0;
-  opacity: 0.9;
+  color: #f0f7fc;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  opacity: 0.98;
   min-width: 1.3ch;
   text-align: right;
-  padding-top: 0.12rem;
+  align-self: center;
+  padding-top: 0;
 }
 
 .top-review-link:hover .top-review-content h3 {

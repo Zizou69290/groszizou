@@ -215,9 +215,10 @@ function markTopFormDirty() {
 
 function refreshTopItemIndex() {
   if (!topStudioItemsList) return;
+  const ordinalLabel = (position) => (position === 1 ? "1ère place" : `${position}ème place`);
   [...topStudioItemsList.querySelectorAll(".block-item")].forEach((row, idx) => {
     const index = row.querySelector(".block-index");
-    if (index) index.textContent = `Item ${idx + 1}`;
+    if (index) index.textContent = ordinalLabel(idx + 1);
   });
 }
 

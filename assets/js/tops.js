@@ -117,19 +117,19 @@ function topCard(item) {
   article.setAttribute("role", "link");
   const target = `top.html?id=${encodeURIComponent(item.id)}`;
 
-  const ownerMeta = item.ownerUsername ? ` · ${ownerBadge(item.ownerUsername)}` : "";
-  const draftBadge = isDraft ? '<span class="draft-pill">Brouillon</span>' : "";
+  const ownerMeta = item.ownerUsername ? `, par ${ownerBadge(item.ownerUsername)}` : "";
   const topDate = fmtTopDateFromTimestamp(item.updatedAt);
   const metaPrefix = isDraft ? "Brouillon" : "Publié";
+  const avg = Number.isFinite(Number(item.averageScore)) ? Number(item.averageScore) : null;
+  const avgDisplay = avg === null ? "☆☆☆☆☆" : `${"★".repeat(Math.max(0, Math.min(5, Math.round(avg / 2))))}${"☆".repeat(5 - Math.max(0, Math.min(5, Math.round(avg / 2))))} (${avg.toFixed(1)}/10)`;
   article.innerHTML = `
     <img src="${item.displayCover || item.cover || DEFAULT_COVER}" alt="${item.title || "Top"}" />
     <div class="card-body">
       <p class="meta">${metaPrefix} le ${topDate}${ownerMeta}</p>
       <h3>${item.title || "Sans titre"}</h3>
-      <p>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}${item.subtitle ? ` · ${item.subtitle}` : ""}</p>
+      <p>${item.subtitle || ""}</p>
       <div class="card-footer">
-        <span class="score">${(item.items || []).length} item(s)</span>
-        ${draftBadge}
+        <span class="score">${avgDisplay}</span>
       </div>
     </div>
   `;
@@ -340,6 +340,7 @@ async function renderTops() {
     const visibleTops = facetedTops
       .filter((item) => selectedTopFilter === "all" || item.category === selectedTopFilter);
     visibleTops.forEach((item) => {
+      item.averageScore = getTopAverageScore(item, reviewMap);
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
         const first = item.items[0];
         const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;
