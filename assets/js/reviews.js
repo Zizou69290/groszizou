@@ -172,7 +172,13 @@ window.ReviewsStore = (() => {
     return {
       title,
       comment: item.comment || "",
-      reviewId
+      reviewId,
+      poster: item.poster || "",
+      cover: item.cover || "",
+      releaseYear: item.releaseYear || "",
+      director: item.director || "",
+      tmdbId: item.tmdbId || "",
+      tmdbMediaType: item.tmdbMediaType || ""
     };
   }
 

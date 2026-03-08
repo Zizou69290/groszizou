@@ -110,14 +110,36 @@ function renderLinkedReviewItem(item, index, review) {
 function renderManualItem(item, index) {
   const li = document.createElement("li");
   li.className = "top-item";
+  const wrapper = document.createElement("div");
+  wrapper.className = "top-review-link top-manual-entry";
+
+  const poster = document.createElement("img");
+  poster.className = "top-review-poster";
+  poster.src = item.poster || DEFAULT_POSTER;
+  poster.alt = item.title || "Média";
+  wrapper.appendChild(poster);
+
+  const content = document.createElement("div");
+  content.className = "top-review-content";
   const h = document.createElement("h3");
   h.textContent = `${index + 1}. ${item.title || "Sans titre"}`;
-  li.appendChild(h);
+  content.appendChild(h);
+
+  const details = [item.releaseYear, item.director].filter(Boolean).join(" · ");
+  if (details) {
+    const meta = document.createElement("p");
+    meta.className = "top-review-meta";
+    meta.textContent = details;
+    content.appendChild(meta);
+  }
   if (item.comment) {
     const p = document.createElement("p");
+    p.className = "top-review-comment";
     p.textContent = item.comment;
-    li.appendChild(p);
+    content.appendChild(p);
   }
+  wrapper.appendChild(content);
+  li.appendChild(wrapper);
   return li;
 }
 
@@ -154,7 +176,7 @@ async function loadTop() {
     if (!topCover && Array.isArray(top.items) && top.items.length) {
       const first = top.items[0];
       const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;
-      topCover = linked?.cover || linked?.poster || "";
+      topCover = linked?.cover || linked?.poster || first?.cover || first?.poster || "";
     }
     cover.src = topCover || DEFAULT_COVER;
     cover.alt = top.title || "Top";

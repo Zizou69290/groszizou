@@ -313,7 +313,7 @@ async function renderTops() {
       if (!item.cover && Array.isArray(item.items) && item.items.length) {
         const first = item.items[0];
         const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;
-        item.displayCover = linked?.cover || linked?.poster || "";
+        item.displayCover = linked?.cover || linked?.poster || first?.cover || first?.poster || "";
       }
       topsGrid.appendChild(topCard(item));
     });
