@@ -3914,3 +3914,71 @@ a:focus-visible {
     white-space: nowrap;
   }
 }
+
+@media (max-width: 700px) {
+  /* Studio mobile: no hero cover preview */
+  .review-studio-page .studio-hero .article-hero-bg,
+  .review-studio-page .studio-hero.article-hero-covered::before {
+    display: none;
+  }
+
+  .review-studio-page .studio-hero.article-hero-covered {
+    min-height: auto;
+  }
+
+  /* Review Studio mobile field order:
+     Categorie/Date, Statut/Note, Realisation(etc)/Annee */
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left .studio-fields-row {
+    display: contents;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left .studio-fields-row:nth-child(1) > .studio-meta-chip:nth-child(1) {
+    order: 1;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left .studio-fields-row:nth-child(1) > .studio-meta-chip:nth-child(2) {
+    order: 2;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left .studio-fields-row:nth-child(1) > .studio-meta-chip:nth-child(3) {
+    order: 3;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left .studio-fields-row:nth-child(2) > .studio-meta-chip:nth-child(3) {
+    order: 4;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left .studio-fields-row:nth-child(2) > .studio-meta-chip:nth-child(1) {
+    order: 5;
+  }
+
+  .review-studio-page:not(.top-studio-page) .studio-fields-grid .studio-fields-left .studio-fields-row:nth-child(2) > .studio-meta-chip:nth-child(2) {
+    order: 6;
+  }
+
+  /* Top Studio mobile field order:
+     Categorie/Statut, then Couverture URL */
+  #top-studio-meta-form.studio-fields-grid {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  #top-studio-meta-form .studio-fields-left .studio-fields-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #top-studio-meta-form .studio-fields-right {
+    order: 2;
+  }
+}
