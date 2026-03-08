@@ -122,8 +122,7 @@ function computeTopAverageScore(top, reviewMap) {
 function renderTopDetails(top) {
   if (!topDetails) return;
   const entries = [
-    { label: "Période", value: top?.year || "" },
-    { label: "Items", value: String((top?.items || []).length || "") }
+    { label: "Période", value: top?.year || "" }
   ].filter((entry) => String(entry.value || "").trim());
   topDetails.innerHTML = "";
   if (!entries.length) {
@@ -270,7 +269,9 @@ async function loadTop() {
   }
   if (topScore) {
     const avg = computeTopAverageScore(top, reviewMap);
-    topScore.textContent = Number.isFinite(avg) ? `${scoreToStars(avg)} (${avg.toFixed(1)}/10)` : "☆☆☆☆☆";
+    topScore.textContent = Number.isFinite(avg)
+      ? `Note moyenne : ${scoreToStars(avg)} (${avg.toFixed(1)}/10)`
+      : "Note moyenne : ☆☆☆☆☆";
   }
   renderTopDetails(top);
   renderTopQuickActions(top);
