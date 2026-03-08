@@ -32,9 +32,13 @@ if (activeMenuLink) activeMenuLink.setAttribute("aria-current", "page");
 const title = document.getElementById("top-title");
 const category = document.getElementById("top-category");
 const subtitle = document.getElementById("top-subtitle");
-const year = document.getElementById("top-year");
+const topDate = document.getElementById("top-date");
+const topScore = document.getElementById("top-score");
+const topDetails = document.getElementById("top-details");
+const topEditLink = document.getElementById("top-edit-link");
 const list = document.getElementById("top-items");
-const cover = document.getElementById("top-cover");
+const cover = document.getElementById("top-cover-bg");
+let loadedTop = null;
 
 const DEFAULT_POSTER =
   "data:image/svg+xml;utf8," +
@@ -53,6 +57,22 @@ function scoreToStars(score) {
   return "★".repeat(full) + "☆".repeat(5 - full);
 }
 
+function fmtDateFromTimestamp(ts) {
+  const parsed = Number(ts);
+  if (!Number.isFinite(parsed) || parsed <= 0) return "Date libre";
+  const d = new Date(parsed);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function itemScoreText(score) {
+  if (!Number.isFinite(Number(score))) return "";
+  const value = Number(score);
+  return `${scoreToStars(value)} (${value}/10)`;
+}
+
 function escapeHtml(text) {
   return String(text || "")
     .replaceAll("&", "&amp;")
@@ -64,6 +84,59 @@ function escapeHtml(text) {
 function ownerBadge(username) {
   if (!username) return "";
   return `<span class="owner-badge"><span>${escapeHtml(username)}</span></span>`;
+}
+
+function isAdminUser(user) {
+  return String(user?.username || "").trim().toLowerCase() === "admin";
+}
+
+function renderTopQuickActions(top) {
+  if (!topEditLink) return;
+  const currentUser = window.ReviewsStore?.getCurrentUser?.() || null;
+  const canEdit = Boolean(
+    top &&
+    currentUser &&
+    (isAdminUser(currentUser) || (top.ownerId && top.ownerId === currentUser.uid))
+  );
+  if (canEdit) {
+    topEditLink.href = `top-studio.html?edit=${encodeURIComponent(top.id)}`;
+    topEditLink.classList.remove("hidden");
+  } else {
+    topEditLink.classList.add("hidden");
+  }
+}
+
+function computeTopAverageScore(top, reviewMap) {
+  const scores = (top?.items || [])
+    .map((item) => {
+      if (Number.isFinite(Number(item?.note))) return Number(item.note);
+      const linked = item?.reviewId ? reviewMap.get(item.reviewId) : null;
+      return Number.isFinite(Number(linked?.score)) ? Number(linked.score) : null;
+    })
+    .filter((value) => value !== null);
+  if (!scores.length) return null;
+  const total = scores.reduce((sum, value) => sum + value, 0);
+  return total / scores.length;
+}
+
+function renderTopDetails(top) {
+  if (!topDetails) return;
+  const entries = [
+    { label: "Période", value: top?.year || "" },
+    { label: "Items", value: String((top?.items || []).length || "") }
+  ].filter((entry) => String(entry.value || "").trim());
+  topDetails.innerHTML = "";
+  if (!entries.length) {
+    topDetails.classList.add("hidden");
+    return;
+  }
+  entries.forEach((entry) => {
+    const node = document.createElement("span");
+    node.className = "review-detail";
+    node.innerHTML = `<strong>${escapeHtml(entry.label)} :</strong> ${escapeHtml(entry.value)}`;
+    topDetails.appendChild(node);
+  });
+  topDetails.classList.remove("hidden");
 }
 
 function renderLinkedReviewItem(item, index, review) {
@@ -90,10 +163,14 @@ function renderLinkedReviewItem(item, index, review) {
   meta.textContent = window.ReviewsStore.categories[review.category] || review.category || "Autre";
   content.appendChild(meta);
 
-  const score = document.createElement("p");
-  score.className = "score";
-  score.textContent = `${scoreToStars(review.score)}${Number.isFinite(review.score) ? ` (${review.score}/10)` : ""}`;
-  content.appendChild(score);
+  const linkedScore = Number.isFinite(Number(item?.note)) ? Number(item.note) : review.score;
+  const linkedScoreText = itemScoreText(linkedScore);
+  if (linkedScoreText) {
+    const score = document.createElement("p");
+    score.className = "score";
+    score.textContent = linkedScoreText;
+    content.appendChild(score);
+  }
 
   if (item.comment) {
     const comment = document.createElement("p");
@@ -132,6 +209,13 @@ function renderManualItem(item, index) {
     meta.textContent = details;
     content.appendChild(meta);
   }
+  const manualScoreText = itemScoreText(item?.note);
+  if (manualScoreText) {
+    const score = document.createElement("p");
+    score.className = "score";
+    score.textContent = manualScoreText;
+    content.appendChild(score);
+  }
   if (item.comment) {
     const p = document.createElement("p");
     p.className = "top-review-comment";
@@ -157,11 +241,11 @@ async function loadTop() {
     return;
   }
 
+  loadedTop = top;
   document.title = `SuperSite - Top - ${top.title || "Sans titre"}`;
   title.textContent = top.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[top.category] || top.category || "Autre";
   subtitle.textContent = top.subtitle || "";
-  year.innerHTML = `${top.year ? `Période : ${escapeHtml(top.year)}` : ""}${top.ownerUsername ? `${top.year ? " · " : ""}${ownerBadge(top.ownerUsername)}` : ""}`;
 
   const reviewMap = new Map();
   try {
@@ -179,8 +263,17 @@ async function loadTop() {
       topCover = linked?.cover || linked?.poster || first?.cover || first?.poster || "";
     }
     cover.src = topCover || DEFAULT_COVER;
-    cover.alt = top.title || "Top";
   }
+
+  if (topDate) {
+    topDate.innerHTML = `Publié le ${fmtDateFromTimestamp(top.updatedAt)}${top.ownerUsername ? ` · ${ownerBadge(top.ownerUsername)}` : ""}`;
+  }
+  if (topScore) {
+    const avg = computeTopAverageScore(top, reviewMap);
+    topScore.textContent = Number.isFinite(avg) ? `${scoreToStars(avg)} (${avg.toFixed(1)}/10)` : "☆☆☆☆☆";
+  }
+  renderTopDetails(top);
+  renderTopQuickActions(top);
 
   list.innerHTML = "";
   (top.items || []).forEach((item, index) => {
@@ -195,6 +288,12 @@ async function loadTop() {
   if (!list.innerHTML) {
     list.innerHTML = "<li class='top-item'><p>Aucun item.</p></li>";
   }
+}
+
+if (window.ReviewsStore?.onAuthChanged) {
+  window.ReviewsStore.onAuthChanged(() => {
+    if (loadedTop) renderTopQuickActions(loadedTop);
+  });
 }
 
 loadTop();

@@ -20,7 +20,22 @@ let selectedTopFilter = "all";
 let selectedTopUserFilter = "all";
 let pendingSearchDebounce = null;
 let suppressTopsUrlSync = false;
+let currentUser = window.ReviewsStore?.getCurrentUser?.() || null;
 const TOPS_SORT_MODES = new Set(["date-desc", "date-asc", "score-desc", "score-asc"]);
+
+function normalizePublicationStatus(value) {
+  return String(value || "").trim().toLowerCase() === "draft" ? "draft" : "published";
+}
+
+function fmtTopDateFromTimestamp(ts) {
+  const parsed = Number(ts);
+  if (!Number.isFinite(parsed) || parsed <= 0) return "Date libre";
+  const d = new Date(parsed);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 function applyTopsListingStateFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -96,19 +111,25 @@ function ownerBadge(username) {
 function topCard(item) {
   const article = document.createElement("article");
   article.className = "review-card";
+  const isDraft = normalizePublicationStatus(item.status) === "draft";
+  article.classList.toggle("is-draft", isDraft);
   article.tabIndex = 0;
   article.setAttribute("role", "link");
   const target = `top.html?id=${encodeURIComponent(item.id)}`;
 
   const ownerMeta = item.ownerUsername ? ` · ${ownerBadge(item.ownerUsername)}` : "";
+  const draftBadge = isDraft ? '<span class="draft-pill">Brouillon</span>' : "";
+  const topDate = fmtTopDateFromTimestamp(item.updatedAt);
+  const metaPrefix = isDraft ? "Brouillon" : "Publié";
   article.innerHTML = `
     <img src="${item.displayCover || item.cover || DEFAULT_COVER}" alt="${item.title || "Top"}" />
     <div class="card-body">
-      <p class="meta">${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}${ownerMeta}</p>
+      <p class="meta">${metaPrefix} le ${topDate}${ownerMeta}</p>
       <h3>${item.title || "Sans titre"}</h3>
-      <p>${item.subtitle || ""}</p>
+      <p>${window.ReviewsStore.categories[item.category] || item.category || "Autre"}${item.year ? ` · ${item.year}` : ""}${item.subtitle ? ` · ${item.subtitle}` : ""}</p>
       <div class="card-footer">
         <span class="score">${(item.items || []).length} item(s)</span>
+        ${draftBadge}
       </div>
     </div>
   `;
@@ -133,8 +154,11 @@ function getTopPublicationTimestamp(item) {
 
 function getTopAverageScore(item, reviewMap) {
   const scores = (item.items || [])
-    .map((topItem) => (topItem?.reviewId ? reviewMap.get(topItem.reviewId) : null))
-    .map((review) => (Number.isFinite(Number(review?.score)) ? Number(review.score) : null))
+    .map((topItem) => {
+      if (Number.isFinite(Number(topItem?.note))) return Number(topItem.note);
+      const review = topItem?.reviewId ? reviewMap.get(topItem.reviewId) : null;
+      return Number.isFinite(Number(review?.score)) ? Number(review.score) : null;
+    })
     .filter((score) => score !== null);
   if (!scores.length) return null;
   const total = scores.reduce((sum, score) => sum + score, 0);
@@ -296,16 +320,21 @@ async function renderTops() {
   if (topsResultsMeta) topsResultsMeta.textContent = "Chargement des contenus...";
   try {
     const [tops, reviews] = await Promise.all([
-      window.ReviewsStore.getAllTops({ status: "published" }),
-      window.ReviewsStore.getAll({ status: "published" })
+      window.ReviewsStore.getAllTops(currentUser ? {} : { status: "published" }),
+      window.ReviewsStore.getAll(currentUser ? {} : { status: "published" })
     ]);
     const reviewMap = new Map(reviews.map((r) => [r.id, r]));
     const sortedTops = sortTops(tops, reviewMap);
-    const facetedTops = sortedTops
+    const listingVisibleTops = sortedTops.filter((item) => {
+      const status = normalizePublicationStatus(item.status);
+      if (status === "published") return true;
+      return status === "draft" && Boolean(currentUser?.uid) && item.ownerId === currentUser.uid;
+    });
+    const facetedTops = listingVisibleTops
       .filter((item) => selectedTopUserFilter === "all" || normalizeUsernameValue(item.ownerUsername) === selectedTopUserFilter)
       .filter((item) => topMatchesSearch(item, selectedTopSearch));
     buildTopFilterButtons(facetedTops);
-    buildTopUserFilterOptions(sortedTops);
+    buildTopUserFilterOptions(listingVisibleTops);
 
     topsGrid.innerHTML = "";
     const visibleTops = facetedTops
@@ -380,7 +409,9 @@ renderTops();
 
 if (window.ReviewsStore?.onAuthChanged) {
   window.ReviewsStore.onAuthChanged((user) => {
+    currentUser = user ? window.ReviewsStore.getCurrentUser() : null;
     if (quickCreateTopBtn) quickCreateTopBtn.classList.toggle("hidden", !Boolean(user));
+    renderTops();
   });
 }
 

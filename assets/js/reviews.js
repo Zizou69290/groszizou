@@ -175,6 +175,7 @@ window.ReviewsStore = (() => {
     return {
       title,
       comment: item.comment || "",
+      note: Number.isFinite(Number(item.note)) ? Number(item.note) : null,
       reviewId,
       poster: item.poster || "",
       cover: item.cover || "",

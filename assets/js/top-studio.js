@@ -230,6 +230,36 @@ function topReviewOptions(selectedId = "") {
   return options.join("");
 }
 
+function getCategoryItemLabel(category) {
+  const key = String(category || "").trim().toLowerCase();
+  if (key === "film") return "Film";
+  if (key === "serie") return "Série";
+  if (key === "jeu") return "Jeu-vidéo";
+  if (key === "livre") return "Livre";
+  if (key === "musique") return "Musique";
+  return "Item";
+}
+
+function currentItemLabel() {
+  return getCategoryItemLabel(topStudioMetaForm?.elements?.category?.value || "");
+}
+
+function updateAddItemButtonLabel() {
+  if (!topStudioAddItemBtn) return;
+  topStudioAddItemBtn.textContent = `+ ${currentItemLabel()}`;
+}
+
+function updateTopItemCategoryLabels() {
+  if (!topStudioItemsList) return;
+  const label = currentItemLabel();
+  [...topStudioItemsList.querySelectorAll(".block-item")].forEach((row) => {
+    const labelNode = row.querySelector(".top-title-label");
+    if (labelNode) labelNode.textContent = `Nom du ${label}`;
+    const input = row.querySelector(".top-title");
+    if (input) input.placeholder = `Nom du ${label}`;
+  });
+}
+
 function refreshTopReviewSelectOptions() {
   if (!topStudioItemsList) return;
   [...topStudioItemsList.querySelectorAll(".top-review")].forEach((select) => {
@@ -239,7 +269,7 @@ function refreshTopReviewSelectOptions() {
   });
 }
 
-function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster: "", cover: "", releaseYear: "", director: "", tmdbId: "", tmdbMediaType: "" }) {
+function createTopItemRow(item = { title: "", comment: "", note: null, reviewId: "", poster: "", cover: "", releaseYear: "", director: "", tmdbId: "", tmdbMediaType: "" }) {
   const row = document.createElement("div");
   row.className = "block-item";
   row.innerHTML = `
@@ -251,18 +281,21 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster:
         <button type="button" class="action-btn danger top-delete">Supprimer</button>
       </div>
     </div>
-    <div class="block-fields">
+    <div class="block-fields top-studio-item-fields">
       <label><span class="label-row"><span class="field-label-text">Review liée</span><span class="field-hint">optionnel</span></span>
         <select class="top-review">${topReviewOptions(item.reviewId || "")}</select>
       </label>
-      <label><span class="label-row"><span class="field-label-text">Titre média</span><span class="field-hint">optionnel</span></span>
-        <input class="top-title" type="text" placeholder="Titre" value="${escapeHtml(item.title || "")}" />
+      <label><span class="label-row"><span class="field-label-text top-title-label">Nom du ${escapeHtml(currentItemLabel())}</span><span class="field-hint">optionnel</span></span>
+        <input class="top-title" type="text" placeholder="Nom du ${escapeHtml(currentItemLabel())}" value="${escapeHtml(item.title || "")}" />
       </label>
       <label><span class="label-row"><span class="field-label-text">Affiche URL</span><span class="field-hint">optionnel</span></span>
         <input class="top-poster" type="url" placeholder="https://..." value="${escapeHtml(item.poster || "")}" />
       </label>
       <label><span class="label-row"><span class="field-label-text">Couverture URL</span><span class="field-hint">optionnel</span></span>
         <input class="top-cover" type="url" placeholder="https://..." value="${escapeHtml(item.cover || "")}" />
+      </label>
+      <label><span class="label-row"><span class="field-label-text">Note</span><span class="field-hint">optionnel</span></span>
+        <input class="top-note" type="number" min="0" max="10" step="0.1" placeholder="/10" value="${Number.isFinite(Number(item.note)) ? escapeHtml(String(Number(item.note))) : ""}" />
       </label>
       <label><span class="label-row"><span class="field-label-text">Année</span><span class="field-hint">optionnel</span></span>
         <input class="top-release-year" type="text" placeholder="Ex: 2024" value="${escapeHtml(item.releaseYear || "")}" />
@@ -282,6 +315,7 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster:
   const titleInput = row.querySelector(".top-title");
   const posterInput = row.querySelector(".top-poster");
   const coverInput = row.querySelector(".top-cover");
+  const noteInput = row.querySelector(".top-note");
   const releaseYearInput = row.querySelector(".top-release-year");
   const directorInput = row.querySelector(".top-director");
   const tmdbIdInput = row.querySelector(".top-tmdb-id");
@@ -293,11 +327,14 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster:
 
   reviewSelect?.addEventListener("change", () => {
     const match = cachedReviews.find((r) => r.id === reviewSelect.value);
-    if (match && !titleInput.value.trim()) titleInput.value = match.title || "";
-    if (match && !posterInput.value.trim()) posterInput.value = match.poster || "";
-    if (match && !coverInput.value.trim()) coverInput.value = match.cover || "";
-    if (match && !releaseYearInput.value.trim()) releaseYearInput.value = match.releaseYear || extractYear(match.date);
-    if (match && !directorInput.value.trim()) directorInput.value = match.director || "";
+    if (match) {
+      titleInput.value = match.title || "";
+      if (posterInput) posterInput.value = match.poster || "";
+      if (coverInput) coverInput.value = match.cover || "";
+      if (noteInput) noteInput.value = Number.isFinite(Number(match.score)) ? String(Number(match.score)) : "";
+      if (releaseYearInput) releaseYearInput.value = match.releaseYear || extractYear(match.date);
+      if (directorInput) directorInput.value = match.director || "";
+    }
     clearTopTmdbLink();
     markTopFormDirty();
   });
@@ -373,22 +410,28 @@ function setTopItems(items) {
     items.forEach((item) => topStudioItemsList.appendChild(createTopItemRow(item)));
   }
   refreshTopItemIndex();
+  updateTopItemCategoryLabels();
 }
 
 function readTopItems() {
   if (!topStudioItemsList) return [];
   return [...topStudioItemsList.querySelectorAll(".block-item")]
-    .map((row) => ({
-      reviewId: row.querySelector(".top-review")?.value || "",
-      title: row.querySelector(".top-title")?.value.trim() || "",
-      comment: row.querySelector(".top-comment")?.value.trim() || "",
-      poster: row.querySelector(".top-poster")?.value.trim() || "",
-      cover: row.querySelector(".top-cover")?.value.trim() || "",
-      releaseYear: row.querySelector(".top-release-year")?.value.trim() || "",
-      director: row.querySelector(".top-director")?.value.trim() || "",
-      tmdbId: row.querySelector(".top-tmdb-id")?.value.trim() || "",
-      tmdbMediaType: row.querySelector(".top-tmdb-media-type")?.value.trim() || ""
-    }))
+    .map((row) => {
+      const noteRaw = row.querySelector(".top-note")?.value;
+      const parsedNote = noteRaw === "" || noteRaw === undefined ? null : Number(noteRaw);
+      return {
+        reviewId: row.querySelector(".top-review")?.value || "",
+        title: row.querySelector(".top-title")?.value.trim() || "",
+        comment: row.querySelector(".top-comment")?.value.trim() || "",
+        note: Number.isFinite(parsedNote) ? parsedNote : null,
+        poster: row.querySelector(".top-poster")?.value.trim() || "",
+        cover: row.querySelector(".top-cover")?.value.trim() || "",
+        releaseYear: row.querySelector(".top-release-year")?.value.trim() || "",
+        director: row.querySelector(".top-director")?.value.trim() || "",
+        tmdbId: row.querySelector(".top-tmdb-id")?.value.trim() || "",
+        tmdbMediaType: row.querySelector(".top-tmdb-media-type")?.value.trim() || ""
+      };
+    })
     .filter((item) => item.title || item.reviewId);
 }
 
@@ -446,6 +489,8 @@ async function tryLoadEditTop() {
   topStudioMetaForm.elements.status.value = String(top?.status || "draft");
   topStudioMetaForm.elements.cover.value = top?.cover || "";
   setTopItems(top?.items || []);
+  updateAddItemButtonLabel();
+  updateTopItemCategoryLabels();
   if (topStudioEyebrow) {
     topStudioEyebrow.textContent = String(top?.status || "").trim().toLowerCase() === "published" ? "PUBLIÉ" : "BROUILLON";
   }
@@ -521,6 +566,8 @@ if (topStudioMetaForm) {
   topStudioMetaForm.addEventListener("change", () => {
     markTopFormDirty();
     refreshHeroPreview();
+    updateAddItemButtonLabel();
+    updateTopItemCategoryLabels();
     if (topStudioEyebrow) {
       const label = String(topStudioMetaForm.elements.status.value || "").trim().toLowerCase() === "published" ? "PUBLIÉ" : "BROUILLON";
       topStudioEyebrow.textContent = label;
@@ -587,6 +634,7 @@ if (window.ReviewsStore?.onAuthChanged) {
 
 toggleWorkspaceForAuth(window.ReviewsStore?.getCurrentUser?.());
 setTopItems([]);
+updateAddItemButtonLabel();
 refreshHeroPreview();
 refreshDeleteButtonState();
 loadTopReviewOptions().then(() => tryLoadEditTop());

@@ -2988,6 +2988,20 @@ a:focus-visible {
   margin-top: 0.12rem;
 }
 
+.top-studio-items-head {
+  justify-content: flex-end;
+  margin-bottom: 0.1rem;
+}
+
+#top-studio-items-list .top-studio-item-fields {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+#top-studio-items-list .top-studio-item-fields > label {
+  margin-bottom: 0;
+}
+
 .review-studio-page .studio-delete-btn {
   margin-right: auto;
 }
@@ -3052,5 +3066,15 @@ a:focus-visible {
   .review-studio-page .studio-fields-right .studio-asset-group.compact {
     grid-template-columns: 1fr;
     gap: 0.3rem;
+  }
+
+  #top-studio-items-list .top-studio-item-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 980px) {
+  #top-studio-items-list .top-studio-item-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

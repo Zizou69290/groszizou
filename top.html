@@ -36,20 +36,25 @@
     </nav>
   </header>
 
-  <header class="article-hero">
-    <div class="container">
-      <a class="back-link" href="tops.html">Retour aux tops</a>
+  <header class="article-hero article-hero-covered">
+    <img id="top-cover-bg" class="article-hero-bg" alt="" aria-hidden="true" />
+    <div class="container article-hero-inner">
+      <div class="hero-links">
+        <a class="back-link" href="tops.html">Retour</a>
+        <a id="top-edit-link" class="back-link hidden" href="#" title="Modifier">Modifier</a>
+      </div>
       <p class="eyebrow" id="top-category"></p>
       <h1 id="top-title"></h1>
       <p class="lede" id="top-subtitle"></p>
       <div class="article-meta">
-        <span id="top-year"></span>
+        <span id="top-date"></span>
+        <span id="top-score"></span>
       </div>
+      <div id="top-details" class="review-details hidden"></div>
     </div>
   </header>
 
   <main class="container reviews-section">
-    <img id="top-cover" class="article-cover" alt="Cover top" />
     <ol id="top-items" class="top-items"></ol>
   </main>
 
