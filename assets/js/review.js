@@ -1,4 +1,4 @@
-const params = new URLSearchParams(window.location.search);
+﻿const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
@@ -38,8 +38,6 @@ const title = document.getElementById("review-title");
 const category = document.getElementById("review-category");
 const summary = document.getElementById("review-summary");
 const date = document.getElementById("review-date");
-const score = document.getElementById("review-score");
-const articleMeta = document.querySelector(".article-meta");
 const coverBg = document.getElementById("review-cover-bg");
 const details = document.getElementById("review-details");
 const content = document.getElementById("review-content");
@@ -116,20 +114,40 @@ function renderQuickActions(item) {
 }
 
 function scoreToStars(value) {
-  if (!Number.isFinite(value)) return "☆☆☆☆☆";
+  if (!Number.isFinite(value)) return "\u2606\u2606\u2606\u2606\u2606";
   const full = Math.max(0, Math.min(5, Math.round(value / 2)));
-  return "★".repeat(full) + "☆".repeat(5 - full);
+  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
+}
+
+function creatorLabelForCategory(categoryValue) {
+  const key = String(categoryValue || "").trim().toLowerCase();
+  if (key === "jeu") return "Studio";
+  if (key === "musique") return "Artiste";
+  if (key === "livre") return "Auteur";
+  return "R\u00E9alisation";
+}
+
+function creatorValueForCategory(categoryValue, source = {}) {
+  const key = String(categoryValue || "").trim().toLowerCase();
+  if (key === "jeu") return String(source?.studio || source?.director || source?.author || "").trim();
+  if (key === "musique") return String(source?.author || source?.studio || source?.director || "").trim();
+  if (key === "livre") return String(source?.author || source?.director || source?.studio || "").trim();
+  return String(source?.director || source?.studio || source?.author || "").trim();
 }
 
 function renderDetails(item) {
   if (!details) return;
 
+  const scoreValue = Number.isFinite(Number(item?.score))
+    ? `${scoreToStars(Number(item.score))} (${Number(item.score).toFixed(1)}/10)`
+    : "";
+  const creatorLabel = creatorLabelForCategory(item?.category);
+  const creatorValue = creatorValueForCategory(item?.category, item);
+
   const entries = [
-    { label: "Auteur", value: item.author },
-    { label: "Réalisation", value: item.director },
-    { label: "Studio / Développeur", value: item.studio },
-    { label: "Année", value: item.releaseYear },
-    { label: "Genre", value: item.genre }
+    { label: "Note", value: scoreValue },
+    { label: "Ann\u00E9e", value: item.releaseYear },
+    { label: creatorLabel, value: creatorValue }
   ].filter((entry) => String(entry.value || "").trim());
 
   details.innerHTML = "";
@@ -324,27 +342,7 @@ function teardownBackgroundAudio() {
 }
 
 function alignAudioControlsToLastInfo() {
-  if (!audioControls || !articleHero || audioControls.classList.contains("hidden")) return;
-  if (window.matchMedia("(max-width: 700px)").matches) {
-    audioControls.style.top = "auto";
-    audioControls.style.bottom = "0.85rem";
-    return;
-  }
-  const candidates = [linkActions, details, articleMeta].filter(
-    (el) => el && !el.classList.contains("hidden") && (el.children?.length || el.textContent?.trim())
-  );
-  const anchor = candidates[0] || articleMeta;
-  if (!anchor) return;
-
-  const heroRect = articleHero.getBoundingClientRect();
-  const anchorRect = anchor.getBoundingClientRect();
-  const controlsRect = audioControls.getBoundingClientRect();
-  const anchorCenterY = anchorRect.top + anchorRect.height / 2 - heroRect.top;
-  const nextTop = anchorCenterY - controlsRect.height / 2;
-  const clampedTop = Math.max(10, Math.min(heroRect.height - controlsRect.height - 10, nextTop));
-
-  audioControls.style.top = `${clampedTop}px`;
-  audioControls.style.bottom = "auto";
+  // Audio controls are now inline in the metadata row.
 }
 
 function setupBackgroundAudio(item) {
@@ -354,14 +352,11 @@ function setupBackgroundAudio(item) {
   const rawUrl = String(item?.bgMusic || "").trim();
   if (!rawUrl) {
     audioControls.classList.add("hidden");
-    if (articleHero) articleHero.classList.remove("has-bg-audio");
     return;
   }
 
   const showControls = () => {
     audioControls.classList.remove("hidden");
-    if (articleHero) articleHero.classList.add("has-bg-audio");
-    requestAnimationFrame(alignAudioControlsToLastInfo);
   };
 
   const audio = new Audio(rawUrl);
@@ -449,8 +444,7 @@ async function loadReview() {
   title.textContent = item.title || "Sans titre";
   category.textContent = window.ReviewsStore.categories[item.category] || item.category || "Review";
   summary.textContent = item.summary || "Aucun résumé.";
-  date.innerHTML = `Publié le ${fmtDate(item.date)}${item.ownerUsername ? ` · ${ownerBadge(item.ownerUsername)}` : ""}`;
-  score.textContent = Number.isFinite(item.score) ? `${scoreToStars(item.score)} (${item.score}/10)` : "☆☆☆☆☆";
+  date.innerHTML = `Publié le ${fmtDate(item.date)}${item.ownerUsername ? ` - par ${ownerBadge(item.ownerUsername)}` : ""}`;
   if (coverBg) coverBg.src = item.cover || DEFAULT_COVER;
   setupBackgroundAudio(item);
   renderDetails(item);

@@ -2812,6 +2812,87 @@ a:focus-visible {
   min-height: clamp(188px, 24vw, 250px);
 }
 
+.review-page .article-hero-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: clamp(0.26rem, 0.58vw, 0.42rem);
+  min-height: clamp(188px, 24vw, 250px);
+}
+
+.review-page .article-hero-inner > * {
+  margin: 0;
+}
+
+.review-page .hero-links {
+  margin-bottom: 0.22rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.review-page .hero-links-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.review-page #review-date {
+  color: #f0f4f8;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
+  font-size: 0.98rem;
+}
+
+.review-page .review-info-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.review-page .review-audio-controls {
+  position: static;
+  left: auto;
+  top: auto;
+  width: auto;
+  transform: none;
+  z-index: auto;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: auto;
+  margin-left: auto;
+}
+
+.review-page .review-audio-controls.hidden {
+  display: none;
+}
+
+.review-page .review-audio-controls-inner {
+  margin-right: 0;
+}
+
+.review-page .article-hero-covered {
+  min-height: clamp(188px, 24vw, 250px);
+}
+
+.review-page #review-title {
+  max-width: none;
+  line-height: 1;
+  margin-bottom: 0.34rem;
+}
+
+.review-page #review-summary {
+  margin-bottom: 0.34rem;
+}
+
+.review-page .review-details {
+  margin-top: 0;
+}
+
 .top-page .article-hero-inner > * {
   margin: 0;
 }
@@ -3297,6 +3378,20 @@ a:focus-visible {
 }
 
 @media (max-width: 700px) {
+  .review-page .article-hero-inner {
+    min-height: clamp(180px, 34vw, 230px);
+    gap: 0.26rem;
+  }
+
+  .review-page .review-info-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .review-page .review-audio-controls {
+    margin-left: 0;
+  }
+
   .top-page .article-hero-inner {
     min-height: clamp(180px, 34vw, 230px);
     gap: 0.26rem;

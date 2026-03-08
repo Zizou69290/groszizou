@@ -1,4 +1,4 @@
-const menuToggle = document.getElementById("menu-toggle");
+﻿const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const pageParams = new URLSearchParams(window.location.search);
 const requestedEditTopId = String(pageParams.get("edit") || "").trim();
@@ -215,7 +215,7 @@ function markTopFormDirty() {
 
 function refreshTopItemIndex() {
   if (!topStudioItemsList) return;
-  const ordinalLabel = (position) => (position === 1 ? "1ère place" : `${position}ème place`);
+  const ordinalLabel = (position) => (position === 1 ? "1\u00E8re place" : `${position}\u00E8me place`);
   [...topStudioItemsList.querySelectorAll(".block-item")].forEach((row, idx) => {
     const index = row.querySelector(".block-index");
     if (index) index.textContent = ordinalLabel(idx + 1);
@@ -223,7 +223,7 @@ function refreshTopItemIndex() {
 }
 
 function topReviewOptions(selectedId = "") {
-  const options = [`<option value="">Aucune review liée</option>`];
+  const options = [`<option value="">Aucune review li\u00E9e</option>`];
   cachedReviews.forEach((review) => {
     const selected = review.id === selectedId ? " selected" : "";
     options.push(`<option value="${review.id}"${selected}>${escapeHtml(review.title || "Sans titre")}</option>`);
@@ -234,8 +234,8 @@ function topReviewOptions(selectedId = "") {
 function getCategoryItemLabel(category) {
   const key = String(category || "").trim().toLowerCase();
   if (key === "film") return "Film";
-  if (key === "serie") return "Série";
-  if (key === "jeu") return "Jeu-vidéo";
+  if (key === "serie") return "S\u00E9rie";
+  if (key === "jeu") return "Jeu-vid\u00E9o";
   if (key === "livre") return "Livre";
   if (key === "musique") return "Musique";
   return "Item";
@@ -246,7 +246,7 @@ function getCategoryCreatorLabel(category) {
   if (key === "jeu") return "Studio";
   if (key === "livre") return "Auteur";
   if (key === "musique") return "Artiste";
-  return "Réalisation";
+  return "R\u00E9alisation";
 }
 
 function getCreatorValueFromReview(review, category) {
@@ -303,7 +303,7 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
       </div>
     </div>
     <div class="block-fields top-studio-item-fields">
-      <label><span class="label-row"><span class="field-label-text">Review liée</span><span class="field-hint">optionnel</span></span>
+      <label><span class="label-row"><span class="field-label-text">Review li\u00E9e</span><span class="field-hint">optionnel</span></span>
         <select class="top-review">${topReviewOptions(item.reviewId || "")}</select>
       </label>
       <label><span class="label-row"><span class="field-label-text top-title-label">Nom</span><span class="field-hint">optionnel</span></span>
@@ -318,7 +318,7 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
       <label><span class="label-row"><span class="field-label-text">Note</span><span class="field-hint">optionnel</span></span>
         <input class="top-note" type="number" min="0" max="10" step="0.1" placeholder="/10" value="${Number.isFinite(Number(item.note)) ? escapeHtml(String(Number(item.note))) : ""}" />
       </label>
-      <label><span class="label-row"><span class="field-label-text">Année</span><span class="field-hint">optionnel</span></span>
+      <label><span class="label-row"><span class="field-label-text">Ann\u00E9e</span><span class="field-hint">optionnel</span></span>
         <input class="top-release-year" type="text" placeholder="Ex: 2024" value="${escapeHtml(item.releaseYear || "")}" />
       </label>
       <label><span class="label-row"><span class="field-label-text top-creator-label">${escapeHtml(getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || ""))}</span><span class="field-hint">optionnel</span></span>
@@ -497,7 +497,7 @@ async function tryLoadEditTop() {
   }
   const canEdit = isAdminUser(currentUser) || (top?.ownerId && top.ownerId === currentUser.uid);
   if (!canEdit) {
-    window.alert("Ce top appartient à un autre utilisateur.");
+    window.alert("Ce top appartient \u00E0 un autre utilisateur.");
     window.location.href = `top.html?id=${encodeURIComponent(editingTopId)}`;
     pendingEditLoad = false;
     return;
@@ -513,7 +513,7 @@ async function tryLoadEditTop() {
   updateAddItemButtonLabel();
   updateTopItemCategoryLabels();
   if (topStudioEyebrow) {
-    topStudioEyebrow.textContent = String(top?.status || "").trim().toLowerCase() === "published" ? "PUBLIÉ" : "BROUILLON";
+    topStudioEyebrow.textContent = String(top?.status || "").trim().toLowerCase() === "published" ? "PUBLI\u00C9" : "BROUILLON";
   }
   document.title = `SuperSite - ${topStudioTitleInput.value.trim() || "Modifier top"}`;
   topFormDirty = false;
@@ -559,7 +559,7 @@ async function saveTop(statusOverride = "") {
 async function deleteCurrentTop() {
   if (!editingTopId || !currentUser) return;
   const label = String(topStudioTitleInput?.value || loadedTopSnapshot?.title || "ce top").trim();
-  const confirmed = window.confirm(`Supprimer définitivement le top "${label}" ?`);
+  const confirmed = window.confirm(`Supprimer d\u00E9finitivement le top "${label}" ?`);
   if (!confirmed) return;
   topStudioDeleteBtn.disabled = true;
   try {
@@ -590,7 +590,7 @@ if (topStudioMetaForm) {
     updateAddItemButtonLabel();
     updateTopItemCategoryLabels();
     if (topStudioEyebrow) {
-      const label = String(topStudioMetaForm.elements.status.value || "").trim().toLowerCase() === "published" ? "PUBLIÉ" : "BROUILLON";
+      const label = String(topStudioMetaForm.elements.status.value || "").trim().toLowerCase() === "published" ? "PUBLI\u00C9" : "BROUILLON";
       topStudioEyebrow.textContent = label;
     }
   });

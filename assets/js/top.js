@@ -114,7 +114,7 @@ function creatorLabelForCategory(category) {
   if (key === "jeu") return "Studio";
   if (key === "livre") return "Auteur";
   if (key === "musique") return "Artiste";
-  return "Realisation";
+  return "R\u00E9alisation";
 }
 
 function creatorValueForCategory(category, source = {}) {
@@ -460,7 +460,7 @@ async function loadTop() {
   }
 
   if (topDate) {
-    topDate.innerHTML = `Publie le ${fmtDateFromTimestamp(top.updatedAt)}${top.ownerUsername ? ` - ${ownerBadge(top.ownerUsername)}` : ""}`;
+    topDate.innerHTML = `Publié le ${fmtDateFromTimestamp(top.updatedAt)}${top.ownerUsername ? ` - ${ownerBadge(top.ownerUsername)}` : ""}`;
   }
   const avg = computeTopAverageScore(top, reviewMap);
   renderTopDetails(top, avg);
