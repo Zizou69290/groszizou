@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperSite - Nouveau top</title>
+  <link rel="icon" type="image/png" href="pouce.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body class="review-studio-page">
+  <div class="noise"></div>
+
+  <header class="hero">
+    <nav class="topbar container">
+      <a class="brand" href="index.html"><img src="pouce.png" alt="" class="brand-icon" aria-hidden="true" /><span>SUPERSITE</span></a>
+      <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
+      <ul id="menu" class="menu">
+        <li><a href="index.html">Reviews</a></li>
+        <li><a href="tops.html">Tops</a></li>
+        <li class="menu-item-has-submenu">
+          <a href="watch-parter-watchlist.html">Watch Parter</a>
+          <ul class="submenu" aria-label="Sous-menu Watch Parter">
+            <li><a href="watch-parter-watchlist.html">Watchlist</a></li>
+            <li><a href="watch-parter-courter.html">Watchlist Courts</a></li>
+            <li><a href="watch-parter-duel.html">Duel de films</a></li>
+            <li><a href="watch-parter-bingo.html">Bingo</a></li>
+          </ul>
+        </li>
+        <li class="menu-sep" aria-hidden="true">|</li>
+        <li id="auth-menu-slot" class="auth-menu-slot"></li>
+      </ul>
+    </nav>
+  </header>
+
+  <header class="article-hero article-hero-covered studio-hero">
+    <img id="top-studio-cover-bg" class="article-hero-bg" alt="" aria-hidden="true" />
+    <div class="container article-hero-inner">
+      <div class="hero-links">
+        <a class="back-link" href="tops.html">Retour</a>
+      </div>
+      <p class="eyebrow" id="top-studio-eyebrow">BROUILLON</p>
+      <input id="top-studio-title" class="studio-title-input" type="text" placeholder="Titre du top" />
+      <textarea id="top-studio-subtitle" class="studio-summary-input" rows="2" placeholder="Sous-titre (optionnel)"></textarea>
+
+      <form id="top-studio-meta-form" class="studio-fields-grid">
+        <div class="studio-fields-left">
+          <div class="studio-fields-row studio-fields-row-3">
+            <label class="studio-meta-chip">
+              <span>Catégorie</span>
+              <select name="category" required>
+                <option value="jeu">Jeux-vidéo</option>
+                <option value="film" selected>Films</option>
+                <option value="serie">Séries</option>
+                <option value="musique">Musiques</option>
+                <option value="livre">Livres</option>
+                <option value="autre">Autre</option>
+              </select>
+            </label>
+            <label class="studio-meta-chip">
+              <span>Période</span>
+              <input name="year" type="text" placeholder="Ex: 2025" />
+            </label>
+            <label class="studio-meta-chip">
+              <span>Statut</span>
+              <select name="status" required>
+                <option value="draft" selected>Brouillon</option>
+                <option value="published">Publié</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="studio-fields-right">
+          <label class="studio-meta-chip studio-music-chip">
+            <span>Couverture</span>
+            <input name="cover" type="url" placeholder="https://..." />
+          </label>
+        </div>
+      </form>
+    </div>
+  </header>
+
+  <main class="container">
+    <p id="top-studio-guest-note" class="manager-guest-note hidden">Connexion requise pour créer un top.</p>
+
+    <section id="top-studio-workspace" class="studio-layout hidden">
+      <section class="studio-editor-card">
+        <div class="media-head top-studio-items-head">
+          <h3>Items du top</h3>
+          <button id="top-studio-add-item" type="button" class="action-btn secondary">+ Item</button>
+        </div>
+        <div id="top-studio-items-list" class="blocks-list"></div>
+        <div class="form-actions studio-editor-actions">
+          <button id="top-studio-delete" type="button" class="action-btn danger studio-delete-btn hidden">Supprimer</button>
+          <button id="top-studio-save-draft" type="button" class="action-btn secondary">Enregistrer brouillon</button>
+          <button id="top-studio-save-publish" type="button" class="action-btn">Publier</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="assets/js/firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="assets/js/reviews.js"></script>
+  <script src="assets/js/auth-ui.js"></script>
+  <script src="assets/js/top-studio.js"></script>
+</body>
+</html>

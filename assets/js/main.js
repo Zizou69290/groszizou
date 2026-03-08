@@ -2,6 +2,7 @@
 const menu = document.getElementById("menu");
 const pageParams = new URLSearchParams(window.location.search);
 const requestedEditReviewId = String(pageParams.get("edit") || "").trim();
+const requestedNewTopCreation = pageParams.get("newTop") === "1";
 
 function closeMenu() {
   if (!menu) return;
@@ -126,6 +127,7 @@ const ADMIN_USERNAME = "admin";
 let selectedRichMediaWrapper = null;
 let richMediaResizeState = null;
 let pendingEditReviewId = requestedEditReviewId || "";
+let pendingCreateTop = requestedNewTopCreation;
 let pendingSearchDebounce = null;
 let pendingManagerSearchDebounce = null;
 let reviewTmdbBindDone = false;
@@ -482,6 +484,13 @@ async function openRequestedReviewForEdit() {
   }
   if (!item) return;
   openForm(item);
+}
+
+function openRequestedTopCreation() {
+  if (!pendingCreateTop) return;
+  pendingCreateTop = false;
+  if (!topForm) return;
+  openTopForm();
 }
 
 function renderRichText(text) {
@@ -2438,6 +2447,7 @@ if (window.ReviewsStore.onAuthChanged) {
     if (unlocked) {
       await renderAll();
       await renderTopsManager();
+      openRequestedTopCreation();
       await openRequestedReviewForEdit();
     } else {
       if (managerList) managerList.innerHTML = "";
@@ -2499,10 +2509,6 @@ if (form) configureMetaFields(form.elements.category.value || "film");
 setupReviewTmdbAutocomplete();
 setContentMode("blocks");
 renderAll();
-
-
-
-
 
 
 

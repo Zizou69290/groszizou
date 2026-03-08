@@ -5,6 +5,7 @@ const topsSearchInput = document.getElementById("tops-search");
 const topsUserFilterSelect = document.getElementById("tops-user-filter");
 const topsResetBtn = document.getElementById("tops-reset");
 const topsResultsMeta = document.getElementById("tops-results-meta");
+const quickCreateTopBtn = document.getElementById("quick-create-top");
 const menuToggle = document.getElementById("menu-toggle");
 const menu = document.getElementById("menu");
 const DEFAULT_COVER =
@@ -376,3 +377,13 @@ window.addEventListener("popstate", async () => {
 });
 
 renderTops();
+
+if (window.ReviewsStore?.onAuthChanged) {
+  window.ReviewsStore.onAuthChanged((user) => {
+    if (quickCreateTopBtn) quickCreateTopBtn.classList.toggle("hidden", !Boolean(user));
+  });
+}
+
+if (quickCreateTopBtn) {
+  quickCreateTopBtn.classList.toggle("hidden", !Boolean(window.ReviewsStore?.getCurrentUser?.()));
+}
