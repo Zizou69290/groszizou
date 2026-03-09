@@ -41,7 +41,7 @@ const topViewDetailsBtn = document.getElementById("top-view-details");
 const topViewPosterBtn = document.getElementById("top-view-poster");
 let loadedTop = null;
 let loadedReviewMap = new Map();
-let selectedTopItemsView = "details";
+let selectedTopItemsView = "poster";
 
 const DEFAULT_POSTER =
   "data:image/svg+xml;utf8," +
@@ -71,7 +71,7 @@ function fmtDateFromTimestamp(ts) {
 }
 
 function normalizeTopItemsView(value) {
-  return String(value || "").trim().toLowerCase() === "poster" ? "poster" : "details";
+  return String(value || "").trim().toLowerCase() === "details" ? "details" : "poster";
 }
 
 function applyTopItemsViewFromUrl() {
