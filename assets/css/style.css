@@ -2748,6 +2748,54 @@ a:focus-visible {
   margin-top: 0.15rem;
 }
 
+.manager-page .top-category-add-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.manager-page .top-category-add-row > label {
+  margin: 0;
+}
+
+.manager-page .top-item-adder {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.manager-page .top-item-adder input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.manager-page .top-item-adder .action-btn {
+  min-height: var(--manager-field-h);
+  height: var(--manager-field-h);
+  white-space: nowrap;
+}
+
+.manager-page .top-form-items {
+  margin-bottom: 1rem;
+}
+
+.manager-page .top-form-item .top-poster-card {
+  position: relative;
+}
+
+.manager-page .top-form-item-actions {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+}
+
+.manager-page .top-form-item-actions .action-btn {
+  min-height: 1.9rem;
+  height: 1.9rem;
+  padding: 0.35rem 0.55rem;
+}
+
 @media (max-width: 900px) {
   .manager-page .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2760,6 +2808,10 @@ a:focus-visible {
   .manager-page .form-grid > label,
   .manager-page #review-form .form-grid > label {
     grid-column: span 1;
+  }
+
+  .manager-page .top-category-add-row {
+    grid-template-columns: 1fr;
   }
 
   .manager-page #blocks-editor-section .text-tools {
@@ -2783,6 +2835,12 @@ a:focus-visible {
 
   .manager-page #review-form .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .manager-page .top-form-item-actions {
+    position: static;
+    margin-top: 0.2rem;
+    justify-content: flex-start;
   }
 }
 
@@ -3317,6 +3375,90 @@ a:focus-visible {
   margin-bottom: 0.1rem;
 }
 
+.top-studio-page .top-studio-add-row {
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+#top-studio-meta-form.studio-fields-grid {
+  grid-template-columns: 1fr;
+}
+
+#top-studio-meta-form .studio-fields-left {
+  width: 100%;
+}
+
+.top-studio-page .top-studio-item-adder {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.top-studio-page .top-studio-item-adder input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.top-studio-page .top-studio-item-adder .action-btn {
+  margin-left: auto;
+}
+
+.top-studio-page .top-studio-add-row .studio-meta-chip > span {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.top-studio-page .top-form-items {
+  margin-top: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.top-studio-page .top-form-item .top-poster-card {
+  position: relative;
+  cursor: grab;
+}
+
+.top-studio-page .top-form-item.is-dragging .top-poster-card {
+  opacity: 0.65;
+  cursor: grabbing;
+}
+
+.top-studio-page .top-form-item-actions {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+}
+
+#top-studio-item-add {
+  white-space: nowrap;
+}
+
+.top-studio-page .top-delete-icon {
+  min-width: 2rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(176, 24, 24, 0.92);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.top-studio-page .top-delete-icon:hover,
+.top-studio-page .top-delete-icon:focus-visible {
+  background: #d23232;
+  border-color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.58);
+  transform: scale(1.06);
+}
+
 #top-studio-items-list .top-studio-item-fields {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
@@ -3394,6 +3536,16 @@ a:focus-visible {
 
   #top-studio-items-list .top-studio-item-fields {
     grid-template-columns: 1fr;
+  }
+
+  .top-studio-page .top-studio-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .top-studio-page .top-form-item-actions {
+    position: static;
+    margin-top: 0.2rem;
+    justify-content: flex-start;
   }
 }
 
@@ -3985,18 +4137,13 @@ a:focus-visible {
     order: 6;
   }
 
-  /* Top Studio mobile field order:
-     Categorie/Statut, then Couverture URL */
+  /* Top Studio mobile: row stacks vertically. */
   #top-studio-meta-form.studio-fields-grid {
     grid-template-columns: 1fr;
     gap: 0.35rem;
   }
 
   #top-studio-meta-form .studio-fields-left .studio-fields-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  #top-studio-meta-form .studio-fields-right {
-    order: 2;
+    grid-template-columns: 1fr;
   }
 }

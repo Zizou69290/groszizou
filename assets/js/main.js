@@ -58,7 +58,8 @@ const topForm = document.getElementById("top-form");
 const topFormTitle = document.getElementById("top-form-title");
 const newTopBtn = document.getElementById("new-top");
 const cancelTopBtn = document.getElementById("cancel-top-form");
-const addTopItemBtn = document.getElementById("add-top-item");
+const topItemQueryInput = document.getElementById("top-item-query");
+const topItemAddBtn = document.getElementById("top-item-add");
 const topItemsList = document.getElementById("top-items-list");
 const managerTopsSortSelect = document.getElementById("manager-tops-sort");
 const managerTopsSearchInput = document.getElementById("manager-tops-search");
@@ -101,6 +102,11 @@ const DEFAULT_COVER =
   encodeURIComponent(
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Sans cover</text></svg>"
   );
+const DEFAULT_POSTER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 900'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='600' height='900' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='30' font-family='Arial, sans-serif'>Sans affiche</text></svg>"
+  );
 const TMDB_API_KEY = "db0d1dbaf15190e0a5574538dc4e579f";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const TMDB_AUTOCOMPLETE_MIN_CHARS = 2;
@@ -117,6 +123,7 @@ let editingId = null;
 let editingTopId = null;
 let reviewFormDirty = false;
 let topFormDirty = false;
+let editingTopStatus = "published";
 let suppressListingUrlSync = false;
 let cachedReviews = [];
 let activeTextArea = null;
@@ -131,6 +138,7 @@ let pendingCreateTop = requestedNewTopCreation;
 let pendingSearchDebounce = null;
 let pendingManagerSearchDebounce = null;
 let reviewTmdbBindDone = false;
+let topTmdbBindDone = false;
 let reviewTmdbSelectionToken = 0;
 const blockEditorHistory = new WeakMap();
 const MAX_EXTERNAL_LINKS = 3;
@@ -1425,6 +1433,40 @@ function setupReviewTmdbAutocomplete() {
   reviewTmdbBindDone = true;
 }
 
+function setupTopTmdbAutocomplete() {
+  if (!topForm || !topItemQueryInput || topTmdbBindDone) return;
+  createTmdbAutocomplete(topItemQueryInput, {
+    getMediaType: () => {
+      const category = topForm.elements.category?.value || "";
+      if (!["film", "serie"].includes(String(category).trim().toLowerCase())) return null;
+      return tmdbMediaTypeFromCategory(category);
+    },
+    onSelect: async (choice) => {
+      const baseItem = {
+        title: choice.title || "",
+        poster: choice.poster || "",
+        cover: choice.cover || "",
+        releaseYear: choice.year || "",
+        tmdbId: String(choice.id || ""),
+        tmdbMediaType: choice.mediaType || ""
+      };
+      try {
+        const details = await getTmdbDetails(choice.id, choice.mediaType);
+        if (details.title) baseItem.title = details.title;
+        if (details.poster) baseItem.poster = details.poster;
+        if (details.cover) baseItem.cover = details.cover;
+        if (details.year) baseItem.releaseYear = details.year;
+        if (details.director) baseItem.director = details.director;
+      } catch {
+        // Keep TMDB search values if details fetch fails.
+      }
+      addTopItemCard(baseItem);
+      topItemQueryInput.value = "";
+    }
+  });
+  topTmdbBindDone = true;
+}
+
 function createBlockRow(block = { type: "text", content: "", url: "", caption: "" }) {
   const row = document.createElement("div");
   row.className = "block-item";
@@ -1522,125 +1564,123 @@ function setBlocks(blocks) {
   renderPreview();
 }
 
-function topReviewOptions(selectedId = "") {
-  const options = [`<option value="">Aucune review liée</option>`];
-  cachedReviews.forEach((review) => {
-    const selected = review.id === selectedId ? " selected" : "";
-    options.push(`<option value="${review.id}"${selected}>${escapeHtml(review.title || "Sans titre")}</option>`);
-  });
-  return options.join("");
-}
-
 function updateTopItemIndex() {
   if (!topItemsList) return;
-  [...topItemsList.querySelectorAll(".block-item")].forEach((row, idx) => {
-    const index = row.querySelector(".block-index");
-    if (index) index.textContent = `Item ${idx + 1}`;
+  [...topItemsList.querySelectorAll(".top-form-item")].forEach((row, idx) => {
+    const index = row.querySelector(".top-poster-rank");
+    if (index) index.textContent = String(idx + 1);
   });
 }
 
-function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster: "", cover: "", releaseYear: "", director: "", tmdbId: "", tmdbMediaType: "" }) {
+function normalizeTopFormItem(item = {}) {
+  const noteValue = Number(item?.note);
+  return {
+    title: String(item?.title || "").trim(),
+    comment: String(item?.comment || "").trim(),
+    reviewId: String(item?.reviewId || "").trim(),
+    poster: String(item?.poster || "").trim(),
+    cover: String(item?.cover || "").trim(),
+    releaseYear: String(item?.releaseYear || "").trim(),
+    director: String(item?.director || "").trim(),
+    tmdbId: String(item?.tmdbId || "").trim(),
+    tmdbMediaType: String(item?.tmdbMediaType || "").trim(),
+    note: Number.isFinite(noteValue) ? noteValue : null
+  };
+}
+
+function topFormItemMeta(item) {
+  const parts = [];
+  if (item.releaseYear) parts.push(item.releaseYear);
+  if (item.director) parts.push(item.director);
+  return parts.join(" - ");
+}
+
+function addTopItemCard(item, options = {}) {
+  if (!topItemsList) return;
+  const normalized = normalizeTopFormItem(item);
+  if (!normalized.title && !normalized.reviewId) return;
+  topItemsList.appendChild(createTopItemRow(normalized));
+  updateTopItemIndex();
+  if (options.markDirty !== false) markTopFormDirty();
+}
+
+function addTopItemFromQuery() {
+  if (!topItemQueryInput) return;
+  const rawTitle = String(topItemQueryInput.value || "").trim();
+  if (!rawTitle) return;
+  const normalizedCategory = String(topForm?.elements?.category?.value || "").trim().toLowerCase();
+  const normalizedTitle = normalizeSearchValue(rawTitle);
+  const linkedReview = cachedReviews.find((review) => {
+    if (normalizeSearchValue(review?.title) !== normalizedTitle) return false;
+    if (normalizedCategory === "autre") return true;
+    return String(review?.category || "").trim().toLowerCase() === normalizedCategory;
+  });
+
+  if (linkedReview) {
+    addTopItemCard({
+      reviewId: linkedReview.id,
+      title: linkedReview.title || rawTitle,
+      poster: linkedReview.poster || linkedReview.cover || "",
+      cover: linkedReview.cover || "",
+      releaseYear: linkedReview.releaseYear || extractYear(linkedReview.date),
+      director: linkedReview.director || "",
+      comment: "",
+      note: Number.isFinite(Number(linkedReview.score)) ? Number(linkedReview.score) : null
+    });
+  } else {
+    addTopItemCard({ title: rawTitle, comment: "" });
+  }
+
+  topItemQueryInput.value = "";
+  topItemQueryInput.focus();
+}
+
+function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster: "", cover: "", releaseYear: "", director: "", tmdbId: "", tmdbMediaType: "", note: null }) {
+  const normalized = normalizeTopFormItem(item);
+  const meta = topFormItemMeta(normalized);
+  const scoreText = Number.isFinite(Number(normalized.note))
+    ? `${scoreToStars(Number(normalized.note))} (${Number(normalized.note).toFixed(1)}/10)`
+    : "";
   const row = document.createElement("div");
-  row.className = "block-item";
+  row.className = "top-form-item top-item top-item-poster";
   row.innerHTML = `
-    <div class="block-head">
-      <strong class="block-index">Item</strong>
-      <div class="row-actions">
-        <button type="button" class="action-btn secondary top-up">&uarr;</button>
-        <button type="button" class="action-btn secondary top-down">&darr;</button>
+    <div class="top-poster-card top-poster-card-static">
+      <span class="top-poster-rank">1</span>
+      <img class="top-poster-image" src="${escapeHtml(normalized.poster || DEFAULT_POSTER)}" alt="${escapeHtml(normalized.title || "Item")}" />
+      <div class="top-poster-content">
+        <h3>${escapeHtml(normalized.title || "Sans titre")}</h3>
+        ${meta ? `<p class="top-poster-meta">${escapeHtml(meta)}</p>` : ""}
+        ${normalized.comment ? `<p class="top-poster-comment">${escapeHtml(normalized.comment)}</p>` : ""}
+        ${scoreText ? `<p class="score">${escapeHtml(scoreText)}</p>` : ""}
+      </div>
+      <div class="top-form-item-actions row-actions">
+        <button type="button" class="action-btn secondary top-up" aria-label="Monter l'item">&uarr;</button>
+        <button type="button" class="action-btn secondary top-down" aria-label="Descendre l'item">&darr;</button>
         <button type="button" class="action-btn danger top-delete">Supprimer</button>
       </div>
     </div>
-    <div class="block-fields">
-      <label><span class="label-row"><span class="field-label-text">Review liée</span><span class="field-hint">optionnel</span></span>
-        <select class="top-review">${topReviewOptions(item.reviewId || "")}</select>
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Titre média</span><span class="field-hint">optionnel</span></span>
-        <input class="top-title" type="text" placeholder="Titre" value="${escapeHtml(item.title || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Affiche URL</span><span class="field-hint">optionnel</span></span>
-        <input class="top-poster" type="url" placeholder="https://..." value="${escapeHtml(item.poster || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Couverture URL</span><span class="field-hint">optionnel</span></span>
-        <input class="top-cover" type="url" placeholder="https://..." value="${escapeHtml(item.cover || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Année</span><span class="field-hint">optionnel</span></span>
-        <input class="top-release-year" type="text" placeholder="Ex: 2024" value="${escapeHtml(item.releaseYear || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Réalisation</span><span class="field-hint">optionnel</span></span>
-        <input class="top-director" type="text" placeholder="Ex: Denis Villeneuve" value="${escapeHtml(item.director || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Commentaire</span><span class="field-hint">optionnel</span></span>
-        <input class="top-comment" type="text" placeholder="Commentaire" value="${escapeHtml(item.comment || "")}" />
-      </label>
-      <input class="top-tmdb-id" type="hidden" value="${escapeHtml(item.tmdbId || "")}" />
-      <input class="top-tmdb-media-type" type="hidden" value="${escapeHtml(item.tmdbMediaType || "")}" />
-    </div>
+    <input class="top-review-id" type="hidden" value="${escapeHtml(normalized.reviewId)}" />
+    <input class="top-title" type="hidden" value="${escapeHtml(normalized.title)}" />
+    <input class="top-comment" type="hidden" value="${escapeHtml(normalized.comment)}" />
+    <input class="top-poster" type="hidden" value="${escapeHtml(normalized.poster)}" />
+    <input class="top-cover" type="hidden" value="${escapeHtml(normalized.cover)}" />
+    <input class="top-release-year" type="hidden" value="${escapeHtml(normalized.releaseYear)}" />
+    <input class="top-director" type="hidden" value="${escapeHtml(normalized.director)}" />
+    <input class="top-tmdb-id" type="hidden" value="${escapeHtml(normalized.tmdbId)}" />
+    <input class="top-tmdb-media-type" type="hidden" value="${escapeHtml(normalized.tmdbMediaType)}" />
+    <input class="top-note" type="hidden" value="${Number.isFinite(Number(normalized.note)) ? String(Number(normalized.note)) : ""}" />
   `;
-
-  const reviewSelect = row.querySelector(".top-review");
-  const titleInput = row.querySelector(".top-title");
-  const posterInput = row.querySelector(".top-poster");
-  const coverInput = row.querySelector(".top-cover");
-  const releaseYearInput = row.querySelector(".top-release-year");
-  const directorInput = row.querySelector(".top-director");
-  const tmdbIdInput = row.querySelector(".top-tmdb-id");
-  const tmdbMediaTypeInput = row.querySelector(".top-tmdb-media-type");
-  const clearTopTmdbLink = () => {
-    if (tmdbIdInput) tmdbIdInput.value = "";
-    if (tmdbMediaTypeInput) tmdbMediaTypeInput.value = "";
-  };
-  reviewSelect.addEventListener("change", () => {
-    const match = cachedReviews.find((r) => r.id === reviewSelect.value);
-    if (match && !titleInput.value.trim()) {
-      titleInput.value = match.title || "";
-    }
-    if (match && !posterInput.value.trim()) posterInput.value = match.poster || "";
-    if (match && !coverInput.value.trim()) coverInput.value = match.cover || "";
-    if (match && !releaseYearInput.value.trim()) releaseYearInput.value = match.releaseYear || extractYear(match.date);
-    if (match && !directorInput.value.trim()) directorInput.value = match.director || "";
-    clearTopTmdbLink();
-  });
-  titleInput.addEventListener("input", clearTopTmdbLink);
-  const topItemAutocomplete = createTmdbAutocomplete(titleInput, {
-    getMediaType: () => {
-      const category = topForm?.elements?.category?.value || "";
-      if (!["film", "serie"].includes(String(category).trim().toLowerCase())) return null;
-      return tmdbMediaTypeFromCategory(category);
-    },
-    onSelect: async (choice) => {
-      const currentToken = Date.now() + Math.random();
-      row.dataset.tmdbSelectionToken = String(currentToken);
-      titleInput.value = choice.title || titleInput.value;
-      if (posterInput) posterInput.value = choice.poster || posterInput.value;
-      if (coverInput) coverInput.value = choice.cover || coverInput.value;
-      if (releaseYearInput) releaseYearInput.value = choice.year || releaseYearInput.value;
-      if (tmdbIdInput) tmdbIdInput.value = String(choice.id || "");
-      if (tmdbMediaTypeInput) tmdbMediaTypeInput.value = choice.mediaType || "";
-      try {
-        const details = await getTmdbDetails(choice.id, choice.mediaType);
-        if (row.dataset.tmdbSelectionToken !== String(currentToken)) return;
-        if (details.title) titleInput.value = details.title;
-        if (details.poster && posterInput) posterInput.value = details.poster;
-        if (details.cover && coverInput) coverInput.value = details.cover;
-        if (details.year && releaseYearInput) releaseYearInput.value = details.year;
-        if (details.director && directorInput) directorInput.value = details.director;
-      } catch {
-        // Keep base search values if TMDB details fail.
-      }
-      markTopFormDirty();
-    }
-  });
   row.querySelector(".top-delete").addEventListener("click", () => {
-    topItemAutocomplete?.hide?.();
     row.remove();
     updateTopItemIndex();
+    markTopFormDirty();
   });
   row.querySelector(".top-up").addEventListener("click", () => {
     const prev = row.previousElementSibling;
     if (prev && topItemsList) {
       topItemsList.insertBefore(row, prev);
       updateTopItemIndex();
+      markTopFormDirty();
     }
   });
   row.querySelector(".top-down").addEventListener("click", () => {
@@ -1648,6 +1688,7 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster:
     if (next && topItemsList) {
       topItemsList.insertBefore(next, row);
       updateTopItemIndex();
+      markTopFormDirty();
     }
   });
   return row;
@@ -1656,27 +1697,24 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster:
 function setTopItems(items) {
   if (!topItemsList) return;
   topItemsList.innerHTML = "";
-  if (!items || !items.length) {
-    topItemsList.appendChild(createTopItemRow());
-  } else {
-    items.forEach((item) => topItemsList.appendChild(createTopItemRow(item)));
-  }
+  if (Array.isArray(items) && items.length) items.forEach((item) => addTopItemCard(item, { markDirty: false }));
   updateTopItemIndex();
 }
 
 function readTopItems() {
   if (!topItemsList) return [];
-  return [...topItemsList.querySelectorAll(".block-item")]
+  return [...topItemsList.querySelectorAll(".top-form-item")]
     .map((row) => ({
-      reviewId: row.querySelector(".top-review")?.value || "",
-      title: row.querySelector(".top-title")?.value.trim() || "",
+      reviewId: row.querySelector(".top-review-id")?.value || "",
+      title: row.querySelector(".top-title")?.value || "",
       comment: row.querySelector(".top-comment")?.value.trim() || "",
       poster: row.querySelector(".top-poster")?.value.trim() || "",
       cover: row.querySelector(".top-cover")?.value.trim() || "",
       releaseYear: row.querySelector(".top-release-year")?.value.trim() || "",
       director: row.querySelector(".top-director")?.value.trim() || "",
       tmdbId: row.querySelector(".top-tmdb-id")?.value.trim() || "",
-      tmdbMediaType: row.querySelector(".top-tmdb-media-type")?.value.trim() || ""
+      tmdbMediaType: row.querySelector(".top-tmdb-media-type")?.value.trim() || "",
+      note: row.querySelector(".top-note")?.value === "" ? null : Number(row.querySelector(".top-note")?.value)
     }))
     .filter((item) => item.title || item.reviewId);
 }
@@ -2009,14 +2047,14 @@ function openTopForm(item = null, options = {}) {
   if (!topForm.classList.contains("hidden") && topFormDirty && !confirmDiscardChanges("top")) return;
   const duplicate = Boolean(options?.duplicate);
   editingTopId = item && !duplicate ? item.id : null;
+  editingTopStatus = normalizePublicationStatus(duplicate ? "draft" : (item?.status || "published"));
   topForm.classList.remove("hidden");
   topFormTitle.textContent = duplicate ? "Dupliquer un top" : (item ? "Modifier un top" : "Ajouter un top");
   topForm.elements.title.value = duplicate ? `${item?.title || "Sans titre"} (copie)` : (item?.title || "");
   topForm.elements.category.value = item?.category || "film";
   topForm.elements.year.value = item?.year || "";
-  if (topForm.elements.status) topForm.elements.status.value = normalizePublicationStatus(duplicate ? "draft" : (item?.status || "published"));
-  topForm.elements.cover.value = item?.cover || "";
   topForm.elements.subtitle.value = item?.subtitle || "";
+  if (topItemQueryInput) topItemQueryInput.value = "";
   setTopItems(item?.items || []);
   topFormDirty = false;
   topForm.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2026,9 +2064,11 @@ function closeTopForm(force = false) {
   if (!topForm) return;
   if (!force && topFormDirty && !confirmDiscardChanges("top")) return;
   editingTopId = null;
+  editingTopStatus = "published";
   topForm.reset();
   topForm.classList.add("hidden");
   if (topItemsList) topItemsList.innerHTML = "";
+  if (topItemQueryInput) topItemQueryInput.value = "";
   topFormDirty = false;
 }
 
@@ -2088,9 +2128,8 @@ if (topForm) {
       id: editingTopId || window.ReviewsStore.slugify(title),
       title,
       category: topForm.elements.category.value || "film",
-      status: normalizePublicationStatus(topForm.elements.status?.value || "published"),
+      status: normalizePublicationStatus(editingTopStatus || "published"),
       year: topForm.elements.year.value.trim(),
-      cover: topForm.elements.cover.value.trim(),
       subtitle: topForm.elements.subtitle.value.trim(),
       items: readTopItems()
     };
@@ -2127,11 +2166,16 @@ if (addExternalLinkBtn && externalLinksList) {
 }
 if (newTopBtn) newTopBtn.addEventListener("click", () => openTopForm());
 if (cancelTopBtn) cancelTopBtn.addEventListener("click", closeTopForm);
-if (addTopItemBtn) {
-  addTopItemBtn.addEventListener("click", () => {
-    if (!topItemsList) return;
-    topItemsList.appendChild(createTopItemRow());
-    updateTopItemIndex();
+if (topItemAddBtn) {
+  topItemAddBtn.addEventListener("click", () => {
+    addTopItemFromQuery();
+  });
+}
+if (topItemQueryInput) {
+  topItemQueryInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addTopItemFromQuery();
   });
 }
 
@@ -2507,10 +2551,6 @@ if (topItemsList) setTopItems([]);
 fillExternalLinksInForm(null);
 if (form) configureMetaFields(form.elements.category.value || "film");
 setupReviewTmdbAutocomplete();
+setupTopTmdbAutocomplete();
 setContentMode("blocks");
 renderAll();
-
-
-
-
-

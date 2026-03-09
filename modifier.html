@@ -257,35 +257,33 @@
 
         <div class="form-grid">
           <label><span class="label-row"><span class="field-label-text">Titre</span><span class="field-hint field-required">obligatoire</span></span><input name="title" required /></label>
-          <label><span class="label-row"><span class="field-label-text">Catégorie</span><span class="field-hint field-required">obligatoire</span></span>
-            <select name="category" required>
-              <option value="jeu">Jeux-vidéo</option>
-              <option value="film" selected>Films</option>
-              <option value="serie">Séries</option>
-              <option value="musique">Musiques</option>
-              <option value="livre">Livres</option>
-              <option value="autre">Autre</option>
-            </select>
-          </label>
           <label><span class="label-row"><span class="field-label-text">Année / période</span><span class="field-hint">optionnel</span></span><input name="year" placeholder="2025" /></label>
-          <label><span class="label-row"><span class="field-label-text">Statut</span><span class="field-hint field-required">obligatoire</span></span>
-            <select name="status" required>
-              <option value="published" selected>Publié</option>
-              <option value="draft">Brouillon</option>
-            </select>
-          </label>
-          <label><span class="label-row"><span class="field-label-text">Image de couverture (URL)</span><span class="field-hint">optionnel</span></span><input name="cover" type="url" /></label>
+          <div class="top-category-add-row">
+            <label><span class="label-row"><span class="field-label-text">Catégorie</span><span class="field-hint field-required">obligatoire</span></span>
+              <select name="category" required>
+                <option value="jeu">Jeux-vidéo</option>
+                <option value="film" selected>Films</option>
+                <option value="serie">Séries</option>
+                <option value="musique">Musiques</option>
+                <option value="livre">Livres</option>
+                <option value="autre">Autre</option>
+              </select>
+            </label>
+            <label><span class="label-row"><span class="field-label-text">Ajouter un item</span><span class="field-hint">recherche ou saisie libre</span></span>
+              <div class="top-item-adder">
+                <input id="top-item-query" type="text" placeholder="Ex: Dune 2" />
+                <button type="button" id="top-item-add" class="action-btn secondary">Ajouter</button>
+              </div>
+            </label>
+          </div>
         </div>
 
         <label><span class="label-row"><span class="field-label-text">Sous-titre</span><span class="field-hint">optionnel</span></span>
           <textarea name="subtitle" rows="2" placeholder="Top 10 films 2025"></textarea>
         </label>
 
-        <div class="media-head">
-          <h4>Items du top</h4>
-          <button type="button" id="add-top-item" class="action-btn secondary" aria-label="Ajouter un item">+</button>
-        </div>
-        <div id="top-items-list" class="blocks-list"></div>
+        <h4>Items du top</h4>
+        <div id="top-items-list" class="top-items top-items-view-posters top-form-items"></div>
 
         <div class="form-actions">
           <button type="submit" class="action-btn">Enregistrer</button>
@@ -304,7 +302,6 @@
   <script src="assets/js/main.js"></script>
 </body>
 </html>
-
 
 
 

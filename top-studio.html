@@ -47,7 +47,7 @@
 
       <form id="top-studio-meta-form" class="studio-fields-grid">
         <div class="studio-fields-left">
-          <div class="studio-fields-row studio-fields-row-3">
+          <div class="studio-fields-row studio-fields-row-3 top-studio-add-row">
             <label class="studio-meta-chip">
               <span>Catégorie</span>
               <select name="category" required>
@@ -60,19 +60,13 @@
               </select>
             </label>
             <label class="studio-meta-chip">
-              <span>Statut</span>
-              <select name="status" required>
-                <option value="draft" selected>Brouillon</option>
-                <option value="published">Publi&eacute;</option>
-              </select>
+              <span>Ajouter un item</span>
+              <div class="top-studio-item-adder">
+                <input id="top-studio-item-query" type="text" placeholder="Ex: Dune 2" />
+                <button id="top-studio-item-add" type="button" class="action-btn secondary">Ajouter</button>
+              </div>
             </label>
           </div>
-        </div>
-        <div class="studio-fields-right">
-          <label class="studio-meta-chip studio-music-chip">
-            <span>Couverture URL</span>
-            <input name="cover" type="url" placeholder="Couverture du 1er appliquée si vide" />
-          </label>
         </div>
       </form>
     </div>
@@ -83,10 +77,8 @@
 
     <section id="top-studio-workspace" class="studio-layout hidden">
       <section class="studio-editor-card">
-        <div class="media-head top-studio-items-head">
-          <button id="top-studio-add-item" type="button" class="action-btn secondary">+ Item</button>
-        </div>
-        <div id="top-studio-items-list" class="blocks-list"></div>
+        <h4>Items du top</h4>
+        <div id="top-studio-items-list" class="top-items top-items-view-posters top-form-items"></div>
         <div class="form-actions studio-editor-actions">
           <button id="top-studio-delete" type="button" class="action-btn danger studio-delete-btn hidden">Supprimer</button>
           <button id="top-studio-save-draft" type="button" class="action-btn secondary">Enregistrer brouillon</button>

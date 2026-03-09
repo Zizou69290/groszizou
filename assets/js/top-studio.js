@@ -8,7 +8,8 @@ const topStudioTitleInput = document.getElementById("top-studio-title");
 const topStudioSubtitleInput = document.getElementById("top-studio-subtitle");
 const topStudioMetaForm = document.getElementById("top-studio-meta-form");
 const topStudioItemsList = document.getElementById("top-studio-items-list");
-const topStudioAddItemBtn = document.getElementById("top-studio-add-item");
+const topStudioItemQueryInput = document.getElementById("top-studio-item-query");
+const topStudioItemAddBtn = document.getElementById("top-studio-item-add");
 const topStudioSaveDraftBtn = document.getElementById("top-studio-save-draft");
 const topStudioSavePublishBtn = document.getElementById("top-studio-save-publish");
 const topStudioDeleteBtn = document.getElementById("top-studio-delete");
@@ -21,6 +22,11 @@ const DEFAULT_COVER =
   encodeURIComponent(
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='1200' height='630' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='54' font-family='Arial, sans-serif'>Nouveau top</text></svg>"
   );
+const DEFAULT_POSTER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 900'><defs><linearGradient id='g' x1='0' x2='1'><stop stop-color='#1a2a36'/><stop offset='1' stop-color='#243b4a'/></linearGradient></defs><rect width='600' height='900' fill='url(#g)'/><text x='50%' y='50%' text-anchor='middle' fill='#b8c2cc' font-size='30' font-family='Arial, sans-serif'>Sans affiche</text></svg>"
+  );
 const TMDB_API_KEY = "db0d1dbaf15190e0a5574538dc4e579f";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const TMDB_AUTOCOMPLETE_MIN_CHARS = 2;
@@ -32,6 +38,7 @@ let loadedTopSnapshot = null;
 let pendingEditLoad = false;
 let topFormDirty = false;
 let cachedReviews = [];
+let draggedTopItem = null;
 
 function closeMenu() {
   if (!menu) return;
@@ -252,160 +259,9 @@ function createTmdbAutocomplete(input, options = {}) {
   return { hide };
 }
 
-function markTopFormDirty() {
-  if (!topStudioWorkspace || topStudioWorkspace.classList.contains("hidden")) return;
-  topFormDirty = true;
-}
-
-function refreshTopItemIndex() {
-  if (!topStudioItemsList) return;
-  const ordinalLabel = (position) => (position === 1 ? "1\u00E8re place" : `${position}\u00E8me place`);
-  [...topStudioItemsList.querySelectorAll(".block-item")].forEach((row, idx) => {
-    const index = row.querySelector(".block-index");
-    if (index) index.textContent = ordinalLabel(idx + 1);
-  });
-}
-
-function topReviewOptions(selectedId = "") {
-  const options = [`<option value="">Aucune review li\u00E9e</option>`];
-  cachedReviews.forEach((review) => {
-    const selected = review.id === selectedId ? " selected" : "";
-    options.push(`<option value="${review.id}"${selected}>${escapeHtml(review.title || "Sans titre")}</option>`);
-  });
-  return options.join("");
-}
-
-function getCategoryItemLabel(category) {
-  const key = String(category || "").trim().toLowerCase();
-  if (key === "film") return "Film";
-  if (key === "serie") return "S\u00E9rie";
-  if (key === "jeu") return "Jeu-vid\u00E9o";
-  if (key === "livre") return "Livre";
-  if (key === "musique") return "Musique";
-  return "Item";
-}
-
-function getCategoryCreatorLabel(category) {
-  const key = String(category || "").trim().toLowerCase();
-  if (key === "jeu") return "Studio";
-  if (key === "livre") return "Auteur";
-  if (key === "musique") return "Artiste";
-  return "R\u00E9alisation";
-}
-
-function getCreatorValueFromReview(review, category) {
-  const key = String(category || "").trim().toLowerCase();
-  if (key === "jeu") return String(review?.studio || review?.director || review?.author || "").trim();
-  if (key === "livre") return String(review?.author || review?.director || review?.studio || "").trim();
-  if (key === "musique") return String(review?.author || review?.studio || review?.director || "").trim();
-  return String(review?.director || review?.studio || review?.author || "").trim();
-}
-
-function currentItemLabel() {
-  return getCategoryItemLabel(topStudioMetaForm?.elements?.category?.value || "");
-}
-
-function updateAddItemButtonLabel() {
-  if (!topStudioAddItemBtn) return;
-  topStudioAddItemBtn.textContent = `+ ${currentItemLabel()}`;
-}
-
-function updateTopItemCategoryLabels() {
-  if (!topStudioItemsList) return;
-  const creatorLabel = getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || "");
-  [...topStudioItemsList.querySelectorAll(".block-item")].forEach((row) => {
-    const labelNode = row.querySelector(".top-title-label");
-    if (labelNode) labelNode.textContent = "Nom";
-    const input = row.querySelector(".top-title");
-    if (input) input.placeholder = "Nom";
-    const creatorNode = row.querySelector(".top-creator-label");
-    if (creatorNode) creatorNode.textContent = creatorLabel;
-    const creatorInput = row.querySelector(".top-director");
-    if (creatorInput) creatorInput.placeholder = `Ex: ${creatorLabel}`;
-  });
-}
-
-function refreshTopReviewSelectOptions() {
-  if (!topStudioItemsList) return;
-  [...topStudioItemsList.querySelectorAll(".top-review")].forEach((select) => {
-    const current = select.value || "";
-    select.innerHTML = topReviewOptions(current);
-    select.value = current;
-  });
-}
-
-function createTopItemRow(item = { title: "", comment: "", note: null, reviewId: "", poster: "", cover: "", releaseYear: "", director: "", tmdbId: "", tmdbMediaType: "" }) {
-  const row = document.createElement("div");
-  row.className = "block-item";
-  row.innerHTML = `
-    <div class="block-head">
-      <strong class="block-index">Item</strong>
-      <div class="row-actions">
-        <button type="button" class="action-btn secondary top-up">&uarr;</button>
-        <button type="button" class="action-btn secondary top-down">&darr;</button>
-        <button type="button" class="action-btn danger top-delete">Supprimer</button>
-      </div>
-    </div>
-    <div class="block-fields top-studio-item-fields">
-      <label><span class="label-row"><span class="field-label-text">Review li\u00E9e</span><span class="field-hint">optionnel</span></span>
-        <select class="top-review">${topReviewOptions(item.reviewId || "")}</select>
-      </label>
-      <label><span class="label-row"><span class="field-label-text top-title-label">Nom</span><span class="field-hint">optionnel</span></span>
-        <input class="top-title" type="text" placeholder="Nom" value="${escapeHtml(item.title || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Affiche URL</span><span class="field-hint">optionnel</span></span>
-        <input class="top-poster" type="url" placeholder="https://..." value="${escapeHtml(item.poster || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Couverture URL</span><span class="field-hint">optionnel</span></span>
-        <input class="top-cover" type="url" placeholder="https://..." value="${escapeHtml(item.cover || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Note</span><span class="field-hint">optionnel</span></span>
-        <input class="top-note" type="number" min="0" max="10" step="0.1" placeholder="/10" value="${Number.isFinite(Number(item.note)) ? escapeHtml(String(Number(item.note))) : ""}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Ann\u00E9e</span><span class="field-hint">optionnel</span></span>
-        <input class="top-release-year" type="text" placeholder="Ex: 2024" value="${escapeHtml(item.releaseYear || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text top-creator-label">${escapeHtml(getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || ""))}</span><span class="field-hint">optionnel</span></span>
-        <input class="top-director" type="text" placeholder="Ex: ${escapeHtml(getCategoryCreatorLabel(topStudioMetaForm?.elements?.category?.value || ""))}" value="${escapeHtml(item.director || "")}" />
-      </label>
-      <label><span class="label-row"><span class="field-label-text">Commentaire</span><span class="field-hint">optionnel</span></span>
-        <input class="top-comment" type="text" placeholder="Commentaire" value="${escapeHtml(item.comment || "")}" />
-      </label>
-      <input class="top-tmdb-id" type="hidden" value="${escapeHtml(item.tmdbId || "")}" />
-      <input class="top-tmdb-media-type" type="hidden" value="${escapeHtml(item.tmdbMediaType || "")}" />
-    </div>
-  `;
-
-  const reviewSelect = row.querySelector(".top-review");
-  const titleInput = row.querySelector(".top-title");
-  const posterInput = row.querySelector(".top-poster");
-  const coverInput = row.querySelector(".top-cover");
-  const noteInput = row.querySelector(".top-note");
-  const releaseYearInput = row.querySelector(".top-release-year");
-  const directorInput = row.querySelector(".top-director");
-  const tmdbIdInput = row.querySelector(".top-tmdb-id");
-  const tmdbMediaTypeInput = row.querySelector(".top-tmdb-media-type");
-  const clearTopTmdbLink = () => {
-    if (tmdbIdInput) tmdbIdInput.value = "";
-    if (tmdbMediaTypeInput) tmdbMediaTypeInput.value = "";
-  };
-
-  reviewSelect?.addEventListener("change", () => {
-    const match = cachedReviews.find((r) => r.id === reviewSelect.value);
-    if (match) {
-      titleInput.value = match.title || "";
-      if (posterInput) posterInput.value = match.poster || "";
-      if (coverInput) coverInput.value = match.cover || "";
-      if (noteInput) noteInput.value = Number.isFinite(Number(match.score)) ? String(Number(match.score)) : "";
-      if (releaseYearInput) releaseYearInput.value = match.releaseYear || extractYear(match.date);
-      if (directorInput) directorInput.value = getCreatorValueFromReview(match, topStudioMetaForm?.elements?.category?.value || "");
-    }
-    clearTopTmdbLink();
-    markTopFormDirty();
-  });
-  titleInput?.addEventListener("input", clearTopTmdbLink);
-
-  const topItemAutocomplete = createTmdbAutocomplete(titleInput, {
+function setupTopStudioItemAutocomplete() {
+  if (!topStudioItemQueryInput) return;
+  createTmdbAutocomplete(topStudioItemQueryInput, {
     getCategory: () => topStudioMetaForm?.elements?.category?.value || "",
     getMediaType: () => {
       const category = topStudioMetaForm?.elements?.category?.value || "";
@@ -413,58 +269,240 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
       return tmdbMediaTypeFromCategory(category);
     },
     onSelect: async (choice) => {
-      const currentToken = Date.now() + Math.random();
-      row.dataset.tmdbSelectionToken = String(currentToken);
-      titleInput.value = choice.title || titleInput.value;
-      if (posterInput) posterInput.value = choice.poster || posterInput.value;
-      if (coverInput) coverInput.value = choice.cover || coverInput.value;
-      if (releaseYearInput) releaseYearInput.value = choice.year || releaseYearInput.value;
-      if (tmdbIdInput) tmdbIdInput.value = String(choice.id || "");
-      if (tmdbMediaTypeInput) tmdbMediaTypeInput.value = choice.mediaType || "";
+      const item = {
+        title: String(choice?.title || "").trim(),
+        poster: String(choice?.poster || "").trim(),
+        cover: String(choice?.cover || "").trim(),
+        releaseYear: String(choice?.year || "").trim(),
+        tmdbId: String(choice?.id || ""),
+        tmdbMediaType: String(choice?.mediaType || "")
+      };
       try {
         const details = choice.provider === "igdb"
           ? await getIgdbGameDetails(choice.id)
           : await getTmdbDetails(choice.id, choice.mediaType);
-        if (row.dataset.tmdbSelectionToken !== String(currentToken)) return;
-        if (details.title) titleInput.value = details.title;
-        if (details.poster && posterInput) posterInput.value = details.poster;
-        if (details.cover && coverInput) coverInput.value = details.cover;
-        if (details.year && releaseYearInput) releaseYearInput.value = details.year;
-        if (details.director && directorInput) directorInput.value = details.director;
+        if (details.title) item.title = details.title;
+        if (details.poster) item.poster = details.poster;
+        if (details.cover) item.cover = details.cover;
+        if (details.year) item.releaseYear = details.year;
+        if (details.director) item.director = details.director;
       } catch {
-        // Keep base search values if TMDB details fail.
+        // Keep base autocomplete values.
       }
-      markTopFormDirty();
+      addTopItemCard(item);
+      topStudioItemQueryInput.value = "";
+      topStudioItemQueryInput.focus();
     }
   });
+}
 
-  row.querySelector(".top-delete")?.addEventListener("click", () => {
-    topItemAutocomplete?.hide?.();
-    row.remove();
+function markTopFormDirty() {
+  if (!topStudioWorkspace || topStudioWorkspace.classList.contains("hidden")) return;
+  topFormDirty = true;
+}
+
+function normalizeSearchValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function scoreToStars(score) {
+  if (!Number.isFinite(Number(score))) return "";
+  const value = Number(score);
+  const full = Math.max(0, Math.min(5, Math.round(value / 2)));
+  return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
+}
+
+function normalizeTopFormItem(item = {}) {
+  const noteValue = Number(item?.note);
+  return {
+    title: String(item?.title || "").trim(),
+    comment: String(item?.comment || "").trim(),
+    reviewId: String(item?.reviewId || "").trim(),
+    poster: String(item?.poster || "").trim(),
+    cover: String(item?.cover || "").trim(),
+    releaseYear: String(item?.releaseYear || "").trim(),
+    director: String(item?.director || "").trim(),
+    tmdbId: String(item?.tmdbId || "").trim(),
+    tmdbMediaType: String(item?.tmdbMediaType || "").trim(),
+    note: Number.isFinite(noteValue) ? noteValue : null
+  };
+}
+
+function topFormItemMeta(item) {
+  const bits = [];
+  if (item.releaseYear) bits.push(item.releaseYear);
+  if (item.director) bits.push(item.director);
+  return bits.join(" - ");
+}
+
+function refreshTopItemIndex() {
+  if (!topStudioItemsList) return;
+  [...topStudioItemsList.querySelectorAll(".top-form-item")].forEach((row, idx) => {
+    const rank = row.querySelector(".top-poster-rank");
+    if (rank) rank.textContent = String(idx + 1);
+  });
+}
+
+function attachTopItemDragAndDrop(row) {
+  if (!row || !topStudioItemsList) return;
+  row.setAttribute("draggable", "true");
+  row.addEventListener("dragstart", (event) => {
+    draggedTopItem = row;
+    row.classList.add("is-dragging");
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", "top-item");
+    }
+  });
+  row.addEventListener("dragover", (event) => {
+    if (!draggedTopItem || draggedTopItem === row) return;
+    event.preventDefault();
+    const rect = row.getBoundingClientRect();
+    const shouldInsertAfter = event.clientY > rect.top + rect.height / 2;
+    if (shouldInsertAfter) {
+      topStudioItemsList.insertBefore(draggedTopItem, row.nextElementSibling);
+    } else {
+      topStudioItemsList.insertBefore(draggedTopItem, row);
+    }
+  });
+  row.addEventListener("drop", (event) => {
+    if (!draggedTopItem) return;
+    event.preventDefault();
     refreshTopItemIndex();
+    refreshHeroPreview();
     markTopFormDirty();
   });
-  row.querySelector(".top-up")?.addEventListener("click", () => {
-    const prev = row.previousElementSibling;
-    if (prev && topStudioItemsList) {
-      topStudioItemsList.insertBefore(row, prev);
-      refreshTopItemIndex();
-      markTopFormDirty();
-    }
+  row.addEventListener("dragend", () => {
+    row.classList.remove("is-dragging");
+    draggedTopItem = null;
+    refreshTopItemIndex();
   });
-  row.querySelector(".top-down")?.addEventListener("click", () => {
-    const next = row.nextElementSibling;
-    if (next && topStudioItemsList) {
-      topStudioItemsList.insertBefore(next, row);
-      refreshTopItemIndex();
-      markTopFormDirty();
+}
+
+function addTopItemCard(item, options = {}) {
+  if (!topStudioItemsList) return;
+  const normalized = normalizeTopFormItem(item);
+  if (!normalized.title && !normalized.reviewId) return;
+  topStudioItemsList.appendChild(createTopItemRow(normalized));
+  refreshTopItemIndex();
+  refreshHeroPreview();
+  if (options.markDirty !== false) markTopFormDirty();
+}
+
+async function fetchApiItemFromQuery(rawTitle) {
+  const category = String(topStudioMetaForm?.elements?.category?.value || "").trim().toLowerCase();
+  try {
+    if (category === "jeu") {
+      const results = await searchIgdbGames(rawTitle);
+      const best = results[0];
+      if (!best) return null;
+      const details = await getIgdbGameDetails(best.id).catch(() => ({}));
+      return {
+        title: details.title || best.title || rawTitle,
+        poster: details.poster || best.poster || "",
+        cover: details.cover || best.cover || "",
+        releaseYear: details.year || best.year || "",
+        director: details.director || best.director || "",
+        tmdbId: String(best.id || ""),
+        tmdbMediaType: "igdb_game"
+      };
     }
+    if (category === "film" || category === "serie") {
+      const mediaType = tmdbMediaTypeFromCategory(category);
+      const results = await searchTmdbTitles(rawTitle, mediaType);
+      const best = results[0];
+      if (!best) return null;
+      const details = await getTmdbDetails(best.id, best.mediaType).catch(() => ({}));
+      return {
+        title: details.title || best.title || rawTitle,
+        poster: details.poster || best.poster || "",
+        cover: details.cover || best.cover || "",
+        releaseYear: details.year || best.year || "",
+        director: details.director || "",
+        tmdbId: String(best.id || ""),
+        tmdbMediaType: String(best.mediaType || "")
+      };
+    }
+  } catch {
+    // Fallback handled by caller.
+  }
+  return null;
+}
+
+async function addTopItemFromQuery() {
+  if (!topStudioItemQueryInput) return;
+  const rawTitle = String(topStudioItemQueryInput.value || "").trim();
+  if (!rawTitle) return;
+
+  const normalizedCategory = String(topStudioMetaForm?.elements?.category?.value || "").trim().toLowerCase();
+  const normalizedTitle = normalizeSearchValue(rawTitle);
+  const linkedReview = cachedReviews.find((review) => {
+    if (normalizeSearchValue(review?.title) !== normalizedTitle) return false;
+    if (normalizedCategory === "autre") return true;
+    return String(review?.category || "").trim().toLowerCase() === normalizedCategory;
   });
 
-  row.querySelectorAll("input,select,textarea").forEach((field) => {
-    field.addEventListener("input", markTopFormDirty);
-    field.addEventListener("change", markTopFormDirty);
+  if (linkedReview) {
+    addTopItemCard({
+      reviewId: linkedReview.id,
+      title: linkedReview.title || rawTitle,
+      poster: linkedReview.poster || linkedReview.cover || "",
+      cover: linkedReview.cover || "",
+      releaseYear: linkedReview.releaseYear || extractYear(linkedReview.date),
+      director: String(linkedReview.director || linkedReview.studio || linkedReview.author || "").trim(),
+      note: Number.isFinite(Number(linkedReview.score)) ? Number(linkedReview.score) : null
+    });
+  } else {
+    const apiItem = await fetchApiItemFromQuery(rawTitle);
+    if (apiItem) addTopItemCard(apiItem);
+    else addTopItemCard({ title: rawTitle });
+  }
+
+  topStudioItemQueryInput.value = "";
+  topStudioItemQueryInput.focus();
+}
+
+function createTopItemRow(item = { title: "", comment: "", note: null, reviewId: "", poster: "", cover: "", releaseYear: "", director: "", tmdbId: "", tmdbMediaType: "" }) {
+  const normalized = normalizeTopFormItem(item);
+  const meta = topFormItemMeta(normalized);
+  const scoreText = Number.isFinite(Number(normalized.note))
+    ? `${scoreToStars(Number(normalized.note))} (${Number(normalized.note).toFixed(1)}/10)`
+    : "";
+  const row = document.createElement("div");
+  row.className = "top-form-item top-item top-item-poster";
+  row.innerHTML = `
+    <div class="top-poster-card top-poster-card-static">
+      <span class="top-poster-rank">1</span>
+      <img class="top-poster-image" src="${escapeHtml(normalized.poster || DEFAULT_POSTER)}" alt="${escapeHtml(normalized.title || "Item")}" />
+      <div class="top-poster-content">
+        <h3>${escapeHtml(normalized.title || "Sans titre")}</h3>
+        ${meta ? `<p class="top-poster-meta">${escapeHtml(meta)}</p>` : ""}
+        ${normalized.comment ? `<p class="top-poster-comment">${escapeHtml(normalized.comment)}</p>` : ""}
+        ${scoreText ? `<p class="score">${escapeHtml(scoreText)}</p>` : ""}
+      </div>
+      <div class="top-form-item-actions row-actions">
+        <button type="button" class="action-btn danger top-delete top-delete-icon" aria-label="Supprimer l'item" title="Supprimer l'item">&times;</button>
+      </div>
+    </div>
+    <input class="top-review-id" type="hidden" value="${escapeHtml(normalized.reviewId)}" />
+    <input class="top-title" type="hidden" value="${escapeHtml(normalized.title)}" />
+    <input class="top-comment" type="hidden" value="${escapeHtml(normalized.comment)}" />
+    <input class="top-note" type="hidden" value="${Number.isFinite(Number(normalized.note)) ? String(Number(normalized.note)) : ""}" />
+    <input class="top-poster" type="hidden" value="${escapeHtml(normalized.poster)}" />
+    <input class="top-cover" type="hidden" value="${escapeHtml(normalized.cover)}" />
+    <input class="top-release-year" type="hidden" value="${escapeHtml(normalized.releaseYear)}" />
+    <input class="top-director" type="hidden" value="${escapeHtml(normalized.director)}" />
+    <input class="top-tmdb-id" type="hidden" value="${escapeHtml(normalized.tmdbId)}" />
+    <input class="top-tmdb-media-type" type="hidden" value="${escapeHtml(normalized.tmdbMediaType)}" />
+  `;
+
+  row.querySelector(".top-delete")?.addEventListener("click", () => {
+    row.remove();
+    refreshTopItemIndex();
+    refreshHeroPreview();
+    markTopFormDirty();
   });
+  attachTopItemDragAndDrop(row);
 
   return row;
 }
@@ -472,24 +510,22 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
 function setTopItems(items) {
   if (!topStudioItemsList) return;
   topStudioItemsList.innerHTML = "";
-  if (!items || !items.length) {
-    topStudioItemsList.appendChild(createTopItemRow());
-  } else {
-    items.forEach((item) => topStudioItemsList.appendChild(createTopItemRow(item)));
+  if (Array.isArray(items) && items.length) {
+    items.forEach((item) => addTopItemCard(item, { markDirty: false }));
   }
   refreshTopItemIndex();
-  updateTopItemCategoryLabels();
+  refreshHeroPreview();
 }
 
 function readTopItems() {
   if (!topStudioItemsList) return [];
-  return [...topStudioItemsList.querySelectorAll(".block-item")]
+  return [...topStudioItemsList.querySelectorAll(".top-form-item")]
     .map((row) => {
-      const noteRaw = row.querySelector(".top-note")?.value;
-      const parsedNote = noteRaw === "" || noteRaw === undefined ? null : Number(noteRaw);
+      const noteRaw = row.querySelector(".top-note")?.value || "";
+      const parsedNote = noteRaw === "" ? null : Number(noteRaw);
       return {
-        reviewId: row.querySelector(".top-review")?.value || "",
-        title: row.querySelector(".top-title")?.value.trim() || "",
+        reviewId: row.querySelector(".top-review-id")?.value || "",
+        title: row.querySelector(".top-title")?.value || "",
         comment: row.querySelector(".top-comment")?.value.trim() || "",
         note: Number.isFinite(parsedNote) ? parsedNote : null,
         poster: row.querySelector(".top-poster")?.value.trim() || "",
@@ -504,9 +540,11 @@ function readTopItems() {
 }
 
 function refreshHeroPreview() {
-  if (!topStudioMetaForm || !topStudioCoverBg) return;
-  const cover = String(topStudioMetaForm.elements.cover.value || "").trim();
-  topStudioCoverBg.src = cover || DEFAULT_COVER;
+  if (!topStudioCoverBg) return;
+  const firstCard = topStudioItemsList?.querySelector(".top-form-item");
+  const firstCover = String(firstCard?.querySelector(".top-cover")?.value || "").trim();
+  const firstPoster = String(firstCard?.querySelector(".top-poster")?.value || "").trim();
+  topStudioCoverBg.src = firstCover || firstPoster || loadedTopSnapshot?.cover || DEFAULT_COVER;
 }
 
 function refreshDeleteButtonState() {
@@ -528,7 +566,6 @@ async function loadTopReviewOptions() {
   } catch {
     cachedReviews = [];
   }
-  refreshTopReviewSelectOptions();
 }
 
 async function tryLoadEditTop() {
@@ -554,11 +591,8 @@ async function tryLoadEditTop() {
   topStudioSubtitleInput.value = top?.subtitle || "";
   topStudioMetaForm.elements.category.value = top?.category || "film";
   if (topStudioMetaForm.elements.year) topStudioMetaForm.elements.year.value = top?.year || "";
-  topStudioMetaForm.elements.status.value = String(top?.status || "draft");
-  topStudioMetaForm.elements.cover.value = top?.cover || "";
+  if (topStudioItemQueryInput) topStudioItemQueryInput.value = "";
   setTopItems(top?.items || []);
-  updateAddItemButtonLabel();
-  updateTopItemCategoryLabels();
   if (topStudioEyebrow) {
     topStudioEyebrow.textContent = String(top?.status || "").trim().toLowerCase() === "published" ? "PUBLI\u00C9" : "BROUILLON";
   }
@@ -572,7 +606,9 @@ function buildPayload(statusOverride = "") {
   if (!topStudioMetaForm) return null;
   const base = loadedTopSnapshot || {};
   const title = String(topStudioTitleInput?.value || "").trim() || "Sans titre";
-  const status = statusOverride || String(topStudioMetaForm.elements.status.value || "draft");
+  const status = statusOverride || "draft";
+  const items = readTopItems();
+  const derivedCover = String(items[0]?.cover || items[0]?.poster || base.cover || "").trim();
   return {
     id: editingTopId || window.ReviewsStore.slugify(title),
     title,
@@ -580,8 +616,8 @@ function buildPayload(statusOverride = "") {
     category: String(topStudioMetaForm.elements.category.value || "film"),
     status,
     year: String(topStudioMetaForm.elements.year?.value || "").trim(),
-    cover: String(topStudioMetaForm.elements.cover.value || "").trim(),
-    items: readTopItems(),
+    cover: derivedCover,
+    items,
     ownerId: base.ownerId || "",
     ownerUsername: base.ownerUsername || ""
   };
@@ -634,12 +670,6 @@ if (topStudioMetaForm) {
   topStudioMetaForm.addEventListener("change", () => {
     markTopFormDirty();
     refreshHeroPreview();
-    updateAddItemButtonLabel();
-    updateTopItemCategoryLabels();
-    if (topStudioEyebrow) {
-      const label = String(topStudioMetaForm.elements.status.value || "").trim().toLowerCase() === "published" ? "PUBLI\u00C9" : "BROUILLON";
-      topStudioEyebrow.textContent = label;
-    }
   });
 }
 
@@ -654,12 +684,16 @@ if (topStudioSubtitleInput) {
   topStudioSubtitleInput.addEventListener("input", markTopFormDirty);
 }
 
-if (topStudioAddItemBtn) {
-  topStudioAddItemBtn.addEventListener("click", () => {
-    if (!topStudioItemsList) return;
-    topStudioItemsList.appendChild(createTopItemRow());
-    refreshTopItemIndex();
-    markTopFormDirty();
+if (topStudioItemAddBtn) {
+  topStudioItemAddBtn.addEventListener("click", () => {
+    addTopItemFromQuery();
+  });
+}
+if (topStudioItemQueryInput) {
+  topStudioItemQueryInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addTopItemFromQuery();
   });
 }
 
@@ -680,7 +714,7 @@ document.addEventListener("keydown", (event) => {
   if (!isSaveShortcut) return;
   if (topStudioWorkspace?.classList.contains("hidden")) return;
   event.preventDefault();
-  saveTop(String(topStudioMetaForm?.elements?.status?.value || "draft"));
+  saveTop("draft");
 });
 
 window.addEventListener("beforeunload", (event) => {
@@ -702,7 +736,7 @@ if (window.ReviewsStore?.onAuthChanged) {
 
 toggleWorkspaceForAuth(window.ReviewsStore?.getCurrentUser?.());
 setTopItems([]);
-updateAddItemButtonLabel();
+setupTopStudioItemAutocomplete();
 refreshHeroPreview();
 refreshDeleteButtonState();
 loadTopReviewOptions().then(() => tryLoadEditTop());

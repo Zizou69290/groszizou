@@ -62,6 +62,15 @@ function requireSupersiteUsername() {
     return username;
 }
 
+function getUserIconAsset(username) {
+    const key = String(username || "").trim().toLowerCase();
+    if (!key) return "";
+    if (key === "antho" || key === "groszizou") return localAsset("antho.png");
+    if (key === "claire" || key === "clairby") return localAsset("claire.png");
+    if (key === "nico") return localAsset("nico.png");
+    return "";
+}
+
 // 📌 Mode actif : liste principale ou Watch Courter (films courts)
 let currentMode = (typeof localStorage !== 'undefined' && localStorage.getItem('watchparter_mode')) || 'main';
 function isCourterMode() {
@@ -228,17 +237,8 @@ async function chargerFilms() {
             // Ajouter l'image correspondante au pseudo (overlay, positioned inside poster-wrapper)
             const pseudoImg = document.createElement("img");
             pseudoImg.className = 'added-by-user-icon';
-            let pseudoIcon = "";
-            if (film.pseudo === "Antho") {
-                pseudoIcon = localAsset("antho.png");
-                pseudoImg.alt = "Antho";
-            } else if (film.pseudo === "Claire") {
-                pseudoIcon = localAsset("claire.png");
-                pseudoImg.alt = "Claire";
-            } else if (film.pseudo === "Nico") {
-                pseudoIcon = localAsset("nico.png");
-                pseudoImg.alt = "Nico";
-            }
+            const pseudoIcon = getUserIconAsset(film.pseudo);
+            pseudoImg.alt = String(film.pseudo || "Utilisateur");
             if (pseudoIcon) {
                 pseudoImg.src = pseudoIcon;
                 posterWrapper.appendChild(pseudoImg);
@@ -1069,10 +1069,7 @@ async function inlineImagesToDataURL(root) {
 // 📌 Récupère le pseudo sélectionné et son icône
 function getSelectedVoterInfo() {
     const voter = getSupersiteUsername() || '';
-    let icon = '';
-    if (voter === 'Antho') icon = localAsset('antho.png');
-    else if (voter === 'Claire') icon = localAsset('claire.png');
-    else if (voter === 'Nico') icon = localAsset('nico.png');
+    const icon = getUserIconAsset(voter);
     return { voter, icon };
 }
 
