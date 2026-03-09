@@ -24,6 +24,7 @@ const DEFAULT_COVER =
 const TMDB_API_KEY = "db0d1dbaf15190e0a5574538dc4e579f";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const TMDB_AUTOCOMPLETE_MIN_CHARS = 2;
+const IGDB_AUTOCOMPLETE_MIN_CHARS = 2;
 
 let currentUser = null;
 let editingTopId = requestedEditTopId || "";
@@ -86,6 +87,10 @@ function tmdbMediaTypeFromCategory(category) {
   return String(category || "").trim().toLowerCase() === "serie" ? "tv" : "movie";
 }
 
+function isGameCategory(category) {
+  return String(category || "").trim().toLowerCase() === "jeu";
+}
+
 function getTmdbTitle(item) {
   return String(item?.title || item?.name || "").trim();
 }
@@ -131,8 +136,42 @@ async function getTmdbDetails(id, mediaType) {
   };
 }
 
+async function searchIgdbGames(query) {
+  const q = String(query || "").trim();
+  if (q.length < IGDB_AUTOCOMPLETE_MIN_CHARS) return [];
+  const response = await fetch(`/api/igdb?mode=search&q=${encodeURIComponent(q)}&limit=8`);
+  if (!response.ok) throw new Error("IGDB search failed");
+  const data = await response.json();
+  const list = Array.isArray(data?.results) ? data.results : [];
+  return list.map((entry) => ({
+    id: entry.id,
+    mediaType: "igdb_game",
+    provider: "igdb",
+    title: String(entry?.title || "").trim(),
+    year: String(entry?.year || "").trim(),
+    poster: String(entry?.poster || "").trim(),
+    cover: String(entry?.cover || "").trim(),
+    director: String(entry?.studio || "").trim()
+  }));
+}
+
+async function getIgdbGameDetails(id) {
+  if (!id) return {};
+  const response = await fetch(`/api/igdb?mode=details&id=${encodeURIComponent(id)}`);
+  if (!response.ok) throw new Error("IGDB details failed");
+  const data = await response.json();
+  const entry = data?.details || {};
+  return {
+    title: String(entry?.title || "").trim(),
+    year: String(entry?.year || "").trim(),
+    poster: String(entry?.poster || "").trim(),
+    cover: String(entry?.cover || "").trim(),
+    director: String(entry?.studio || "").trim()
+  };
+}
+
 function createTmdbAutocomplete(input, options = {}) {
-  if (!(input instanceof HTMLInputElement) || !TMDB_API_KEY) return null;
+  if (!(input instanceof HTMLInputElement)) return null;
   const host = input.parentElement;
   if (!(host instanceof HTMLElement)) return null;
   host.classList.add("has-tmdb-autocomplete");
@@ -178,8 +217,11 @@ function createTmdbAutocomplete(input, options = {}) {
 
   input.addEventListener("input", () => {
     const query = String(input.value || "").trim();
+    const category = String(options.getCategory?.() || "").trim().toLowerCase();
     const mediaType = options.getMediaType?.() || null;
-    if (!mediaType || query.length < TMDB_AUTOCOMPLETE_MIN_CHARS) {
+    const isGame = isGameCategory(category);
+    const minChars = isGame ? IGDB_AUTOCOMPLETE_MIN_CHARS : TMDB_AUTOCOMPLETE_MIN_CHARS;
+    if ((!mediaType && !isGame) || query.length < minChars) {
       hide();
       return;
     }
@@ -187,7 +229,9 @@ function createTmdbAutocomplete(input, options = {}) {
     timer = window.setTimeout(async () => {
       const currentRequest = ++requestId;
       try {
-        const results = await searchTmdbTitles(query, mediaType);
+        const results = isGame
+          ? await searchIgdbGames(query)
+          : await searchTmdbTitles(query, mediaType);
         if (currentRequest !== requestId) return;
         render(results);
       } catch {
@@ -362,6 +406,7 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
   titleInput?.addEventListener("input", clearTopTmdbLink);
 
   const topItemAutocomplete = createTmdbAutocomplete(titleInput, {
+    getCategory: () => topStudioMetaForm?.elements?.category?.value || "",
     getMediaType: () => {
       const category = topStudioMetaForm?.elements?.category?.value || "";
       if (!["film", "serie"].includes(String(category).trim().toLowerCase())) return null;
@@ -377,7 +422,9 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
       if (tmdbIdInput) tmdbIdInput.value = String(choice.id || "");
       if (tmdbMediaTypeInput) tmdbMediaTypeInput.value = choice.mediaType || "";
       try {
-        const details = await getTmdbDetails(choice.id, choice.mediaType);
+        const details = choice.provider === "igdb"
+          ? await getIgdbGameDetails(choice.id)
+          : await getTmdbDetails(choice.id, choice.mediaType);
         if (row.dataset.tmdbSelectionToken !== String(currentToken)) return;
         if (details.title) titleInput.value = details.title;
         if (details.poster && posterInput) posterInput.value = details.poster;

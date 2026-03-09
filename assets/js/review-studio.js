@@ -39,6 +39,7 @@ const DEFAULT_COVER =
 const TMDB_API_KEY = "db0d1dbaf15190e0a5574538dc4e579f";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const TMDB_AUTOCOMPLETE_MIN_CHARS = 2;
+const IGDB_AUTOCOMPLETE_MIN_CHARS = 2;
 
 let currentUser = null;
 let studioTmdbToken = 0;
@@ -507,20 +508,81 @@ async function getTmdbImageChoices(id, mediaType) {
   return { posters, backdrops };
 }
 
+function isGameCategory(category) {
+  return String(category || "").trim().toLowerCase() === "jeu";
+}
+
+async function searchIgdbGames(query) {
+  const q = String(query || "").trim();
+  if (q.length < IGDB_AUTOCOMPLETE_MIN_CHARS) return [];
+  const response = await fetch(`/api/igdb?mode=search&q=${encodeURIComponent(q)}&limit=8`);
+  if (!response.ok) throw new Error("IGDB search failed");
+  const data = await response.json();
+  const list = Array.isArray(data?.results) ? data.results : [];
+  return list.map((entry) => ({
+    id: entry.id,
+    mediaType: "igdb_game",
+    provider: "igdb",
+    title: String(entry?.title || "").trim(),
+    year: String(entry?.year || "").trim(),
+    poster: String(entry?.poster || "").trim(),
+    cover: String(entry?.cover || "").trim(),
+    overview: String(entry?.overview || "").trim(),
+    studio: String(entry?.studio || "").trim()
+  }));
+}
+
+async function getIgdbGameDetails(id) {
+  if (!id) return {};
+  const response = await fetch(`/api/igdb?mode=details&id=${encodeURIComponent(id)}`);
+  if (!response.ok) throw new Error("IGDB details failed");
+  const data = await response.json();
+  const entry = data?.details || {};
+  return {
+    title: String(entry?.title || "").trim(),
+    year: String(entry?.year || "").trim(),
+    poster: String(entry?.poster || "").trim(),
+    cover: String(entry?.cover || "").trim(),
+    studio: String(entry?.studio || "").trim(),
+    overview: String(entry?.overview || "").trim()
+  };
+}
+
+async function getIgdbImageChoices(id) {
+  if (!id) return { posters: [], backdrops: [] };
+  const response = await fetch(`/api/igdb?mode=images&id=${encodeURIComponent(id)}`);
+  if (!response.ok) throw new Error("IGDB images failed");
+  const data = await response.json();
+  return {
+    posters: Array.isArray(data?.images?.posters) ? data.images.posters : [],
+    backdrops: Array.isArray(data?.images?.backdrops) ? data.images.backdrops : []
+  };
+}
+
 function updateAssetButtonsState() {
   if (!studioMetaForm) return;
   const posterValue = String(studioMetaForm.elements.poster.value || "").trim();
   const coverValue = String(studioMetaForm.elements.cover.value || "").trim();
-  const hasTmdb = Boolean(studioSelectedTmdb?.id);
-  const posterFromTmdb = hasTmdb && /image\.tmdb\.org/i.test(posterValue);
-  const coverFromTmdb = hasTmdb && /image\.tmdb\.org/i.test(coverValue);
+  const category = String(studioMetaForm.elements.category?.value || "").trim().toLowerCase();
+  const provider = isGameCategory(category) ? "IGDB" : "TMDB";
+  const hasLinkedMedia = Boolean(studioSelectedTmdb?.id);
+  const posterFromProvider = hasLinkedMedia && (
+    provider === "IGDB"
+      ? /images\.igdb\.com/i.test(posterValue)
+      : /image\.tmdb\.org/i.test(posterValue)
+  );
+  const coverFromProvider = hasLinkedMedia && (
+    provider === "IGDB"
+      ? /images\.igdb\.com/i.test(coverValue)
+      : /image\.tmdb\.org/i.test(coverValue)
+  );
   if (studioPosterPickerBtn) {
-    studioPosterPickerBtn.textContent = posterFromTmdb ? "Modifier via TMDB ✓" : "Modifier via TMDB";
-    studioPosterPickerBtn.disabled = !hasTmdb;
+    studioPosterPickerBtn.textContent = posterFromProvider ? `Modifier via ${provider} ✓` : `Modifier via ${provider}`;
+    studioPosterPickerBtn.disabled = !hasLinkedMedia;
   }
   if (studioCoverPickerBtn) {
-    studioCoverPickerBtn.textContent = coverFromTmdb ? "Modifier via TMDB ✓" : "Modifier via TMDB";
-    studioCoverPickerBtn.disabled = !hasTmdb;
+    studioCoverPickerBtn.textContent = coverFromProvider ? `Modifier via ${provider} ✓` : `Modifier via ${provider}`;
+    studioCoverPickerBtn.disabled = !hasLinkedMedia;
   }
 }
 
@@ -580,7 +642,7 @@ function hideTmdbSuggestions(list) {
 }
 
 function setupStudioTmdbAutocomplete() {
-  if (!studioTitleInput || !studioMetaForm || !TMDB_API_KEY) return;
+  if (!studioTitleInput || !studioMetaForm) return;
   const host = document.querySelector(".studio-title-wrap") || studioTitleInput.parentElement;
   if (!host) return;
   const list = document.createElement("ul");
@@ -606,28 +668,32 @@ function setupStudioTmdbAutocomplete() {
         event.preventDefault();
         studioTmdbToken += 1;
         const token = studioTmdbToken;
-        studioSelectedTmdb = { id: item.id, mediaType: item.mediaType };
+        studioSelectedTmdb = { id: item.id, mediaType: item.mediaType, provider: item.provider || "tmdb" };
         studioMetaForm.elements.tmdbId.value = String(item.id || "");
         studioMetaForm.elements.tmdbMediaType.value = String(item.mediaType || "");
         studioTitleInput.value = item.title || studioTitleInput.value;
         if (!studioMetaForm.elements.poster.value.trim()) studioMetaForm.elements.poster.value = item.poster || "";
         if (!studioMetaForm.elements.cover.value.trim()) studioMetaForm.elements.cover.value = item.cover || "";
         if (!studioMetaForm.elements.releaseYear.value.trim()) studioMetaForm.elements.releaseYear.value = item.year || "";
+        if (!studioMetaForm.elements.director.value.trim() && item.studio) studioMetaForm.elements.director.value = item.studio;
         if (studioSynopsisInput && !studioSynopsisInput.value.trim()) studioSynopsisInput.value = item.overview || "";
         if (item.overview) studioMetaForm.elements.tmdbOverview.value = item.overview;
         hideTmdbSuggestions(list);
         refreshHeroPreview();
         try {
-          const details = await getTmdbDetails(item.id, item.mediaType);
+          const details = item.provider === "igdb"
+            ? await getIgdbGameDetails(item.id)
+            : await getTmdbDetails(item.id, item.mediaType);
           if (token !== studioTmdbToken) return;
           if (details.title) studioTitleInput.value = details.title;
           if (details.poster) studioMetaForm.elements.poster.value = details.poster;
           if (details.cover) studioMetaForm.elements.cover.value = details.cover;
           if (details.year) studioMetaForm.elements.releaseYear.value = details.year;
+          if (details.studio) studioMetaForm.elements.director.value = details.studio;
           if (details.director) studioMetaForm.elements.director.value = details.director;
           if (studioSynopsisInput && details.overview && !studioSynopsisInput.value.trim()) studioSynopsisInput.value = details.overview;
           if (details.overview) studioMetaForm.elements.tmdbOverview.value = details.overview;
-          studioSelectedTmdb = { id: item.id, mediaType: item.mediaType };
+          studioSelectedTmdb = { id: item.id, mediaType: item.mediaType, provider: item.provider || "tmdb" };
           studioMetaForm.elements.tmdbId.value = String(item.id || "");
           studioMetaForm.elements.tmdbMediaType.value = String(item.mediaType || "");
           refreshHeroPreview();
@@ -647,7 +713,14 @@ function setupStudioTmdbAutocomplete() {
     studioSelectedTmdb = null;
     studioMetaForm.elements.tmdbId.value = "";
     studioMetaForm.elements.tmdbMediaType.value = "";
-    if (!["film", "serie"].includes(category) || query.length < TMDB_AUTOCOMPLETE_MIN_CHARS) {
+    const isFilmOrSerie = ["film", "serie"].includes(category);
+    const isGame = isGameCategory(category);
+    if (!isFilmOrSerie && !isGame) {
+      hideTmdbSuggestions(list);
+      return;
+    }
+    const minChars = isGame ? IGDB_AUTOCOMPLETE_MIN_CHARS : TMDB_AUTOCOMPLETE_MIN_CHARS;
+    if (query.length < minChars) {
       hideTmdbSuggestions(list);
       return;
     }
@@ -655,7 +728,9 @@ function setupStudioTmdbAutocomplete() {
     debounceTimer = window.setTimeout(async () => {
       const currentRequest = ++requestId;
       try {
-        const results = await searchTmdbTitles(query, tmdbMediaTypeFromCategory(category));
+        const results = isGame
+          ? await searchIgdbGames(query)
+          : await searchTmdbTitles(query, tmdbMediaTypeFromCategory(category));
         if (currentRequest !== requestId) return;
         renderSuggestions(results);
       } catch {
@@ -748,17 +823,24 @@ async function tryLoadEditReview() {
   studioMetaForm.elements.tmdbId.value = String(item?.tmdbId || "");
   studioMetaForm.elements.tmdbMediaType.value = String(item?.tmdbMediaType || "");
   studioSelectedTmdb = item?.tmdbId
-    ? { id: item.tmdbId, mediaType: String(item.tmdbMediaType || tmdbMediaTypeFromCategory(item?.category || "film")) }
+    ? {
+      id: item.tmdbId,
+      mediaType: String(item.tmdbMediaType || (isGameCategory(item?.category) ? "igdb_game" : tmdbMediaTypeFromCategory(item?.category || "film"))),
+      provider: String(item.tmdbMediaType || "").trim().toLowerCase().startsWith("igdb") ? "igdb" : (isGameCategory(item?.category) ? "igdb" : "tmdb")
+    }
     : null;
   if (!studioSelectedTmdb?.id) {
     const title = String(item?.title || "").trim();
     const category = String(item?.category || "").trim().toLowerCase();
-    if (title && (category === "film" || category === "serie")) {
+    if (title && (category === "film" || category === "serie" || category === "jeu")) {
       try {
-        const results = await searchTmdbTitles(title, tmdbMediaTypeFromCategory(category));
+        const isGame = category === "jeu";
+        const results = isGame
+          ? await searchIgdbGames(title)
+          : await searchTmdbTitles(title, tmdbMediaTypeFromCategory(category));
         const best = (results || []).find((entry) => String(entry.title || "").trim().toLowerCase() === title.toLowerCase()) || results[0];
         if (best?.id) {
-          studioSelectedTmdb = { id: best.id, mediaType: best.mediaType };
+          studioSelectedTmdb = { id: best.id, mediaType: best.mediaType, provider: best.provider || (isGame ? "igdb" : "tmdb") };
           studioMetaForm.elements.tmdbId.value = String(best.id);
           studioMetaForm.elements.tmdbMediaType.value = String(best.mediaType || "");
         }
@@ -1034,13 +1116,16 @@ if (studioCoverUrlBtn && studioMetaForm) {
 if (studioPosterPickerBtn && studioMetaForm) {
   studioPosterPickerBtn.addEventListener("click", async () => {
     if (!studioSelectedTmdb?.id) {
-      window.alert("Choisis d'abord un média TMDB via le titre.");
+      window.alert("Choisis d'abord un média via le titre.");
       return;
     }
     try {
-      const images = await getTmdbImageChoices(studioSelectedTmdb.id, studioSelectedTmdb.mediaType);
+      const useIgdb = studioSelectedTmdb.provider === "igdb" || String(studioSelectedTmdb.mediaType || "").startsWith("igdb");
+      const images = useIgdb
+        ? await getIgdbImageChoices(studioSelectedTmdb.id)
+        : await getTmdbImageChoices(studioSelectedTmdb.id, studioSelectedTmdb.mediaType);
       if (!images.posters.length) {
-        window.alert("Aucune affiche TMDB disponible pour ce média.");
+        window.alert(`Aucune affiche ${useIgdb ? "IGDB" : "TMDB"} disponible pour ce média.`);
         return;
       }
       const selected = await openTmdbImagePicker(images.posters, "une affiche", "poster");
@@ -1048,7 +1133,7 @@ if (studioPosterPickerBtn && studioMetaForm) {
       studioMetaForm.elements.poster.value = selected;
       refreshHeroPreview();
     } catch (error) {
-      window.alert(`Impossible de charger les affiches TMDB : ${error.message}`);
+      window.alert(`Impossible de charger les affiches : ${error.message}`);
     }
   });
 }
@@ -1056,13 +1141,16 @@ if (studioPosterPickerBtn && studioMetaForm) {
 if (studioCoverPickerBtn && studioMetaForm) {
   studioCoverPickerBtn.addEventListener("click", async () => {
     if (!studioSelectedTmdb?.id) {
-      window.alert("Choisis d'abord un média TMDB via le titre.");
+      window.alert("Choisis d'abord un média via le titre.");
       return;
     }
     try {
-      const images = await getTmdbImageChoices(studioSelectedTmdb.id, studioSelectedTmdb.mediaType);
+      const useIgdb = studioSelectedTmdb.provider === "igdb" || String(studioSelectedTmdb.mediaType || "").startsWith("igdb");
+      const images = useIgdb
+        ? await getIgdbImageChoices(studioSelectedTmdb.id)
+        : await getTmdbImageChoices(studioSelectedTmdb.id, studioSelectedTmdb.mediaType);
       if (!images.backdrops.length) {
-        window.alert("Aucune image de couverture TMDB disponible pour ce média.");
+        window.alert(`Aucune image de couverture ${useIgdb ? "IGDB" : "TMDB"} disponible pour ce média.`);
         return;
       }
       const selected = await openTmdbImagePicker(images.backdrops, "une couverture", "backdrop");
@@ -1070,7 +1158,7 @@ if (studioCoverPickerBtn && studioMetaForm) {
       studioMetaForm.elements.cover.value = selected;
       refreshHeroPreview();
     } catch (error) {
-      window.alert(`Impossible de charger les couvertures TMDB : ${error.message}`);
+      window.alert(`Impossible de charger les couvertures : ${error.message}`);
     }
   });
 }
