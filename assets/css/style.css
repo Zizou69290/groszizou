@@ -3398,6 +3398,16 @@ a:focus-visible {
   width: 100%;
 }
 
+.top-studio-page .studio-hero.article-hero-covered {
+  overflow: visible;
+  z-index: 40;
+}
+
+#top-studio-workspace {
+  position: relative;
+  z-index: 1;
+}
+
 .top-studio-page .top-studio-item-adder {
   display: flex;
   align-items: center;
@@ -3418,6 +3428,10 @@ a:focus-visible {
 .top-studio-page .top-studio-add-row .studio-meta-chip > span {
   white-space: nowrap;
   flex: 0 0 auto;
+}
+
+.top-studio-page .top-studio-item-adder .tmdb-suggestion-box {
+  z-index: 1200;
 }
 
 .top-studio-page .top-form-items {
