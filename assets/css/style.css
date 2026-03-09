@@ -493,6 +493,10 @@ h1 {
   font-size: 0.86rem;
 }
 
+.review-card .score {
+  color: var(--accent-2) !important;
+}
+
 .card-footer a {
   color: var(--text);
 }
@@ -2360,6 +2364,12 @@ textarea {
 
 .top-poster-content .score {
   margin-top: auto;
+}
+
+.top-page .top-review-content .score,
+.top-page .top-poster-content .score {
+  color: var(--accent-2);
+  font-weight: 700;
 }
 
 .top-poster-rank {
