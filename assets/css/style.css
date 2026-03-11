@@ -1960,6 +1960,7 @@ textarea {
   padding: 0.8rem;
   color: var(--text);
   outline: 0;
+  overflow-wrap: anywhere;
 }
 
 .rich-toolbar {
@@ -1998,6 +1999,12 @@ textarea {
 
 .rich-editor:focus {
   border-color: #4e6b7f;
+}
+
+.rich-editor.is-drop-target {
+  border-color: #5f899f;
+  box-shadow: 0 0 0 1px rgba(95, 137, 159, 0.35) inset;
+  background: #12212b;
 }
 
 .rich-editor p {
@@ -2047,9 +2054,10 @@ textarea {
 .rich-editor .rich-media-shell,
 .rich-preview .rich-media-shell,
 .media-render .rich-media-shell {
-  display: block;
+  display: inline-block;
   max-width: 100%;
   vertical-align: top;
+  line-height: 1;
 }
 
 .rich-editor .rich-media-shell > img,
@@ -2068,6 +2076,12 @@ textarea {
   height: auto;
 }
 
+.rich-editor .rich-media-shell > .video-wrap,
+.rich-preview .rich-media-shell > .video-wrap,
+.media-render .rich-media-shell > .video-wrap {
+  width: 100%;
+}
+
 .rich-editor::after,
 .rich-preview::after,
 .media-render::after {
@@ -2079,14 +2093,14 @@ textarea {
 .rich-editor .rich-media-size-small,
 .rich-preview .rich-media-size-small,
 .media-render .rich-media-size-small {
-  width: min(38%, 320px);
+  width: min(31.5%, 320px);
   max-width: 100%;
 }
 
 .rich-editor .rich-media-size-medium,
 .rich-preview .rich-media-size-medium,
 .media-render .rich-media-size-medium {
-  width: min(60%, 560px);
+  width: min(48.5%, 560px);
   max-width: 100%;
 }
 
@@ -2115,11 +2129,30 @@ textarea {
 .rich-preview .rich-media-center,
 .media-render .rich-media-center {
   float: none;
+  display: block;
   margin: 0.25rem auto 0.85rem;
+}
+
+.rich-editor .rich-media-inline,
+.rich-preview .rich-media-inline,
+.media-render .rich-media-inline {
+  float: none;
+  display: inline-block;
+  margin: 0.2rem 0.4rem 0.8rem 0;
+}
+
+.rich-editor .rich-media-inline:last-child,
+.rich-preview .rich-media-inline:last-child,
+.media-render .rich-media-inline:last-child {
+  margin-right: 0;
 }
 
 .rich-editor .rich-media-selected {
   position: relative;
+}
+
+.rich-editor .rich-media-dragging {
+  opacity: 0.55;
 }
 
 .rich-editor .rich-media-selected > img,

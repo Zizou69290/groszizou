@@ -49,12 +49,183 @@ let loadedReviewSnapshot = null;
 let pendingEditLoad = false;
 let selectedStudioMediaWrapper = null;
 let studioMediaResizeState = null;
+let studioDropTargetDepth = 0;
+let draggedStudioMediaWrapper = null;
 const STUDIO_HISTORY_LIMIT = 120;
 let studioHistory = [];
 let studioHistoryIndex = -1;
 
 function getEditorHtml() {
-  return String(studioEditor?.innerHTML || "");
+  return getCleanStudioEditorHtml();
+}
+
+function getCleanStudioEditorHtml() {
+  if (!studioEditor) return "";
+  const clone = studioEditor.cloneNode(true);
+  clone.querySelectorAll(".rich-media-resize-handle").forEach((node) => node.remove());
+  clone.querySelectorAll(".rich-media-selected").forEach((node) => node.classList.remove("rich-media-selected"));
+  return String(clone.innerHTML || "").trim();
+}
+
+function ensureStudioShellClasses(shell) {
+  if (!(shell instanceof HTMLElement)) return;
+  shell.setAttribute("contenteditable", "false");
+  shell.setAttribute("draggable", "true");
+  const hasSizeClass =
+    shell.classList.contains("rich-media-size-small") ||
+    shell.classList.contains("rich-media-size-medium") ||
+    shell.classList.contains("rich-media-size-large");
+  const hasAlignClass =
+    shell.classList.contains("rich-media-inline") ||
+    shell.classList.contains("rich-media-float-left") ||
+    shell.classList.contains("rich-media-float-right") ||
+    shell.classList.contains("rich-media-center");
+  if (!hasSizeClass) shell.classList.add("rich-media-size-medium");
+  if (!hasAlignClass) shell.classList.add("rich-media-center");
+}
+
+function normalizeStudioEditorMedia() {
+  if (!studioEditor) return;
+  studioEditor.querySelectorAll(".rich-media-resize-handle").forEach((node) => node.remove());
+  studioEditor.querySelectorAll(".rich-media-shell").forEach((shell) => ensureStudioShellClasses(shell));
+  studioEditor.querySelectorAll("img,video,audio").forEach((media) => {
+    if (!(media instanceof HTMLElement)) return;
+    if (media.closest(".rich-media-shell")) return;
+    const shell = ensureStudioMediaShell(media);
+    if (shell) ensureStudioShellClasses(shell);
+  });
+  studioEditor.querySelectorAll("iframe").forEach((frame) => {
+    if (!(frame instanceof HTMLElement)) return;
+    if (frame.closest(".rich-media-shell")) return;
+    const videoWrap = frame.closest(".video-wrap");
+    if (videoWrap instanceof HTMLElement && studioEditor.contains(videoWrap)) {
+      if (!videoWrap.closest(".rich-media-shell")) {
+        const shell = ensureStudioMediaShell(videoWrap);
+        if (shell) ensureStudioShellClasses(shell);
+      }
+      return;
+    }
+    const shell = ensureStudioMediaShell(frame);
+    if (shell) ensureStudioShellClasses(shell);
+  });
+}
+
+function moveDraggedStudioMedia(event) {
+  if (!studioEditor || !draggedStudioMediaWrapper || !studioEditor.contains(draggedStudioMediaWrapper)) return false;
+  const dropTarget = event.target instanceof Node ? getStudioMediaWrapperFromNode(event.target) : null;
+  if (dropTarget && dropTarget !== draggedStudioMediaWrapper && dropTarget.parentNode) {
+    const rect = dropTarget.getBoundingClientRect();
+    const insertBefore = event.clientY < rect.top + rect.height / 2;
+    dropTarget.parentNode.insertBefore(draggedStudioMediaWrapper, insertBefore ? dropTarget : dropTarget.nextSibling);
+    return true;
+  }
+  if (!placeStudioCaretAtPoint(event.clientX, event.clientY)) return false;
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return false;
+  const range = selection.getRangeAt(0);
+  range.insertNode(draggedStudioMediaWrapper);
+  placeCaretAfterNode(draggedStudioMediaWrapper);
+  return true;
+}
+
+function clearDraggedStudioMediaState() {
+  if (draggedStudioMediaWrapper) draggedStudioMediaWrapper.classList.remove("rich-media-dragging");
+  draggedStudioMediaWrapper = null;
+}
+
+function isLikelyImageUrl(url) {
+  const value = String(url || "").trim();
+  if (!/^https?:\/\//i.test(value) && !/^data:image\//i.test(value)) return false;
+  const clean = value.split("?")[0].split("#")[0].toLowerCase();
+  return /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/.test(clean) || /^data:image\//i.test(value);
+}
+
+function getImageUrlsFromHtml(html) {
+  const text = String(html || "").trim();
+  if (!text) return [];
+  const doc = new DOMParser().parseFromString(text, "text/html");
+  return [...doc.querySelectorAll("img")]
+    .map((img) => String(img.getAttribute("src") || "").trim())
+    .filter(Boolean);
+}
+
+function readImageFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Impossible de lire l'image"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function placeStudioCaretAtPoint(clientX, clientY) {
+  if (!studioEditor) return false;
+  const selection = window.getSelection();
+  if (!selection) return false;
+  let range = null;
+  if (document.caretRangeFromPoint) {
+    range = document.caretRangeFromPoint(clientX, clientY);
+  } else if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(clientX, clientY);
+    if (pos) {
+      range = document.createRange();
+      range.setStart(pos.offsetNode, pos.offset);
+      range.collapse(true);
+    }
+  }
+  if (!range) return false;
+  if (!studioEditor.contains(range.startContainer) && range.startContainer !== studioEditor) return false;
+  selection.removeAllRanges();
+  selection.addRange(range);
+  studioEditor.focus();
+  return true;
+}
+
+function insertStudioPlainText(text) {
+  if (!studioEditor) return;
+  const value = String(text || "");
+  if (!value) return;
+  studioEditor.focus();
+  if (document.queryCommandSupported && document.queryCommandSupported("insertText")) {
+    document.execCommand("insertText", false, value);
+    queueHistorySnapshot();
+    return;
+  }
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) {
+    studioEditor.appendChild(document.createTextNode(value));
+    queueHistorySnapshot();
+    return;
+  }
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  range.insertNode(document.createTextNode(value));
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  queueHistorySnapshot();
+}
+
+async function handleStudioDroppedOrPastedImages(files = [], imageUrls = []) {
+  if (!studioEditor) return false;
+  const fileImages = [...files].filter((file) => file && String(file.type || "").toLowerCase().startsWith("image/"));
+  const urls = [...imageUrls].map((entry) => String(entry || "").trim()).filter(Boolean);
+  if (!fileImages.length && !urls.length) return false;
+  studioEditor.focus();
+  for (const url of urls) {
+    insertStudioMediaShell(`<img src="${escapeHtml(url)}" alt="image" />`);
+  }
+  for (const file of fileImages) {
+    try {
+      const dataUrl = await readImageFileAsDataUrl(file);
+      if (dataUrl) insertStudioMediaShell(`<img src="${escapeHtml(dataUrl)}" alt="image" />`);
+    } catch {
+      // Continue with remaining files.
+    }
+  }
+  normalizeStudioEditorMedia();
+  queueHistorySnapshot();
+  return true;
 }
 
 function pushStudioHistorySnapshot(force = false) {
@@ -77,6 +248,8 @@ function pushStudioHistorySnapshot(force = false) {
 function replaceEditorHtmlWithHistory(html) {
   if (!studioEditor) return;
   studioEditor.innerHTML = String(html || "");
+  normalizeStudioEditorMedia();
+  clearStudioSelectedMedia();
   studioEditor.focus();
 }
 
@@ -131,7 +304,7 @@ function ensureStudioMediaShell(media) {
   if (parent?.classList.contains("rich-media-shell")) return parent;
   const shell = document.createElement("span");
   shell.className = "rich-media-shell";
-  shell.style.display = "inline-block";
+  shell.setAttribute("contenteditable", "false");
   media.parentNode?.insertBefore(shell, media);
   shell.appendChild(media);
   return shell;
@@ -257,7 +430,6 @@ function onStudioMediaResizeMove(event) {
   const deltaX = event.clientX - startX;
   const nextWidth = Math.max(minWidth, Math.min(maxWidth, Math.round(startWidth + deltaX)));
   wrapper.classList.remove("rich-media-size-small", "rich-media-size-medium", "rich-media-size-large");
-  wrapper.style.display = "inline-block";
   wrapper.style.width = `${nextWidth}px`;
   wrapper.style.maxWidth = "100%";
   ensureStudioMediaFillsWrapper(wrapper);
@@ -276,9 +448,15 @@ function applyStudioMediaAlign(align) {
   const target = getStudioSelectedMediaWrapper();
   if (!target) return false;
   selectStudioMedia(target);
-  target.style.display = "inline-block";
-  target.classList.remove("rich-media-float-left", "rich-media-float-right", "rich-media-center");
-  const cls = align === "left" ? "rich-media-float-left" : align === "right" ? "rich-media-float-right" : "rich-media-center";
+  target.classList.remove("rich-media-inline", "rich-media-float-left", "rich-media-float-right", "rich-media-center");
+  const cls =
+    align === "left"
+      ? "rich-media-float-left"
+      : align === "right"
+        ? "rich-media-float-right"
+        : align === "inline"
+          ? "rich-media-inline"
+          : "rich-media-center";
   target.classList.add(cls);
   positionStudioResizeHandle(target);
   queueHistorySnapshot();
@@ -301,7 +479,7 @@ function insertStudioMediaShell(innerHtml) {
   studioEditor.focus();
   const wrapper = document.createElement("span");
   wrapper.className = "rich-media-shell rich-media-center rich-media-size-medium";
-  wrapper.style.display = "inline-block";
+  wrapper.setAttribute("contenteditable", "false");
   wrapper.innerHTML = innerHtml;
   const selection = window.getSelection();
   if (selection && selection.rangeCount) {
@@ -312,6 +490,7 @@ function insertStudioMediaShell(innerHtml) {
     studioEditor.appendChild(wrapper);
   }
   placeCaretAfterNode(wrapper);
+  normalizeStudioEditorMedia();
   selectStudioMedia(wrapper);
   queueHistorySnapshot();
   return wrapper;
@@ -357,6 +536,10 @@ function handleStudioAction(action) {
   if (action === "center") {
     if (applyStudioMediaAlign("center")) return;
     return document.execCommand("justifyCenter", false, null);
+  }
+  if (action === "inline") {
+    if (applyStudioMediaAlign("inline")) return;
+    return;
   }
   if (action === "right") {
     if (applyStudioMediaAlign("right")) return;
@@ -852,6 +1035,8 @@ async function tryLoadEditReview() {
   studioEditor.innerHTML = item?.contentMode === "rich"
     ? String(item?.bodyHtml || "")
     : blocksToSimpleHtml(item?.blocks || []);
+  normalizeStudioEditorMedia();
+  clearStudioSelectedMedia();
   studioHistory = [];
   studioHistoryIndex = -1;
   pushStudioHistorySnapshot(true);
@@ -894,7 +1079,7 @@ function buildPayload(statusOverride = "") {
     tmdbMediaType: String(studioMetaForm.elements.tmdbMediaType.value || "").trim(),
     externalLinks: Array.isArray(base.externalLinks) ? base.externalLinks : [],
     contentMode: "rich",
-    bodyHtml: String(studioEditor.innerHTML || "").trim(),
+    bodyHtml: getEditorHtml(),
     blocks: []
   };
 }
@@ -1066,11 +1251,90 @@ if (studioEditor) {
     }
     clearStudioSelectedMedia();
   });
+  studioEditor.addEventListener("dragstart", (event) => {
+    const target = event.target instanceof Node ? getStudioMediaWrapperFromNode(event.target) : null;
+    if (!target) return;
+    draggedStudioMediaWrapper = target;
+    target.classList.add("rich-media-dragging");
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", "__studio_media_move__");
+    }
+  });
   studioEditor.addEventListener("input", () => {
     if (selectedStudioMediaWrapper && !studioEditor.contains(selectedStudioMediaWrapper)) {
       selectedStudioMediaWrapper = null;
     }
+    normalizeStudioEditorMedia();
     pushStudioHistorySnapshot(false);
+  });
+  studioEditor.addEventListener("dragenter", (event) => {
+    if (!(event.dataTransfer?.types || []).includes("Files")) return;
+    event.preventDefault();
+    studioDropTargetDepth += 1;
+    studioEditor.classList.add("is-drop-target");
+  });
+  studioEditor.addEventListener("dragover", (event) => {
+    if (!event.dataTransfer) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = draggedStudioMediaWrapper ? "move" : "copy";
+    studioEditor.classList.add("is-drop-target");
+  });
+  studioEditor.addEventListener("dragleave", () => {
+    studioDropTargetDepth = Math.max(0, studioDropTargetDepth - 1);
+    if (studioDropTargetDepth === 0) studioEditor.classList.remove("is-drop-target");
+  });
+  studioEditor.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    studioDropTargetDepth = 0;
+    studioEditor.classList.remove("is-drop-target");
+    if (draggedStudioMediaWrapper) {
+      const movedShell = draggedStudioMediaWrapper;
+      const moved = moveDraggedStudioMedia(event);
+      clearDraggedStudioMediaState();
+      if (moved) {
+        normalizeStudioEditorMedia();
+        selectStudioMedia(getStudioMediaWrapperFromNode(event.target instanceof Node ? event.target : null) || movedShell);
+        queueHistorySnapshot();
+      }
+      return;
+    }
+    placeStudioCaretAtPoint(event.clientX, event.clientY);
+    const files = [...(event.dataTransfer?.files || [])];
+    const urlListText = String(event.dataTransfer?.getData("text/uri-list") || "").trim();
+    const plainText = String(event.dataTransfer?.getData("text/plain") || "").trim();
+    const htmlText = String(event.dataTransfer?.getData("text/html") || "");
+    const uriUrls = urlListText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"));
+    const htmlImageUrls = getImageUrlsFromHtml(htmlText);
+    const plainImageUrls = isLikelyImageUrl(plainText) ? [plainText] : [];
+    const imageUrls = [...new Set([...uriUrls, ...htmlImageUrls, ...plainImageUrls])];
+    const insertedImages = await handleStudioDroppedOrPastedImages(files, imageUrls);
+    if (!insertedImages && plainText) insertStudioPlainText(plainText);
+  });
+  studioEditor.addEventListener("dragend", () => {
+    studioDropTargetDepth = 0;
+    studioEditor.classList.remove("is-drop-target");
+    clearDraggedStudioMediaState();
+  });
+  studioEditor.addEventListener("paste", async (event) => {
+    const files = [...(event.clipboardData?.files || [])];
+    const htmlText = String(event.clipboardData?.getData("text/html") || "");
+    const plainText = String(event.clipboardData?.getData("text/plain") || "");
+    const htmlImageUrls = getImageUrlsFromHtml(htmlText);
+    const plainImageUrls = isLikelyImageUrl(plainText) ? [plainText.trim()] : [];
+    const shouldHandleImages = files.some((file) => String(file?.type || "").toLowerCase().startsWith("image/")) || htmlImageUrls.length || plainImageUrls.length;
+    if (shouldHandleImages) {
+      event.preventDefault();
+      await handleStudioDroppedOrPastedImages(files, [...htmlImageUrls, ...plainImageUrls]);
+      return;
+    }
+    if (htmlText && plainText) {
+      event.preventDefault();
+      insertStudioPlainText(plainText);
+    }
   });
 }
 
@@ -1079,6 +1343,18 @@ document.addEventListener("keydown", (event) => {
   const target = event.target;
   const isInEditor = target instanceof Node && studioEditor.contains(target);
   if (!isInEditor) return;
+  if (event.key === "Backspace" || event.key === "Delete") {
+    const selected = getStudioSelectedMediaWrapper();
+    if (selected && studioEditor.contains(selected)) {
+      event.preventDefault();
+      const next = selected.nextSibling || selected.previousSibling || studioEditor;
+      selected.remove();
+      clearStudioSelectedMedia();
+      if (next instanceof Node && next !== studioEditor) placeCaretAfterNode(next);
+      queueHistorySnapshot();
+      return;
+    }
+  }
   if (!(event.ctrlKey || event.metaKey)) return;
 
   const key = String(event.key || "").toLowerCase();
@@ -1090,6 +1366,12 @@ document.addEventListener("keydown", (event) => {
   if (key === "y" || (key === "z" && event.shiftKey)) {
     event.preventDefault();
     studioRedo();
+  }
+});
+
+window.addEventListener("resize", () => {
+  if (selectedStudioMediaWrapper && studioEditor?.contains(selectedStudioMediaWrapper)) {
+    positionStudioResizeHandle(selectedStudioMediaWrapper);
   }
 });
 
@@ -1189,4 +1471,5 @@ refreshDeleteButtonState();
 tryLoadEditReview();
 setupStudioTmdbAutocomplete();
 refreshHeroPreview();
+normalizeStudioEditorMedia();
 pushStudioHistorySnapshot(true);
