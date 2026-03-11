@@ -39,9 +39,12 @@ const list = document.getElementById("top-items");
 const cover = document.getElementById("top-cover-bg");
 const topViewDetailsBtn = document.getElementById("top-view-details");
 const topViewPosterBtn = document.getElementById("top-view-poster");
+const topDiscordShareBtn = document.getElementById("top-discord-share");
 let loadedTop = null;
 let loadedReviewMap = new Map();
 let selectedTopItemsView = "poster";
+let topDiscordSharePending = false;
+let loadedTopCoverUrl = "";
 
 const DEFAULT_POSTER =
   "data:image/svg+xml;utf8," +
@@ -169,6 +172,55 @@ function computeTopAverageScore(top, reviewMap) {
   if (!scores.length) return null;
   const total = scores.reduce((sum, value) => sum + value, 0);
   return total / scores.length;
+}
+
+function sanitizeShareImageUrl(raw) {
+  const value = String(raw || "").trim();
+  if (!value || value.startsWith("data:")) return "";
+  return value;
+}
+
+async function shareTopToDiscord(top) {
+  if (!top || topDiscordSharePending) return;
+  topDiscordSharePending = true;
+  if (topDiscordShareBtn) {
+    topDiscordShareBtn.disabled = true;
+    topDiscordShareBtn.textContent = "Envoi...";
+  }
+
+  try {
+    const avg = computeTopAverageScore(top, loadedReviewMap);
+    const response = await fetch("/api/discord-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "top",
+        title: String(top.title || "Sans titre").trim(),
+        summary: String(top.subtitle || "").trim(),
+        coverUrl: sanitizeShareImageUrl(loadedTopCoverUrl || top.cover || ""),
+        score: Number.isFinite(Number(avg)) ? Number(avg) : null,
+        url: `${window.location.origin}/top.html?id=${encodeURIComponent(top.id || id || "")}`
+      })
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Endpoint /api/discord-share indisponible en local. Utilise la version déployée pour ce bouton.");
+      }
+      const message = await response.text();
+      throw new Error(message || `Erreur ${response.status}`);
+    }
+
+    window.alert("Partagé sur Discord.");
+  } catch (error) {
+    window.alert(`Partage Discord impossible : ${error.message}`);
+  } finally {
+    topDiscordSharePending = false;
+    if (topDiscordShareBtn) {
+      topDiscordShareBtn.disabled = false;
+      topDiscordShareBtn.textContent = "Partager sur Discord";
+    }
+  }
 }
 
 function renderTopDetails(top, averageScore = null) {
@@ -456,6 +508,7 @@ async function loadTop() {
       const linked = first?.reviewId ? reviewMap.get(first.reviewId) : null;
       topCover = linked?.cover || linked?.poster || first?.cover || first?.poster || "";
     }
+    loadedTopCoverUrl = topCover || "";
     cover.src = topCover || DEFAULT_COVER;
   }
 
@@ -495,5 +548,11 @@ if (topViewPosterBtn) {
 
 applyTopItemsViewFromUrl();
 renderTopItemsViewButtons();
+if (topDiscordShareBtn) {
+  topDiscordShareBtn.addEventListener("click", () => {
+    if (!loadedTop) return;
+    shareTopToDiscord(loadedTop);
+  });
+}
 loadTop();
 

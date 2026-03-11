@@ -48,6 +48,7 @@ const audioControls = document.getElementById("review-audio-controls");
 const audioToggleBtn = document.getElementById("review-audio-toggle");
 const audioProgressInput = document.getElementById("review-audio-progress");
 const audioVolumeInput = document.getElementById("review-audio-volume");
+const reviewDiscordShareBtn = document.getElementById("review-discord-share");
 let loadedReview = null;
 let backgroundAudio = null;
 let reviewImageViewer = null;
@@ -57,6 +58,7 @@ let reviewImageViewerPrevBtn = null;
 let reviewImageViewerNextBtn = null;
 let reviewImageViewerIndex = -1;
 let reviewImageNodes = [];
+let reviewDiscordSharePending = false;
 
 content?.addEventListener("click", (event) => {
   const target = event.target;
@@ -133,6 +135,54 @@ function scoreToStars(value) {
   if (!Number.isFinite(value)) return "\u2606\u2606\u2606\u2606\u2606";
   const full = Math.max(0, Math.min(5, Math.round(value / 2)));
   return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
+}
+
+function sanitizeShareImageUrl(raw) {
+  const value = String(raw || "").trim();
+  if (!value || value.startsWith("data:")) return "";
+  return value;
+}
+
+async function shareReviewToDiscord(item) {
+  if (!item || reviewDiscordSharePending) return;
+  reviewDiscordSharePending = true;
+  if (reviewDiscordShareBtn) {
+    reviewDiscordShareBtn.disabled = true;
+    reviewDiscordShareBtn.textContent = "Envoi...";
+  }
+
+  try {
+    const response = await fetch("/api/discord-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "review",
+        title: String(item.title || "Sans titre").trim(),
+        summary: String(item.summary || "").trim(),
+        coverUrl: sanitizeShareImageUrl(item.cover || item.poster || ""),
+        score: Number.isFinite(Number(item.score)) ? Number(item.score) : null,
+        url: `${window.location.origin}/review.html?id=${encodeURIComponent(item.id || id || "")}`
+      })
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Endpoint /api/discord-share indisponible en local. Utilise la version déployée pour ce bouton.");
+      }
+      const message = await response.text();
+      throw new Error(message || `Erreur ${response.status}`);
+    }
+
+    window.alert("Partagé sur Discord.");
+  } catch (error) {
+    window.alert(`Partage Discord impossible : ${error.message}`);
+  } finally {
+    reviewDiscordSharePending = false;
+    if (reviewDiscordShareBtn) {
+      reviewDiscordShareBtn.disabled = false;
+      reviewDiscordShareBtn.textContent = "Partager sur Discord";
+    }
+  }
 }
 
 function creatorLabelForCategory(categoryValue) {
@@ -606,5 +656,12 @@ document.addEventListener("keydown", (event) => {
     changeReviewImageViewerIndex(1);
   }
 });
+
+if (reviewDiscordShareBtn) {
+  reviewDiscordShareBtn.addEventListener("click", () => {
+    if (!loadedReview) return;
+    shareReviewToDiscord(loadedReview);
+  });
+}
 
 loadReview();
