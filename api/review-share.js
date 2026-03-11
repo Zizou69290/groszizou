@@ -109,15 +109,12 @@ module.exports = async function handler(req, res) {
     html, body { margin: 0; height: 100%; background: #0d1820; }
     .share-shell { width: 100%; height: 100%; display: grid; }
     iframe { width: 100%; height: 100%; border: 0; }
-    .fallback { position: fixed; top: 8px; right: 10px; z-index: 10; font: 14px/1.2 system-ui, sans-serif; background: rgba(0,0,0,.45); color: #fff; padding: 6px 10px; border-radius: 8px; }
-    .fallback a { color: #fff; }
   </style>
 </head>
 <body>
   <div class="share-shell">
     <iframe src="${escapeHtml(reviewUrl)}" title="${escapeHtml(title)}" loading="eager"></iframe>
   </div>
-  <p class="fallback">Ouvrir sans wrapper: <a href="${escapeHtml(reviewUrl)}">review.html</a></p>
 </body>
 </html>`;
 
