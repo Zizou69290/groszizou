@@ -1,5 +1,3 @@
-const FALLBACK_DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1481235830721745121/rIDc_ii0LYHExS6vwY5G2vdWOIHtdixvosjSu7uC5vvT2bcFgf5k-qXyOuQEI2NO1p_N";
-
 function normalizeShareKind(value) {
   return String(value || "").trim().toLowerCase() === "top" ? "top" : "review";
 }
@@ -64,28 +62,32 @@ export default async function handler(req, res) {
     return res.status(405).send("Method Not Allowed");
   }
 
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL || FALLBACK_DISCORD_WEBHOOK_URL;
-  if (!webhookUrl) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    return res.status(500).send("DISCORD_WEBHOOK_URL is not configured");
-  }
-
   try {
     const { imageBase64, content } = req.body || {};
+    const duelWebhookUrl = process.env.DISCORD_WEBHOOK_URL_DUEL || process.env.DISCORD_WEBHOOK_URL;
+    const contentWebhookUrl = process.env.DISCORD_WEBHOOK_URL_CONTENT || process.env.DISCORD_WEBHOOK_URL;
     let resp;
 
     // Backward compatibility for duel image posting flow.
     if (imageBase64) {
+      if (!duelWebhookUrl) {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        return res.status(500).send("DISCORD_WEBHOOK_URL_DUEL is not configured");
+      }
       const cleaned = String(imageBase64).replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(cleaned, "base64");
 
       const form = new FormData();
       form.append("file", new Blob([buffer]), "duel-top5.png");
       form.append("payload_json", JSON.stringify({ content: content || "Resultats du duel" }));
-      resp = await fetch(webhookUrl, { method: "POST", body: form });
+      resp = await fetch(duelWebhookUrl, { method: "POST", body: form });
     } else {
+      if (!contentWebhookUrl) {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        return res.status(500).send("DISCORD_WEBHOOK_URL_CONTENT is not configured");
+      }
       const payload = buildEmbedPayload(req.body || {});
-      resp = await fetch(webhookUrl, {
+      resp = await fetch(contentWebhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
