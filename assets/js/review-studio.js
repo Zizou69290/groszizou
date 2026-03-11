@@ -1327,8 +1327,6 @@ function getStudioBlockFieldsHtml(type, block = {}) {
     return `
       <div class="block-media-pair">
         <input class="block-url" type="url" placeholder="URL image gauche" value="${escapeHtml(block.url || "")}" />
-      </div>
-      <div class="block-media-pair">
         <input class="block-url-2" type="url" placeholder="URL image droite" value="${escapeHtml(block.url2 || "")}" />
       </div>
     `;
@@ -1542,7 +1540,7 @@ async function tryLoadEditReview() {
       }
     }
   }
-  const loadedMode = String(item?.contentMode || "").trim().toLowerCase() === "blocks" ? "blocks" : "rich";
+  const loadedMode = String(item?.contentMode || "").trim().toLowerCase() === "rich" ? "rich" : "blocks";
   studioEditor.innerHTML = loadedMode === "rich"
     ? String(item?.bodyHtml || blocksToSimpleHtml(item?.blocks || []))
     : String(item?.bodyHtml || "");
@@ -2076,7 +2074,7 @@ if (window.ReviewsStore?.onAuthChanged) {
 toggleWorkspaceForAuth(window.ReviewsStore?.getCurrentUser?.());
 refreshDeleteButtonState();
 setStudioBlocks([]);
-setStudioContentMode("rich");
+setStudioContentMode("blocks");
 tryLoadEditReview();
 setupStudioTmdbAutocomplete();
 refreshHeroPreview();

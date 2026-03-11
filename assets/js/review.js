@@ -50,6 +50,22 @@ const audioProgressInput = document.getElementById("review-audio-progress");
 const audioVolumeInput = document.getElementById("review-audio-volume");
 let loadedReview = null;
 let backgroundAudio = null;
+let reviewImageViewer = null;
+let reviewImageViewerImage = null;
+let reviewImageViewerCounter = null;
+let reviewImageViewerPrevBtn = null;
+let reviewImageViewerNextBtn = null;
+let reviewImageViewerIndex = -1;
+let reviewImageNodes = [];
+
+content?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLImageElement)) return;
+  if (target.dataset.reviewViewer !== "1") return;
+  const index = reviewImageNodes.indexOf(target);
+  if (index < 0) return;
+  openReviewImageViewer(index);
+});
 
 const fmtDate = (iso) => {
   if (!iso || !iso.includes("-")) return "Date libre";
@@ -308,6 +324,7 @@ function renderBlock(block) {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter((line) => /^https?:\/\//i.test(line));
+    wrapper.style.setProperty("--gallery-cols", String(Math.max(1, Math.min(4, urls.length || 1))));
     wrapper.innerHTML = urls.map((url) => `<figure><img src="${escapeHtml(url)}" alt="screenshot" /></figure>`).join("");
     return wrapper.innerHTML ? wrapper : null;
   }
@@ -331,6 +348,85 @@ function renderBlock(block) {
     wrapper.appendChild(cap);
   }
   return wrapper.innerHTML ? wrapper : null;
+}
+
+function ensureReviewImageViewer() {
+  if (reviewImageViewer) return;
+  reviewImageViewer = document.createElement("div");
+  reviewImageViewer.className = "review-image-viewer hidden";
+  reviewImageViewer.innerHTML = `
+    <div class="review-image-viewer-inner">
+      <button type="button" class="review-image-viewer-btn prev" aria-label="Image prÃ©cÃ©dente">&#10094;</button>
+      <img class="review-image-viewer-image" src="" alt="AperÃ§u image" />
+      <button type="button" class="review-image-viewer-btn next" aria-label="Image suivante">&#10095;</button>
+      <button type="button" class="review-image-viewer-close" aria-label="Fermer">&times;</button>
+      <div class="review-image-viewer-counter"></div>
+    </div>
+  `;
+  reviewImageViewerImage = reviewImageViewer.querySelector(".review-image-viewer-image");
+  reviewImageViewerCounter = reviewImageViewer.querySelector(".review-image-viewer-counter");
+  reviewImageViewerPrevBtn = reviewImageViewer.querySelector(".review-image-viewer-btn.prev");
+  reviewImageViewerNextBtn = reviewImageViewer.querySelector(".review-image-viewer-btn.next");
+  const closeBtn = reviewImageViewer.querySelector(".review-image-viewer-close");
+
+  const close = () => closeReviewImageViewer();
+  closeBtn?.addEventListener("click", close);
+  reviewImageViewerPrevBtn?.addEventListener("click", () => changeReviewImageViewerIndex(-1));
+  reviewImageViewerNextBtn?.addEventListener("click", () => changeReviewImageViewerIndex(1));
+  reviewImageViewer.addEventListener("click", (event) => {
+    if (event.target === reviewImageViewer) close();
+  });
+  document.body.appendChild(reviewImageViewer);
+}
+
+function refreshReviewImageNodes() {
+  if (!content) return;
+  reviewImageNodes = Array.from(content.querySelectorAll("img")).filter((img) => {
+    const src = String(img.getAttribute("src") || img.src || "").trim();
+    return Boolean(src);
+  });
+  reviewImageNodes.forEach((img) => {
+    img.dataset.reviewViewer = "1";
+  });
+}
+
+function renderReviewImageViewerFrame() {
+  if (!reviewImageViewerImage || !reviewImageViewerCounter) return;
+  if (!reviewImageNodes.length || reviewImageViewerIndex < 0 || reviewImageViewerIndex >= reviewImageNodes.length) return;
+  const target = reviewImageNodes[reviewImageViewerIndex];
+  if (!(target instanceof HTMLImageElement)) return;
+  const src = String(target.getAttribute("src") || target.src || "").trim();
+  const alt = String(target.getAttribute("alt") || "Image review").trim();
+  reviewImageViewerImage.src = src;
+  reviewImageViewerImage.alt = alt || "Image review";
+  reviewImageViewerCounter.textContent = `${reviewImageViewerIndex + 1} / ${reviewImageNodes.length}`;
+  const canNavigate = reviewImageNodes.length > 1;
+  if (reviewImageViewerPrevBtn) reviewImageViewerPrevBtn.classList.toggle("hidden", !canNavigate);
+  if (reviewImageViewerNextBtn) reviewImageViewerNextBtn.classList.toggle("hidden", !canNavigate);
+}
+
+function openReviewImageViewer(index) {
+  if (!Number.isFinite(index)) return;
+  refreshReviewImageNodes();
+  if (!reviewImageNodes.length) return;
+  ensureReviewImageViewer();
+  reviewImageViewerIndex = Math.max(0, Math.min(reviewImageNodes.length - 1, Number(index)));
+  renderReviewImageViewerFrame();
+  reviewImageViewer?.classList.remove("hidden");
+  document.body.classList.add("image-viewer-open");
+}
+
+function closeReviewImageViewer() {
+  reviewImageViewer?.classList.add("hidden");
+  if (reviewImageViewerImage) reviewImageViewerImage.src = "";
+  reviewImageViewerIndex = -1;
+  document.body.classList.remove("image-viewer-open");
+}
+
+function changeReviewImageViewerIndex(delta) {
+  if (!reviewImageNodes.length || !reviewImageViewer || reviewImageViewer.classList.contains("hidden")) return;
+  reviewImageViewerIndex = (reviewImageViewerIndex + delta + reviewImageNodes.length) % reviewImageNodes.length;
+  renderReviewImageViewerFrame();
 }
 
 function createTmdbSynopsisNode(item) {
@@ -467,6 +563,7 @@ async function loadReview() {
     content.classList.add("rich-content");
     content.innerHTML = `${synopsisNode ? synopsisNode.outerHTML : ""}${item.bodyHtml}`;
     bindSpoilers(content);
+    refreshReviewImageNodes();
     return;
   }
   content.classList.remove("rich-content");
@@ -482,6 +579,7 @@ async function loadReview() {
       if (node) content.appendChild(node);
     });
   }
+  refreshReviewImageNodes();
 }
 
 if (window.ReviewsStore?.onAuthChanged) {
@@ -492,6 +590,21 @@ if (window.ReviewsStore?.onAuthChanged) {
 
 window.addEventListener("resize", () => {
   alignAudioControlsToLastInfo();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!reviewImageViewer || reviewImageViewer.classList.contains("hidden")) return;
+  if (event.key === "Escape") {
+    closeReviewImageViewer();
+    return;
+  }
+  if (event.key === "ArrowLeft") {
+    changeReviewImageViewerIndex(-1);
+    return;
+  }
+  if (event.key === "ArrowRight") {
+    changeReviewImageViewerIndex(1);
+  }
 });
 
 loadReview();
