@@ -106,15 +106,33 @@ module.exports = async function handler(req, res) {
   <meta name="twitter:description" content="${escapeHtml(description)}" />
   <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />
   <style>
-    html, body { margin: 0; height: 100%; background: #0d1820; }
-    .share-shell { width: 100%; height: 100%; display: grid; }
-    iframe { width: 100%; height: 100%; border: 0; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #0d1820;
+      color: #f2f2ee;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .share-shell {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .share-link {
+      color: #f7b538;
+    }
   </style>
 </head>
 <body>
   <div class="share-shell">
-    <iframe src="${escapeHtml(reviewUrl)}" title="${escapeHtml(title)}" loading="eager"></iframe>
+    <p>Redirection vers la review...</p>
+    <p><a class="share-link" href="${escapeHtml(reviewUrl)}">Ouvrir la review</a></p>
   </div>
+  <script>
+    window.location.replace(${JSON.stringify(reviewUrl)});
+  </script>
 </body>
 </html>`;
 

@@ -1492,7 +1492,7 @@ async function tryLoadEditReview() {
   const canEdit = isAdminUser(currentUser) || (item?.ownerId && item.ownerId === currentUser.uid);
   if (!canEdit) {
     window.alert("Cette review appartient à un autre utilisateur.");
-    window.location.href = `api/review-share?id=${encodeURIComponent(editingReviewId)}`;
+    window.location.href = `review.html?id=${encodeURIComponent(editingReviewId)}`;
     pendingEditLoad = false;
     return;
   }
@@ -1612,7 +1612,7 @@ async function saveReview(status) {
   }
   try {
     await window.ReviewsStore.upsert(payload);
-    window.location.href = `api/review-share?id=${encodeURIComponent(payload.id)}`;
+    window.location.href = `review.html?id=${encodeURIComponent(payload.id)}`;
   } catch (error) {
     window.alert(`Sauvegarde impossible : ${error.message}`);
   }

@@ -591,7 +591,7 @@ function reviewCard(item) {
   article.tabIndex = 0;
   article.setAttribute("role", "link");
   const accent = item.accent || "#f25f29";
-  const target = `api/review-share?id=${encodeURIComponent(item.id)}`;
+  const target = `review.html?id=${encodeURIComponent(item.id)}`;
 
   const ownerMeta = item.ownerUsername ? `, par ${ownerBadge(item.ownerUsername)}` : "";
   const metaPrefix = isDraft ? "Brouillon" : "Publié";
