@@ -201,7 +201,7 @@ function renderLinkedReviewItem(item, index, review) {
     li.className = "top-item top-item-poster";
     const link = document.createElement("a");
     link.className = "top-poster-card";
-    link.href = `review.html?id=${encodeURIComponent(review.id)}`;
+    link.href = `api/review-share?id=${encodeURIComponent(review.id)}`;
 
     const rank = document.createElement("span");
     rank.className = "top-poster-rank";
@@ -257,7 +257,7 @@ function renderLinkedReviewItem(item, index, review) {
   li.className = "top-item";
   const link = document.createElement("a");
   link.className = "top-review-link";
-  link.href = `review.html?id=${encodeURIComponent(review.id)}`;
+  link.href = `api/review-share?id=${encodeURIComponent(review.id)}`;
 
   const rank = document.createElement("span");
   rank.className = "top-item-rank";
