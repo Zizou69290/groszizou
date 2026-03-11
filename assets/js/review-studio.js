@@ -30,6 +30,11 @@ const studioPosterPickerBtn = document.getElementById("studio-poster-picker-btn"
 const studioPosterUrlBtn = document.getElementById("studio-poster-url-btn");
 const studioCoverPickerBtn = document.getElementById("studio-cover-picker-btn");
 const studioCoverUrlBtn = document.getElementById("studio-cover-url-btn");
+const studioContentModeButtons = document.querySelectorAll("[data-studio-content-mode]");
+const studioRichEditorSection = document.getElementById("studio-rich-editor-section");
+const studioBlocksEditorSection = document.getElementById("studio-blocks-editor-section");
+const studioBlocksList = document.getElementById("studio-blocks-list");
+const studioAddBlockBtn = document.getElementById("studio-add-block-btn");
 
 const DEFAULT_COVER =
   "data:image/svg+xml;utf8," +
@@ -51,6 +56,9 @@ let selectedStudioMediaWrapper = null;
 let studioMediaResizeState = null;
 let studioDropTargetDepth = 0;
 let draggedStudioMediaWrapper = null;
+let currentStudioContentMode = "rich";
+let activeStudioBlockTextarea = null;
+const studioBlockEditorHistory = new WeakMap();
 const STUDIO_HISTORY_LIMIT = 120;
 let studioHistory = [];
 let studioHistoryIndex = -1;
@@ -108,24 +116,31 @@ function normalizeStudioEditorMedia() {
     const shell = ensureStudioMediaShell(frame);
     if (shell) ensureStudioShellClasses(shell);
   });
+  ensureStudioEditorHasEditableParagraph();
+  updateStudioEditorEmptyState();
 }
 
 function moveDraggedStudioMedia(event) {
   if (!studioEditor || !draggedStudioMediaWrapper || !studioEditor.contains(draggedStudioMediaWrapper)) return false;
+  let moved = false;
   const dropTarget = event.target instanceof Node ? getStudioMediaWrapperFromNode(event.target) : null;
   if (dropTarget && dropTarget !== draggedStudioMediaWrapper && dropTarget.parentNode) {
     const rect = dropTarget.getBoundingClientRect();
     const insertBefore = event.clientY < rect.top + rect.height / 2;
     dropTarget.parentNode.insertBefore(draggedStudioMediaWrapper, insertBefore ? dropTarget : dropTarget.nextSibling);
-    return true;
+    moved = true;
+  } else {
+    if (!placeStudioCaretAtPoint(event.clientX, event.clientY)) return false;
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return false;
+    const range = selection.getRangeAt(0);
+    range.insertNode(draggedStudioMediaWrapper);
+    moved = true;
   }
-  if (!placeStudioCaretAtPoint(event.clientX, event.clientY)) return false;
-  const selection = window.getSelection();
-  if (!selection || !selection.rangeCount) return false;
-  const range = selection.getRangeAt(0);
-  range.insertNode(draggedStudioMediaWrapper);
-  placeCaretAfterNode(draggedStudioMediaWrapper);
-  return true;
+  const trailingParagraph = ensureStudioParagraphAfterMedia(draggedStudioMediaWrapper);
+  if (trailingParagraph) placeStudioCaretInsideNode(trailingParagraph, false);
+  else placeCaretAfterNode(draggedStudioMediaWrapper);
+  return moved;
 }
 
 function clearDraggedStudioMediaState() {
@@ -179,6 +194,65 @@ function placeStudioCaretAtPoint(clientX, clientY) {
   selection.addRange(range);
   studioEditor.focus();
   return true;
+}
+
+function getStudioEditorContentWidth() {
+  if (!studioEditor) return 0;
+  const styles = window.getComputedStyle(studioEditor);
+  const paddingLeft = Number.parseFloat(styles.paddingLeft || "0") || 0;
+  const paddingRight = Number.parseFloat(styles.paddingRight || "0") || 0;
+  return Math.max(0, studioEditor.clientWidth - paddingLeft - paddingRight);
+}
+
+function getStudioMediaMaxWidth(wrapper = null) {
+  const contentWidth = getStudioEditorContentWidth();
+  const isInline = wrapper instanceof HTMLElement && wrapper.classList.contains("rich-media-inline");
+  const isFloat =
+    wrapper instanceof HTMLElement &&
+    (wrapper.classList.contains("rich-media-float-left") || wrapper.classList.contains("rich-media-float-right"));
+  const reserve = isInline || isFloat ? 14 : 4;
+  return Math.max(140, Math.floor(contentWidth - reserve));
+}
+
+function placeStudioCaretInsideNode(node, atEnd = false) {
+  if (!(node instanceof Node) || !studioEditor) return;
+  const selection = window.getSelection();
+  if (!selection) return;
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  range.collapse(!atEnd);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  studioEditor.focus();
+}
+
+function ensureStudioEditorHasEditableParagraph() {
+  if (!studioEditor) return null;
+  const hasAnyText = String(studioEditor.textContent || "").replace(/\u200B/g, "").trim().length > 0;
+  const hasMedia = Boolean(studioEditor.querySelector(".rich-media-shell,img,video,audio,iframe,.video-wrap"));
+  if (hasAnyText || hasMedia) return null;
+  const p = document.createElement("p");
+  p.appendChild(document.createElement("br"));
+  studioEditor.appendChild(p);
+  return p;
+}
+
+function ensureStudioParagraphAfterMedia(mediaNode) {
+  if (!(mediaNode instanceof Node) || !studioEditor) return null;
+  const nextNode = mediaNode.nextSibling;
+  if (nextNode instanceof HTMLElement && nextNode.tagName.toLowerCase() === "p") return nextNode;
+  if (nextNode instanceof Text && String(nextNode.textContent || "").trim()) return null;
+  const p = document.createElement("p");
+  p.appendChild(document.createElement("br"));
+  mediaNode.parentNode?.insertBefore(p, nextNode || null);
+  return p;
+}
+
+function updateStudioEditorEmptyState() {
+  if (!studioEditor) return;
+  const hasText = String(studioEditor.textContent || "").replace(/\u200B/g, "").trim().length > 0;
+  const hasMedia = Boolean(studioEditor.querySelector(".rich-media-shell,img,video,audio,iframe,.video-wrap"));
+  studioEditor.classList.toggle("is-editor-empty", !hasText && !hasMedia);
 }
 
 function insertStudioPlainText(text) {
@@ -330,7 +404,7 @@ function ensureStudioMediaFillsWrapper(wrapper) {
   if (tag === "img" || tag === "video") {
     media.style.width = "100%";
     media.style.height = "auto";
-    media.style.maxWidth = "none";
+    media.style.maxWidth = "100%";
     return;
   }
   if (tag === "audio") {
@@ -339,7 +413,7 @@ function ensureStudioMediaFillsWrapper(wrapper) {
   }
   if (tag === "iframe") {
     media.style.width = "100%";
-    media.style.maxWidth = "none";
+    media.style.maxWidth = "100%";
   }
 }
 
@@ -411,14 +485,13 @@ function startStudioMediaResize(event) {
   event.preventDefault();
   event.stopPropagation();
   selectStudioMedia(wrapper);
-  const editorRect = studioEditor.getBoundingClientRect();
   const rect = wrapper.getBoundingClientRect();
   studioMediaResizeState = {
     wrapper,
     startX: event.clientX,
     startWidth: rect.width,
     minWidth: 120,
-    maxWidth: Math.max(140, editorRect.width - 24)
+    maxWidth: getStudioMediaMaxWidth(wrapper)
   };
   window.addEventListener("pointermove", onStudioMediaResizeMove);
   window.addEventListener("pointerup", stopStudioMediaResize);
@@ -426,7 +499,9 @@ function startStudioMediaResize(event) {
 
 function onStudioMediaResizeMove(event) {
   if (!studioMediaResizeState) return;
-  const { wrapper, startX, startWidth, minWidth, maxWidth } = studioMediaResizeState;
+  const { wrapper, startX, startWidth, minWidth } = studioMediaResizeState;
+  const maxWidth = getStudioMediaMaxWidth(wrapper);
+  studioMediaResizeState.maxWidth = maxWidth;
   const deltaX = event.clientX - startX;
   const nextWidth = Math.max(minWidth, Math.min(maxWidth, Math.round(startWidth + deltaX)));
   wrapper.classList.remove("rich-media-size-small", "rich-media-size-medium", "rich-media-size-large");
@@ -489,7 +564,9 @@ function insertStudioMediaShell(innerHtml) {
   } else {
     studioEditor.appendChild(wrapper);
   }
-  placeCaretAfterNode(wrapper);
+  const trailingParagraph = ensureStudioParagraphAfterMedia(wrapper);
+  if (trailingParagraph) placeStudioCaretInsideNode(trailingParagraph, false);
+  else placeCaretAfterNode(wrapper);
   normalizeStudioEditorMedia();
   selectStudioMedia(wrapper);
   queueHistorySnapshot();
@@ -769,6 +846,49 @@ function updateAssetButtonsState() {
   }
 }
 
+function setStudioLinkedMedia(id, mediaType, providerHint = "") {
+  if (!studioMetaForm) return false;
+  const normalizedId = String(id || "").trim();
+  if (!normalizedId) return false;
+  const category = String(studioMetaForm.elements.category?.value || "").trim().toLowerCase();
+  const normalizedMediaType = String(mediaType || "").trim() || (isGameCategory(category) ? "igdb_game" : tmdbMediaTypeFromCategory(category));
+  const provider =
+    String(providerHint || "").trim().toLowerCase() ||
+    (normalizedMediaType.startsWith("igdb") ? "igdb" : (isGameCategory(category) ? "igdb" : "tmdb"));
+  studioSelectedTmdb = { id: normalizedId, mediaType: normalizedMediaType, provider };
+  studioMetaForm.elements.tmdbId.value = normalizedId;
+  studioMetaForm.elements.tmdbMediaType.value = normalizedMediaType;
+  updateAssetButtonsState();
+  return true;
+}
+
+async function ensureStudioLinkedMediaForAssetPicker() {
+  if (!studioMetaForm || !studioTitleInput) return false;
+  if (studioSelectedTmdb?.id) return true;
+
+  const savedId = String(studioMetaForm.elements.tmdbId.value || "").trim();
+  const savedType = String(studioMetaForm.elements.tmdbMediaType.value || "").trim();
+  if (savedId) {
+    return setStudioLinkedMedia(savedId, savedType);
+  }
+
+  const title = String(studioTitleInput.value || "").trim();
+  const category = String(studioMetaForm.elements.category?.value || "").trim().toLowerCase();
+  if (!title || !["film", "serie", "jeu"].includes(category)) return false;
+
+  try {
+    const isGame = category === "jeu";
+    const results = isGame
+      ? await searchIgdbGames(title)
+      : await searchTmdbTitles(title, tmdbMediaTypeFromCategory(category));
+    const best = (results || []).find((entry) => String(entry.title || "").trim().toLowerCase() === title.toLowerCase()) || results[0];
+    if (!best?.id) return false;
+    return setStudioLinkedMedia(best.id, best.mediaType, best.provider || (isGame ? "igdb" : "tmdb"));
+  } catch {
+    return false;
+  }
+}
+
 function openTmdbImagePicker(images, kindLabel, mode = "poster") {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -851,9 +971,7 @@ function setupStudioTmdbAutocomplete() {
         event.preventDefault();
         studioTmdbToken += 1;
         const token = studioTmdbToken;
-        studioSelectedTmdb = { id: item.id, mediaType: item.mediaType, provider: item.provider || "tmdb" };
-        studioMetaForm.elements.tmdbId.value = String(item.id || "");
-        studioMetaForm.elements.tmdbMediaType.value = String(item.mediaType || "");
+        setStudioLinkedMedia(item.id, item.mediaType, item.provider || "tmdb");
         studioTitleInput.value = item.title || studioTitleInput.value;
         if (!studioMetaForm.elements.poster.value.trim()) studioMetaForm.elements.poster.value = item.poster || "";
         if (!studioMetaForm.elements.cover.value.trim()) studioMetaForm.elements.cover.value = item.cover || "";
@@ -876,9 +994,7 @@ function setupStudioTmdbAutocomplete() {
           if (details.director) studioMetaForm.elements.director.value = details.director;
           if (studioSynopsisInput && details.overview && !studioSynopsisInput.value.trim()) studioSynopsisInput.value = details.overview;
           if (details.overview) studioMetaForm.elements.tmdbOverview.value = details.overview;
-          studioSelectedTmdb = { id: item.id, mediaType: item.mediaType, provider: item.provider || "tmdb" };
-          studioMetaForm.elements.tmdbId.value = String(item.id || "");
-          studioMetaForm.elements.tmdbMediaType.value = String(item.mediaType || "");
+          setStudioLinkedMedia(item.id, item.mediaType, item.provider || "tmdb");
           refreshHeroPreview();
         } catch {
           // Keep base suggestion values if details request fails.
@@ -896,6 +1012,7 @@ function setupStudioTmdbAutocomplete() {
     studioSelectedTmdb = null;
     studioMetaForm.elements.tmdbId.value = "";
     studioMetaForm.elements.tmdbMediaType.value = "";
+    updateAssetButtonsState();
     const isFilmOrSerie = ["film", "serie"].includes(category);
     const isGame = isGameCategory(category);
     if (!isFilmOrSerie && !isGame) {
@@ -927,6 +1044,7 @@ function setupStudioTmdbAutocomplete() {
     studioSelectedTmdb = null;
     studioMetaForm.elements.tmdbId.value = "";
     studioMetaForm.elements.tmdbMediaType.value = "";
+    updateAssetButtonsState();
     hideTmdbSuggestions(list);
   });
 
@@ -954,6 +1072,399 @@ function escapeHtml(text) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function setStudioContentMode(mode = "rich") {
+  const nextMode = mode === "blocks" ? "blocks" : "rich";
+  currentStudioContentMode = nextMode;
+  if (studioRichEditorSection) studioRichEditorSection.classList.remove("hidden");
+  if (studioEditor) studioEditor.classList.toggle("hidden", nextMode !== "rich");
+  if (studioBlocksEditorSection) studioBlocksEditorSection.classList.toggle("hidden", nextMode !== "blocks");
+  if (studioAddBlockBtn) {
+    const show = nextMode === "blocks";
+    studioAddBlockBtn.classList.toggle("hidden", !show);
+    studioAddBlockBtn.style.display = show ? "" : "none";
+  }
+  if (studioImageBtn) {
+    const show = nextMode !== "blocks";
+    studioImageBtn.classList.toggle("hidden", !show);
+    studioImageBtn.style.display = show ? "" : "none";
+  }
+  if (studioVideoBtn) {
+    const show = nextMode !== "blocks";
+    studioVideoBtn.classList.toggle("hidden", !show);
+    studioVideoBtn.style.display = show ? "" : "none";
+  }
+  studioContentModeButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.studioContentMode === nextMode);
+  });
+  if (nextMode === "blocks" && studioBlocksList && !studioBlocksList.children.length) {
+    setStudioBlocks([]);
+  }
+  if (nextMode === "rich") {
+    normalizeStudioEditorMedia();
+  }
+}
+
+function getTargetStudioBlockTextarea() {
+  if (document.activeElement instanceof HTMLTextAreaElement && document.activeElement.classList.contains("block-content")) {
+    activeStudioBlockTextarea = document.activeElement;
+    return activeStudioBlockTextarea;
+  }
+  if (activeStudioBlockTextarea && studioBlocksList?.contains(activeStudioBlockTextarea)) return activeStudioBlockTextarea;
+  const fallback = studioBlocksList?.querySelector(".block-content");
+  if (fallback instanceof HTMLTextAreaElement) {
+    activeStudioBlockTextarea = fallback;
+    return fallback;
+  }
+  return null;
+}
+
+function initStudioBlockHistory(textarea) {
+  if (!(textarea instanceof HTMLTextAreaElement)) return null;
+  let state = studioBlockEditorHistory.get(textarea);
+  if (!state) {
+    state = { stack: [textarea.value], index: 0, applying: false };
+    studioBlockEditorHistory.set(textarea, state);
+  }
+  return state;
+}
+
+function recordStudioBlockHistory(textarea) {
+  const state = initStudioBlockHistory(textarea);
+  if (!state || state.applying) return;
+  const value = textarea.value;
+  if (state.stack[state.index] === value) return;
+  state.stack = state.stack.slice(0, state.index + 1);
+  state.stack.push(value);
+  if (state.stack.length > 300) state.stack.shift();
+  state.index = state.stack.length - 1;
+}
+
+function applyStudioBlockHistoryStep(textarea, direction) {
+  const state = initStudioBlockHistory(textarea);
+  if (!state) return false;
+  const nextIndex = state.index + direction;
+  if (nextIndex < 0 || nextIndex >= state.stack.length) return false;
+  state.index = nextIndex;
+  state.applying = true;
+  textarea.value = state.stack[state.index];
+  textarea.focus();
+  const end = textarea.value.length;
+  textarea.selectionStart = end;
+  textarea.selectionEnd = end;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  state.applying = false;
+  return true;
+}
+
+function handleStudioBlockTextareaKeydown(event) {
+  const textarea = event.currentTarget;
+  if (!(textarea instanceof HTMLTextAreaElement)) return;
+  if (!(event.ctrlKey || event.metaKey)) return;
+  const key = String(event.key || "").toLowerCase();
+  if (key === "z" && !event.shiftKey) {
+    if (applyStudioBlockHistoryStep(textarea, -1)) event.preventDefault();
+    return;
+  }
+  if (key === "y" || (key === "z" && event.shiftKey)) {
+    if (applyStudioBlockHistoryStep(textarea, 1)) event.preventDefault();
+  }
+}
+
+function insertAtStudioBlockSelection(text) {
+  const textarea = getTargetStudioBlockTextarea();
+  if (!textarea) return;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const value = textarea.value;
+  textarea.value = `${value.slice(0, start)}${text}${value.slice(end)}`;
+  textarea.focus();
+  const cursor = start + text.length;
+  textarea.selectionStart = cursor;
+  textarea.selectionEnd = cursor;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function wrapStudioBlockSelection(prefix, suffix) {
+  const textarea = getTargetStudioBlockTextarea();
+  if (!textarea) return;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const value = textarea.value;
+  const selected = value.slice(start, end) || "Texte";
+  textarea.value = `${value.slice(0, start)}${prefix}${selected}${suffix}${value.slice(end)}`;
+  textarea.focus();
+  textarea.selectionStart = start + prefix.length;
+  textarea.selectionEnd = start + prefix.length + selected.length;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function wrapStudioBlockLinesAsList(ordered = false) {
+  const textarea = getTargetStudioBlockTextarea();
+  if (!textarea) return;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const value = textarea.value;
+  const selected = value.slice(start, end).trim();
+  if (!selected) {
+    const tag = ordered ? "[list=1]\n[*]Item 1\n[*]Item 2\n[/list]" : "[list]\n[*]Item 1\n[*]Item 2\n[/list]";
+    insertAtStudioBlockSelection(tag);
+    return;
+  }
+  const items = selected
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `[*]${line}`)
+    .join("\n");
+  const open = ordered ? "[list=1]" : "[list]";
+  const wrapped = `${open}\n${items}\n[/list]`;
+  textarea.value = `${value.slice(0, start)}${wrapped}${value.slice(end)}`;
+  textarea.focus();
+  textarea.selectionStart = start;
+  textarea.selectionEnd = start + wrapped.length;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function applyStudioBlockAction(action) {
+  if (!action) return;
+  if (action === "quote") return wrapStudioBlockSelection("[quote]\n", "\n[/quote]");
+  if (action === "strike") return wrapStudioBlockSelection("[s]", "[/s]");
+  if (action === "left") return wrapStudioBlockSelection("[left]", "[/left]");
+  if (action === "center") return wrapStudioBlockSelection("[center]", "[/center]");
+  if (action === "right") return wrapStudioBlockSelection("[right]", "[/right]");
+  if (action === "justify") return wrapStudioBlockSelection("[justify]", "[/justify]");
+  if (action === "undo") {
+    const textarea = getTargetStudioBlockTextarea();
+    if (!textarea) return;
+    applyStudioBlockHistoryStep(textarea, -1);
+    return;
+  }
+  if (action === "redo") {
+    const textarea = getTargetStudioBlockTextarea();
+    if (!textarea) return;
+    applyStudioBlockHistoryStep(textarea, 1);
+    return;
+  }
+  if (action === "clear") {
+    const textarea = getTargetStudioBlockTextarea();
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+    if (end <= start) return;
+    const value = textarea.value;
+    const selected = value.slice(start, end);
+    const cleaned = selected
+      .replace(/\[\/?(?:b|i|u|s|spoiler|quote|left|center|right|justify|url|list|list=1)\]/gi, "")
+      .replace(/\[(?:color|size|mark)=[^\]]+\]/gi, "")
+      .replace(/\[\/(?:color|size|mark)\]/gi, "")
+      .replace(/\[\*\]/gi, "");
+    textarea.value = `${value.slice(0, start)}${cleaned}${value.slice(end)}`;
+    textarea.selectionStart = start;
+    textarea.selectionEnd = start + cleaned.length;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    return;
+  }
+  if (action === "ul") return wrapStudioBlockLinesAsList(false);
+  if (action === "ol") return wrapStudioBlockLinesAsList(true);
+  if (action === "url") {
+    const url = window.prompt("URL du lien");
+    if (!url) return;
+    const textarea = getTargetStudioBlockTextarea();
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+    const selected = textarea.value.slice(start, end).trim();
+    const bb = selected ? `[url=${url.trim()}]${selected}[/url]` : `[url]${url.trim()}[/url]`;
+    insertAtStudioBlockSelection(bb);
+  }
+}
+
+function applyStudioBlockColor(color) {
+  if (!color) return;
+  wrapStudioBlockSelection(`[color=${color}]`, "[/color]");
+}
+
+function applyStudioBlockSize(px) {
+  const size = Math.max(10, Math.min(72, Number(px) || 16));
+  wrapStudioBlockSelection(`[size=${size}]`, "[/size]");
+}
+
+function applyStudioBlockHighlight(color) {
+  if (!color) return;
+  wrapStudioBlockSelection(`[mark=${color}]`, "[/mark]");
+}
+
+function appendStudioBlock(block = { type: "text", content: "" }) {
+  if (!studioBlocksList) return;
+  studioBlocksList.appendChild(createStudioBlockRow(block));
+  updateStudioBlockIndex();
+  setStudioContentMode("blocks");
+}
+
+function updateStudioBlockIndex() {
+  if (!studioBlocksList) return;
+  [...studioBlocksList.querySelectorAll(".block-item")].forEach((row, idx) => {
+    const index = row.querySelector(".block-index");
+    if (index) index.textContent = `Bloc ${idx + 1}`;
+  });
+}
+
+function getStudioBlockFieldsHtml(type, block = {}) {
+  if (type === "text") {
+    return `<textarea class="block-content" rows="5" placeholder="Ton texte...">${escapeHtml(block.content || "")}</textarea>`;
+  }
+  if (type === "image-text-left" || type === "image-text-right") {
+    return `
+      <div class="block-media-pair">
+        <input class="block-url" type="url" placeholder="URL image" value="${escapeHtml(block.url || "")}" />
+      </div>
+      <textarea class="block-content" rows="5" placeholder="Texte à côté de l'image...">${escapeHtml(block.content || "")}</textarea>
+    `;
+  }
+  if (type === "two-images") {
+    return `
+      <div class="block-media-pair">
+        <input class="block-url" type="url" placeholder="URL image gauche" value="${escapeHtml(block.url || "")}" />
+      </div>
+      <div class="block-media-pair">
+        <input class="block-url-2" type="url" placeholder="URL image droite" value="${escapeHtml(block.url2 || "")}" />
+      </div>
+    `;
+  }
+  if (type === "gallery") {
+    return `<textarea class="block-gallery-urls" rows="6" placeholder="Une URL d'image par ligne...">${escapeHtml(block.content || "")}</textarea>`;
+  }
+  return `
+    <div class="block-media-pair">
+      <input class="block-url" type="url" placeholder="URL" value="${escapeHtml(block.url || "")}" />
+    </div>
+  `;
+}
+
+function createStudioBlockRow(block = { type: "text", content: "", url: "", caption: "" }) {
+  const row = document.createElement("div");
+  row.className = "block-item";
+  row.innerHTML = `
+    <div class="block-head">
+      <strong class="block-index">Bloc</strong>
+      <div class="block-type-tools">
+        <select class="block-type">
+          <option value="text">Texte</option>
+          <option value="image">Image</option>
+          <option value="image-text-left">Image gauche + Texte droite</option>
+          <option value="image-text-right">Texte gauche + Image droite</option>
+          <option value="two-images">2 images côte à côte</option>
+          <option value="gallery">Galerie screenshots</option>
+          <option value="video">Vidéo</option>
+          <option value="video-embed">Vidéo embed</option>
+          <option value="audio">Audio</option>
+        </select>
+        <button type="button" class="action-btn secondary block-up" title="Monter le bloc">&uarr;</button>
+        <button type="button" class="action-btn secondary block-down" title="Descendre le bloc">&darr;</button>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="action-btn danger block-delete">Supprimer</button>
+      </div>
+    </div>
+    <div class="block-fields"></div>
+  `;
+
+  const typeSelect = row.querySelector(".block-type");
+  const fields = row.querySelector(".block-fields");
+  const renderFields = () => {
+    fields.innerHTML = getStudioBlockFieldsHtml(typeSelect.value, block);
+    fields.querySelectorAll("input,textarea").forEach((el) => {
+      el.addEventListener("input", () => {
+        if (el instanceof HTMLTextAreaElement && (el.classList.contains("block-content") || el.classList.contains("block-gallery-urls"))) {
+          recordStudioBlockHistory(el);
+        }
+      });
+      if (el instanceof HTMLTextAreaElement && (el.classList.contains("block-content") || el.classList.contains("block-gallery-urls"))) {
+        const remember = () => {
+          activeStudioBlockTextarea = el;
+          initStudioBlockHistory(el);
+        };
+        el.addEventListener("focus", remember);
+        el.addEventListener("click", remember);
+        el.addEventListener("keydown", handleStudioBlockTextareaKeydown);
+        remember();
+      }
+    });
+  };
+
+  typeSelect.value = block.type || "text";
+  renderFields();
+  typeSelect.addEventListener("change", () => {
+    block.type = typeSelect.value;
+    renderFields();
+  });
+  row.querySelector(".block-delete")?.addEventListener("click", () => {
+    row.remove();
+    if (studioBlocksList && !studioBlocksList.children.length) {
+      studioBlocksList.appendChild(createStudioBlockRow({ type: "text", content: "" }));
+    }
+    updateStudioBlockIndex();
+  });
+  row.querySelector(".block-up")?.addEventListener("click", () => {
+    const prev = row.previousElementSibling;
+    if (prev && studioBlocksList) {
+      studioBlocksList.insertBefore(row, prev);
+      updateStudioBlockIndex();
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+  row.querySelector(".block-down")?.addEventListener("click", () => {
+    const next = row.nextElementSibling;
+    if (next && studioBlocksList) {
+      studioBlocksList.insertBefore(next, row);
+      updateStudioBlockIndex();
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+  return row;
+}
+
+function setStudioBlocks(blocks = []) {
+  if (!studioBlocksList) return;
+  studioBlocksList.innerHTML = "";
+  const rows = Array.isArray(blocks) ? blocks : [];
+  if (!rows.length) {
+    studioBlocksList.appendChild(createStudioBlockRow({ type: "text", content: "" }));
+  } else {
+    rows.forEach((block) => studioBlocksList.appendChild(createStudioBlockRow(block)));
+  }
+  updateStudioBlockIndex();
+}
+
+function readStudioBlocks() {
+  if (!studioBlocksList) return [];
+  return [...studioBlocksList.querySelectorAll(".block-item")]
+    .map((row) => {
+      const type = row.querySelector(".block-type")?.value || "text";
+      if (type === "text") {
+        const content = row.querySelector(".block-content")?.value.trim() || "";
+        return content ? { type, content, url: "", caption: "" } : null;
+      }
+      if (type === "image-text-left" || type === "image-text-right") {
+        const url = row.querySelector(".block-url")?.value.trim() || "";
+        const content = row.querySelector(".block-content")?.value.trim() || "";
+        return url || content ? { type, content, url, caption: "" } : null;
+      }
+      if (type === "two-images") {
+        const url = row.querySelector(".block-url")?.value.trim() || "";
+        const url2 = row.querySelector(".block-url-2")?.value.trim() || "";
+        return url || url2 ? { type, content: "", url, caption: "", url2, caption2: "" } : null;
+      }
+      if (type === "gallery") {
+        const content = row.querySelector(".block-gallery-urls")?.value.trim() || "";
+        return content ? { type, content, url: "", caption: "" } : null;
+      }
+      const url = row.querySelector(".block-url")?.value.trim() || "";
+      return url ? { type, content: "", url, caption: "" } : null;
+    })
+    .filter(Boolean);
 }
 
 function isAdminUser(user) {
@@ -1005,13 +1516,14 @@ async function tryLoadEditReview() {
   if (studioSynopsisInput) studioSynopsisInput.value = loadedSynopsis;
   studioMetaForm.elements.tmdbId.value = String(item?.tmdbId || "");
   studioMetaForm.elements.tmdbMediaType.value = String(item?.tmdbMediaType || "");
-  studioSelectedTmdb = item?.tmdbId
-    ? {
-      id: item.tmdbId,
-      mediaType: String(item.tmdbMediaType || (isGameCategory(item?.category) ? "igdb_game" : tmdbMediaTypeFromCategory(item?.category || "film"))),
-      provider: String(item.tmdbMediaType || "").trim().toLowerCase().startsWith("igdb") ? "igdb" : (isGameCategory(item?.category) ? "igdb" : "tmdb")
-    }
-    : null;
+  studioSelectedTmdb = null;
+  if (item?.tmdbId) {
+    setStudioLinkedMedia(
+      item.tmdbId,
+      String(item.tmdbMediaType || (isGameCategory(item?.category) ? "igdb_game" : tmdbMediaTypeFromCategory(item?.category || "film"))),
+      String(item.tmdbMediaType || "").trim().toLowerCase().startsWith("igdb") ? "igdb" : (isGameCategory(item?.category) ? "igdb" : "tmdb")
+    );
+  }
   if (!studioSelectedTmdb?.id) {
     const title = String(item?.title || "").trim();
     const category = String(item?.category || "").trim().toLowerCase();
@@ -1023,18 +1535,19 @@ async function tryLoadEditReview() {
           : await searchTmdbTitles(title, tmdbMediaTypeFromCategory(category));
         const best = (results || []).find((entry) => String(entry.title || "").trim().toLowerCase() === title.toLowerCase()) || results[0];
         if (best?.id) {
-          studioSelectedTmdb = { id: best.id, mediaType: best.mediaType, provider: best.provider || (isGame ? "igdb" : "tmdb") };
-          studioMetaForm.elements.tmdbId.value = String(best.id);
-          studioMetaForm.elements.tmdbMediaType.value = String(best.mediaType || "");
+          setStudioLinkedMedia(best.id, best.mediaType, best.provider || (isGame ? "igdb" : "tmdb"));
         }
       } catch {
         // Keep studio usable even if TMDB fallback lookup fails.
       }
     }
   }
-  studioEditor.innerHTML = item?.contentMode === "rich"
-    ? String(item?.bodyHtml || "")
-    : blocksToSimpleHtml(item?.blocks || []);
+  const loadedMode = String(item?.contentMode || "").trim().toLowerCase() === "blocks" ? "blocks" : "rich";
+  studioEditor.innerHTML = loadedMode === "rich"
+    ? String(item?.bodyHtml || blocksToSimpleHtml(item?.blocks || []))
+    : String(item?.bodyHtml || "");
+  setStudioBlocks(item?.blocks || []);
+  setStudioContentMode(loadedMode);
   normalizeStudioEditorMedia();
   clearStudioSelectedMedia();
   studioHistory = [];
@@ -1078,9 +1591,9 @@ function buildPayload(statusOverride = "") {
     tmdbId: String(studioMetaForm.elements.tmdbId.value || "").trim(),
     tmdbMediaType: String(studioMetaForm.elements.tmdbMediaType.value || "").trim(),
     externalLinks: Array.isArray(base.externalLinks) ? base.externalLinks : [],
-    contentMode: "rich",
-    bodyHtml: getEditorHtml(),
-    blocks: []
+    contentMode: currentStudioContentMode,
+    bodyHtml: currentStudioContentMode === "rich" ? getEditorHtml() : "",
+    blocks: currentStudioContentMode === "blocks" ? readStudioBlocks() : []
   };
 }
 
@@ -1162,6 +1675,12 @@ if (studioWrapButtons.length && studioEditor) {
     button.addEventListener("click", () => {
       const tag = button.dataset.studioWrap;
       if (!tag) return;
+      if (currentStudioContentMode === "blocks") {
+        const open = tag === "spoiler" ? "[spoiler]" : `[${tag}]`;
+        const close = tag === "spoiler" ? "[/spoiler]" : `[/${tag}]`;
+        wrapStudioBlockSelection(open, close);
+        return;
+      }
       studioEditor.focus();
       wrapSelectionWithTag(tag);
       queueHistorySnapshot();
@@ -1175,14 +1694,38 @@ if (studioActionButtons.length && studioEditor) {
     button.addEventListener("click", () => {
       const action = button.dataset.studioAction;
       if (!action) return;
+      if (currentStudioContentMode === "blocks") {
+        applyStudioBlockAction(action);
+        return;
+      }
       handleStudioAction(action);
       if (action !== "undo" && action !== "redo") queueHistorySnapshot();
     });
   });
 }
 
+if (studioContentModeButtons.length) {
+  studioContentModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.studioContentMode || "rich";
+      setStudioContentMode(mode);
+    });
+  });
+}
+
+if (studioAddBlockBtn && studioBlocksList) {
+  studioAddBlockBtn.addEventListener("click", () => {
+    studioBlocksList.appendChild(createStudioBlockRow({ type: "text", content: "" }));
+    updateStudioBlockIndex();
+  });
+}
+
 if (studioToolColorApply) {
   studioToolColorApply.addEventListener("click", () => {
+    if (currentStudioContentMode === "blocks") {
+      applyStudioBlockColor(studioToolColor?.value || "#f2f2ee");
+      return;
+    }
     if (!studioEditor) return;
     studioEditor.focus();
     document.execCommand("styleWithCSS", false, true);
@@ -1193,6 +1736,10 @@ if (studioToolColorApply) {
 
 if (studioToolSizeApply) {
   studioToolSizeApply.addEventListener("click", () => {
+    if (currentStudioContentMode === "blocks") {
+      applyStudioBlockSize(studioToolSize?.value || "16");
+      return;
+    }
     if (!studioEditor) return;
     studioEditor.focus();
     const size = Number(studioToolSize?.value || "16");
@@ -1210,6 +1757,10 @@ if (studioToolSizeApply) {
 
 if (studioToolHighlightApply) {
   studioToolHighlightApply.addEventListener("click", () => {
+    if (currentStudioContentMode === "blocks") {
+      applyStudioBlockHighlight(studioToolHighlight?.value || "#f7b538");
+      return;
+    }
     if (!studioEditor) return;
     studioEditor.focus();
     document.execCommand("styleWithCSS", false, true);
@@ -1223,6 +1774,10 @@ if (studioImageBtn && studioEditor) {
   studioImageBtn.addEventListener("click", () => {
     const url = window.prompt("URL de l'image");
     if (!url) return;
+    if (currentStudioContentMode === "blocks") {
+      appendStudioBlock({ type: "image", url: url.trim(), content: "", caption: "" });
+      return;
+    }
     insertStudioMediaShell(`<img src="${escapeHtml(url.trim())}" alt="image" />`);
   });
 }
@@ -1234,6 +1789,11 @@ if (studioVideoBtn && studioEditor) {
     if (!url) return;
     const clean = url.trim();
     const embed = normalizeYouTubeEmbed(clean);
+    if (currentStudioContentMode === "blocks") {
+      const type = embed.includes("youtube.com/embed/") ? "video-embed" : "video";
+      appendStudioBlock({ type, url: type === "video-embed" ? embed : clean, content: "", caption: "" });
+      return;
+    }
     if (embed.includes("youtube.com/embed/")) {
       insertStudioMediaShell(`<div class="video-wrap"><iframe src="${escapeHtml(embed)}" title="video" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`);
       return;
@@ -1343,6 +1903,43 @@ document.addEventListener("keydown", (event) => {
   const target = event.target;
   const isInEditor = target instanceof Node && studioEditor.contains(target);
   if (!isInEditor) return;
+  if (event.key === "Escape") {
+    clearStudioSelectedMedia();
+    return;
+  }
+  if (event.key === "Enter") {
+    const selected = getStudioSelectedMediaWrapper();
+    if (selected && studioEditor.contains(selected)) {
+      event.preventDefault();
+      const paragraph = ensureStudioParagraphAfterMedia(selected) || ensureStudioEditorHasEditableParagraph();
+      if (paragraph) placeStudioCaretInsideNode(paragraph, false);
+      clearStudioSelectedMedia();
+      queueHistorySnapshot();
+      return;
+    }
+  }
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    const selected = getStudioSelectedMediaWrapper();
+    if (selected && studioEditor.contains(selected)) {
+      event.preventDefault();
+      clearStudioSelectedMedia();
+      if (event.key === "ArrowLeft") {
+        const previous = selected.previousSibling;
+        if (previous instanceof HTMLElement && previous.tagName.toLowerCase() === "p") {
+          placeStudioCaretInsideNode(previous, true);
+        } else if (previous instanceof Node) {
+          placeCaretAfterNode(previous);
+        } else {
+          const fallback = ensureStudioEditorHasEditableParagraph();
+          if (fallback) placeStudioCaretInsideNode(fallback, false);
+        }
+      } else {
+        const paragraph = ensureStudioParagraphAfterMedia(selected) || ensureStudioEditorHasEditableParagraph();
+        if (paragraph) placeStudioCaretInsideNode(paragraph, false);
+      }
+      return;
+    }
+  }
   if (event.key === "Backspace" || event.key === "Delete") {
     const selected = getStudioSelectedMediaWrapper();
     if (selected && studioEditor.contains(selected)) {
@@ -1350,7 +1947,15 @@ document.addEventListener("keydown", (event) => {
       const next = selected.nextSibling || selected.previousSibling || studioEditor;
       selected.remove();
       clearStudioSelectedMedia();
-      if (next instanceof Node && next !== studioEditor) placeCaretAfterNode(next);
+      const fallback = ensureStudioEditorHasEditableParagraph();
+      if (next instanceof HTMLElement && next.tagName.toLowerCase() === "p") {
+        placeStudioCaretInsideNode(next, false);
+      } else if (next instanceof Node && next !== studioEditor) {
+        placeCaretAfterNode(next);
+      } else if (fallback) {
+        placeStudioCaretInsideNode(fallback, false);
+      }
+      updateStudioEditorEmptyState();
       queueHistorySnapshot();
       return;
     }
@@ -1397,8 +2002,9 @@ if (studioCoverUrlBtn && studioMetaForm) {
 
 if (studioPosterPickerBtn && studioMetaForm) {
   studioPosterPickerBtn.addEventListener("click", async () => {
-    if (!studioSelectedTmdb?.id) {
-      window.alert("Choisis d'abord un média via le titre.");
+    const linked = await ensureStudioLinkedMediaForAssetPicker();
+    if (!linked || !studioSelectedTmdb?.id) {
+      window.alert("Choisis d'abord un m�dia via le titre.");
       return;
     }
     try {
@@ -1407,7 +2013,7 @@ if (studioPosterPickerBtn && studioMetaForm) {
         ? await getIgdbImageChoices(studioSelectedTmdb.id)
         : await getTmdbImageChoices(studioSelectedTmdb.id, studioSelectedTmdb.mediaType);
       if (!images.posters.length) {
-        window.alert(`Aucune affiche ${useIgdb ? "IGDB" : "TMDB"} disponible pour ce média.`);
+        window.alert(`Aucune affiche ${useIgdb ? "IGDB" : "TMDB"} disponible pour ce m�dia.`);
         return;
       }
       const selected = await openTmdbImagePicker(images.posters, "une affiche", "poster");
@@ -1422,8 +2028,9 @@ if (studioPosterPickerBtn && studioMetaForm) {
 
 if (studioCoverPickerBtn && studioMetaForm) {
   studioCoverPickerBtn.addEventListener("click", async () => {
-    if (!studioSelectedTmdb?.id) {
-      window.alert("Choisis d'abord un média via le titre.");
+    const linked = await ensureStudioLinkedMediaForAssetPicker();
+    if (!linked || !studioSelectedTmdb?.id) {
+      window.alert("Choisis d'abord un m�dia via le titre.");
       return;
     }
     try {
@@ -1432,7 +2039,7 @@ if (studioCoverPickerBtn && studioMetaForm) {
         ? await getIgdbImageChoices(studioSelectedTmdb.id)
         : await getTmdbImageChoices(studioSelectedTmdb.id, studioSelectedTmdb.mediaType);
       if (!images.backdrops.length) {
-        window.alert(`Aucune image de couverture ${useIgdb ? "IGDB" : "TMDB"} disponible pour ce média.`);
+        window.alert(`Aucune image de couverture ${useIgdb ? "IGDB" : "TMDB"} disponible pour ce m�dia.`);
         return;
       }
       const selected = await openTmdbImagePicker(images.backdrops, "une couverture", "backdrop");
@@ -1468,8 +2075,13 @@ if (window.ReviewsStore?.onAuthChanged) {
 
 toggleWorkspaceForAuth(window.ReviewsStore?.getCurrentUser?.());
 refreshDeleteButtonState();
+setStudioBlocks([]);
+setStudioContentMode("rich");
 tryLoadEditReview();
 setupStudioTmdbAutocomplete();
 refreshHeroPreview();
 normalizeStudioEditorMedia();
 pushStudioHistorySnapshot(true);
+
+
+

@@ -1117,6 +1117,16 @@ textarea {
   margin: 0;
 }
 
+.media-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.8rem;
+}
+
+.media-gallery figure {
+  margin: 0;
+}
+
 .video-wrap {
   position: relative;
   padding-top: 56.25%;
@@ -1960,7 +1970,19 @@ textarea {
   padding: 0.8rem;
   color: var(--text);
   outline: 0;
+  position: relative;
   overflow-wrap: anywhere;
+  overflow-x: clip;
+}
+
+.rich-editor.is-editor-empty::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  left: 0.8rem;
+  top: 0.8rem;
+  color: #86a0b1;
+  opacity: 0.78;
+  pointer-events: none;
 }
 
 .rich-toolbar {
@@ -2055,6 +2077,7 @@ textarea {
 .rich-preview .rich-media-shell,
 .media-render .rich-media-shell {
   display: inline-block;
+  box-sizing: border-box;
   max-width: 100%;
   vertical-align: top;
   line-height: 1;
@@ -3543,6 +3566,14 @@ a:focus-visible {
   margin: 0;
   width: 100%;
   gap: 0.7rem;
+}
+
+.studio-content-mode-switch {
+  margin: 0;
+}
+
+.studio-blocks-tools {
+  margin-bottom: 0.55rem;
 }
 
 .studio-text-tools .rich-tool-group + .rich-tool-group {

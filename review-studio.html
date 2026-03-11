@@ -126,8 +126,15 @@
           <span class="label-row"><span class="field-label-text">Synopsis</span><span class="field-hint">optionnel</span></span>
           <textarea id="studio-synopsis-input" rows="2" placeholder="Synopsis TMDB ou personnalisé"></textarea>
         </label>
-        <div class="text-tools studio-text-tools">
+        <div class="content-mode-switch studio-content-mode-switch" role="group" aria-label="Mode d'édition">
+          <button type="button" class="action-btn secondary mode-btn active" data-studio-content-mode="rich">Mode Studio</button>
+          <button type="button" class="action-btn secondary mode-btn" data-studio-content-mode="blocks">Mode Blocs</button>
+        </div>
+
+        <section id="studio-rich-editor-section">
+          <div class="text-tools studio-text-tools">
           <div class="rich-tool-group">
+            <button type="button" class="action-btn secondary tool-btn hidden" id="studio-add-block-btn" title="Ajouter un bloc">+ Bloc</button>
             <button type="button" class="action-btn secondary tool-btn" data-studio-wrap="b" title="Gras"><strong>B</strong></button>
             <button type="button" class="action-btn secondary tool-btn" data-studio-wrap="i" title="Italique"><em>I</em></button>
             <button type="button" class="action-btn secondary tool-btn" data-studio-wrap="u" title="Souligné"><span class="u-text">U</span></button>
@@ -176,8 +183,14 @@
             <button type="button" class="action-btn secondary tool-btn" data-studio-action="redo" title="Restaurer">&#8631;</button>
             <button type="button" class="action-btn secondary tool-btn" data-studio-action="clear" title="Enlever mise en page">Tx</button>
           </div>
-        </div>
-        <div id="studio-editor" class="rich-editor studio-editor" contenteditable="true"></div>
+          </div>
+          <div id="studio-editor" class="rich-editor studio-editor" contenteditable="true" data-placeholder="Commence ta review ici..."></div>
+        </section>
+
+        <section id="studio-blocks-editor-section" class="hidden">
+          <div id="studio-blocks-list" class="blocks-list"></div>
+        </section>
+
         <div class="form-actions studio-editor-actions">
           <button id="studio-delete-review" type="button" class="action-btn danger studio-delete-btn hidden">Supprimer</button>
           <button id="studio-save-draft" type="button" class="action-btn secondary">Enregistrer brouillon</button>

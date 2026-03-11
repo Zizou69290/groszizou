@@ -302,6 +302,15 @@ function renderBlock(block) {
     wrapper.innerHTML = `${left}${right}`;
     return wrapper.innerHTML ? wrapper : null;
   }
+  if (block.type === "gallery") {
+    wrapper.className = "media-item media-gallery";
+    const urls = String(block.content || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => /^https?:\/\//i.test(line));
+    wrapper.innerHTML = urls.map((url) => `<figure><img src="${escapeHtml(url)}" alt="screenshot" /></figure>`).join("");
+    return wrapper.innerHTML ? wrapper : null;
+  }
   if (block.type === "video") {
     const embedUrl = normalizeYouTubeEmbed(block.url || "");
     if (embedUrl.includes("youtube.com/embed/")) {
