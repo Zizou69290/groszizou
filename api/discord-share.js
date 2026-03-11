@@ -60,7 +60,7 @@ function buildEmbedPayload(body = {}) {
 
   return {
     username: "SuperSite",
-    content: "Super review en ligne 👍",
+    content: "Nouvel arrivage 👍",
     embeds: [embed]
   };
 }
