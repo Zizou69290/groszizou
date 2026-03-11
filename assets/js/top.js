@@ -180,6 +180,18 @@ function sanitizeShareImageUrl(raw) {
   return value;
 }
 
+function findTopDirector(top, reviewMap) {
+  const items = Array.isArray(top?.items) ? top.items : [];
+  for (const item of items) {
+    const linked = item?.reviewId ? reviewMap.get(item.reviewId) : null;
+    const linkedDirector = creatorValueForCategory(linked?.category || top?.category || "", linked || {});
+    if (linkedDirector) return linkedDirector;
+    const manualDirector = String(item?.director || "").trim();
+    if (manualDirector) return manualDirector;
+  }
+  return "";
+}
+
 async function shareTopToDiscord(top) {
   if (!top || topDiscordSharePending) return;
   topDiscordSharePending = true;
@@ -198,6 +210,8 @@ async function shareTopToDiscord(top) {
         title: String(top.title || "Sans titre").trim(),
         summary: String(top.subtitle || "").trim(),
         coverUrl: sanitizeShareImageUrl(loadedTopCoverUrl || top.cover || ""),
+        year: String(top.year || "").trim(),
+        director: findTopDirector(top, loadedReviewMap),
         score: Number.isFinite(Number(avg)) ? Number(avg) : null,
         url: `${window.location.origin}/top.html?id=${encodeURIComponent(top.id || id || "")}`
       })

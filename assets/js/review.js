@@ -160,6 +160,8 @@ async function shareReviewToDiscord(item) {
         title: String(item.title || "Sans titre").trim(),
         summary: String(item.summary || "").trim(),
         coverUrl: sanitizeShareImageUrl(item.cover || item.poster || ""),
+        year: String(item.releaseYear || "").trim(),
+        director: creatorValueForCategory(item.category, item),
         score: Number.isFinite(Number(item.score)) ? Number(item.score) : null,
         url: `${window.location.origin}/review.html?id=${encodeURIComponent(item.id || id || "")}`
       })

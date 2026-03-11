@@ -20,10 +20,26 @@ function buildEmbedPayload(body = {}) {
   const summary = String(body.summary || "").trim();
   const link = safeHttpUrl(body.url);
   const coverUrl = safeHttpUrl(body.coverUrl);
+  const year = String(body.year || "").trim();
+  const director = String(body.director || "").trim();
   const scoreNum = Number(body.score);
   const score = Number.isFinite(scoreNum) ? `${scoreNum.toFixed(1)}/10` : "";
 
   const fields = [];
+  if (year) {
+    fields.push({
+      name: "Année",
+      value: year,
+      inline: true
+    });
+  }
+  if (director) {
+    fields.push({
+      name: "Réalisateur",
+      value: director,
+      inline: true
+    });
+  }
   if (score) {
     fields.push({
       name: kind === "top" ? "Note moyenne" : "Note",
@@ -44,7 +60,7 @@ function buildEmbedPayload(body = {}) {
 
   return {
     username: "SuperSite",
-    content: kind === "top" ? "Nouveau top en ligne." : "Nouvelle review en ligne.",
+    content: "Super review en ligne 👍",
     embeds: [embed]
   };
 }
