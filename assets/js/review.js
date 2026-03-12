@@ -137,6 +137,12 @@ function scoreToStars(value) {
   return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
 }
 
+function formatScoreValue(score) {
+  if (!Number.isFinite(Number(score))) return "";
+  const value = Number(score);
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
 function sanitizeShareImageUrl(raw) {
   const value = String(raw || "").trim();
   if (!value || value.startsWith("data:")) return "";
@@ -207,7 +213,7 @@ function renderDetails(item) {
   if (!details) return;
 
   const scoreValue = Number.isFinite(Number(item?.score))
-    ? `${scoreToStars(Number(item.score))} (${Number(item.score).toFixed(1)}/10)`
+    ? `${scoreToStars(Number(item.score))} (${formatScoreValue(Number(item.score))}/10)`
     : "";
   const creatorLabel = creatorLabelForCategory(item?.category);
   const creatorValue = creatorValueForCategory(item?.category, item);

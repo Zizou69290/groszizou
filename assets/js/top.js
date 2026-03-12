@@ -243,7 +243,7 @@ function renderTopDetails(top, averageScore = null) {
     {
       label: "Note moyenne",
       value: Number.isFinite(Number(averageScore))
-        ? `${scoreToStars(Number(averageScore))} (${Number(averageScore).toFixed(1)}/10)`
+        ? itemScoreText(Number(averageScore))
         : ""
     }
   ].filter((entry) => String(entry.value || "").trim());

@@ -27,6 +27,12 @@ function normalizePublicationStatus(value) {
   return String(value || "").trim().toLowerCase() === "draft" ? "draft" : "published";
 }
 
+function formatScoreValue(score) {
+  if (!Number.isFinite(Number(score))) return "";
+  const value = Number(score);
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
 function fmtTopDateFromTimestamp(ts) {
   const parsed = Number(ts);
   if (!Number.isFinite(parsed) || parsed <= 0) return "Date libre";
@@ -121,7 +127,7 @@ function topCard(item) {
   const topDate = fmtTopDateFromTimestamp(item.updatedAt);
   const metaPrefix = isDraft ? "Brouillon" : "Publié";
   const avg = Number.isFinite(Number(item.averageScore)) ? Number(item.averageScore) : null;
-  const avgDisplay = avg === null ? "☆☆☆☆☆" : `${"★".repeat(Math.max(0, Math.min(5, Math.round(avg / 2))))}${"☆".repeat(5 - Math.max(0, Math.min(5, Math.round(avg / 2))))} (${avg.toFixed(1)}/10)`;
+  const avgDisplay = avg === null ? "☆☆☆☆☆" : `${"★".repeat(Math.max(0, Math.min(5, Math.round(avg / 2))))}${"☆".repeat(5 - Math.max(0, Math.min(5, Math.round(avg / 2))))} (${formatScoreValue(avg)}/10)`;
   article.innerHTML = `
     <img src="${item.displayCover || item.cover || DEFAULT_COVER}" alt="${item.title || "Top"}" />
     <div class="card-body">

@@ -582,6 +582,12 @@ function scoreToStars(score) {
   return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
 }
 
+function formatScoreValue(score) {
+  if (!Number.isFinite(Number(score))) return "";
+  const value = Number(score);
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
 function reviewCard(item) {
   const article = document.createElement("article");
   article.className = "review-card";
@@ -603,7 +609,7 @@ function reviewCard(item) {
       <h3>${escapeHtml(item.title || "Sans titre")}</h3>
       <p>${escapeHtml(item.summary || "Aucun résumé.")}</p>
       <div class="card-footer">
-        <span class="score" style="color:${accent}">${scoreToStars(item.score)}${Number.isFinite(item.score) ? ` (${item.score}/10)` : ""}</span>
+        <span class="score" style="color:${accent}">${scoreToStars(item.score)}${Number.isFinite(item.score) ? ` (${formatScoreValue(item.score)}/10)` : ""}</span>
         ${draftBadge}
       </div>
     </div>
@@ -1025,7 +1031,7 @@ function renderPreview() {
   previewBox.innerHTML = "";
   const head = document.createElement("div");
   head.className = "preview-head";
-  head.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${scoreToStars(score)}${Number.isFinite(score) ? ` (${score}/10)` : ""}</span>`;
+  head.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${scoreToStars(score)}${Number.isFinite(score) ? ` (${formatScoreValue(score)}/10)` : ""}</span>`;
   previewBox.appendChild(head);
 
   const summaryNode = document.createElement("p");
@@ -1639,7 +1645,7 @@ function createTopItemRow(item = { title: "", comment: "", reviewId: "", poster:
   const normalized = normalizeTopFormItem(item);
   const meta = topFormItemMeta(normalized);
   const scoreText = Number.isFinite(Number(normalized.note))
-    ? `${scoreToStars(Number(normalized.note))} (${Number(normalized.note).toFixed(1)}/10)`
+    ? `${scoreToStars(Number(normalized.note))} (${formatScoreValue(Number(normalized.note))}/10)`
     : "";
   const row = document.createElement("div");
   row.className = "top-form-item top-item top-item-poster";

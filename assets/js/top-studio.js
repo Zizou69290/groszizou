@@ -94,6 +94,11 @@ function tmdbMediaTypeFromCategory(category) {
   return String(category || "").trim().toLowerCase() === "serie" ? "tv" : "movie";
 }
 
+function isTmdbCategory(category) {
+  const key = String(category || "").trim().toLowerCase();
+  return key === "film" || key === "serie" || key === "docu" || key === "documentaire";
+}
+
 function isGameCategory(category) {
   return String(category || "").trim().toLowerCase() === "jeu";
 }
@@ -143,6 +148,24 @@ async function getTmdbDetails(id, mediaType) {
   };
 }
 
+async function getTmdbImageChoices(id, mediaType) {
+  if (!TMDB_API_KEY || !id) return { posters: [], backdrops: [] };
+  const type = mediaType === "tv" ? "tv" : "movie";
+  const url = `https://api.themoviedb.org/3/${type}/${encodeURIComponent(id)}/images?api_key=${TMDB_API_KEY}&include_image_language=fr,en,null`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("TMDB images failed");
+  const data = await response.json();
+  const posters = (Array.isArray(data?.posters) ? data.posters : [])
+    .filter((img) => img?.file_path)
+    .slice(0, 30)
+    .map((img) => tmdbImageUrl(img.file_path, "w500"));
+  const backdrops = (Array.isArray(data?.backdrops) ? data.backdrops : [])
+    .filter((img) => img?.file_path)
+    .slice(0, 30)
+    .map((img) => tmdbImageUrl(img.file_path, "w1280"));
+  return { posters, backdrops };
+}
+
 async function searchIgdbGames(query) {
   const q = String(query || "").trim();
   if (q.length < IGDB_AUTOCOMPLETE_MIN_CHARS) return [];
@@ -174,6 +197,17 @@ async function getIgdbGameDetails(id) {
     poster: String(entry?.poster || "").trim(),
     cover: String(entry?.cover || "").trim(),
     director: String(entry?.studio || "").trim()
+  };
+}
+
+async function getIgdbImageChoices(id) {
+  if (!id) return { posters: [], backdrops: [] };
+  const response = await fetch(`/api/igdb?mode=images&id=${encodeURIComponent(id)}`);
+  if (!response.ok) throw new Error("IGDB images failed");
+  const data = await response.json();
+  return {
+    posters: Array.isArray(data?.images?.posters) ? data.images.posters : [],
+    backdrops: Array.isArray(data?.images?.backdrops) ? data.images.backdrops : []
   };
 }
 
@@ -312,6 +346,22 @@ function scoreToStars(score) {
   return "\u2605".repeat(full) + "\u2606".repeat(5 - full);
 }
 
+function formatScoreValue(score) {
+  if (!Number.isFinite(Number(score))) return "";
+  const value = Number(score);
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function providerLabelForCategory(category) {
+  if (isGameCategory(category)) return "IGDB";
+  if (isTmdbCategory(category)) return "TMDB";
+  return "";
+}
+
+function isIgdbMediaType(mediaType) {
+  return String(mediaType || "").trim().toLowerCase().startsWith("igdb");
+}
+
 function normalizeTopFormItem(item = {}) {
   const noteValue = Number(item?.note);
   return {
@@ -328,6 +378,143 @@ function normalizeTopFormItem(item = {}) {
   };
 }
 
+function openTopImagePicker(images, kindLabel, mode = "poster") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-dialog studio-image-picker-dialog" role="dialog" aria-modal="true" aria-label="Choisir une image">
+        <p class="confirm-title">Choisir ${kindLabel}</p>
+        <div class="studio-image-picker-grid ${mode === "backdrop" ? "is-backdrop" : "is-poster"}"></div>
+        <div class="confirm-actions">
+          <button type="button" class="action-btn secondary" data-studio-picker-action="cancel">Annuler</button>
+        </div>
+      </div>
+    `;
+    const grid = overlay.querySelector(".studio-image-picker-grid");
+    if (!grid) return resolve("");
+    images.forEach((url) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "studio-image-choice";
+      button.innerHTML = `<img src="${url}" alt="${kindLabel}" loading="lazy" />`;
+      button.addEventListener("click", () => {
+        cleanup();
+        resolve(url);
+      });
+      grid.appendChild(button);
+    });
+    const cleanup = () => {
+      document.removeEventListener("keydown", onKeyDown);
+      overlay.remove();
+    };
+    const close = () => {
+      cleanup();
+      resolve("");
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+      }
+    };
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) close();
+    });
+    overlay.querySelector('[data-studio-picker-action="cancel"]')?.addEventListener("click", close);
+    document.addEventListener("keydown", onKeyDown);
+    document.body.appendChild(overlay);
+  });
+}
+
+function updateTopItemAssetButtons(row) {
+  if (!row || !topStudioMetaForm) return;
+  const category = String(topStudioMetaForm.elements.category?.value || "").trim().toLowerCase();
+  const provider = providerLabelForCategory(category);
+  const hasLinkedMedia = Boolean(row.querySelector(".top-tmdb-id")?.value);
+  const posterValue = String(row.querySelector(".top-poster")?.value || "").trim();
+  const coverValue = String(row.querySelector(".top-cover")?.value || "").trim();
+  const posterBtn = row.querySelector(".top-item-poster-picker");
+  const coverBtn = row.querySelector(".top-item-cover-picker");
+  const posterFromProvider = provider === "IGDB"
+    ? /images\.igdb\.com/i.test(posterValue)
+    : /image\.tmdb\.org/i.test(posterValue);
+  const coverFromProvider = provider === "IGDB"
+    ? /images\.igdb\.com/i.test(coverValue)
+    : /image\.tmdb\.org/i.test(coverValue);
+  const enabled = Boolean(provider);
+  if (posterBtn) {
+    posterBtn.textContent = provider ? `Affiche via ${provider}${posterFromProvider ? " \u2713" : ""}` : "Affiche indisponible";
+    posterBtn.disabled = !enabled || !hasLinkedMedia;
+  }
+  if (coverBtn) {
+    coverBtn.textContent = provider ? `Couverture via ${provider}${coverFromProvider ? " \u2713" : ""}` : "Couverture indisponible";
+    coverBtn.disabled = !enabled || !hasLinkedMedia;
+  }
+}
+
+function updateAllTopItemAssetButtons() {
+  if (!topStudioItemsList) return;
+  [...topStudioItemsList.querySelectorAll(".top-form-item")].forEach((row) => {
+    updateTopItemAssetButtons(row);
+  });
+}
+
+async function ensureTopItemLinkedMedia(row) {
+  if (!row || !topStudioMetaForm) return null;
+  const savedId = String(row.querySelector(".top-tmdb-id")?.value || "").trim();
+  const savedType = String(row.querySelector(".top-tmdb-media-type")?.value || "").trim();
+  if (savedId) {
+    return {
+      id: savedId,
+      mediaType: savedType || (isGameCategory(topStudioMetaForm.elements.category?.value) ? "igdb_game" : tmdbMediaTypeFromCategory(topStudioMetaForm.elements.category?.value)),
+      provider: isIgdbMediaType(savedType) ? "igdb" : (isGameCategory(topStudioMetaForm.elements.category?.value) ? "igdb" : "tmdb")
+    };
+  }
+  const title = String(row.querySelector(".top-title")?.value || "").trim();
+  const category = String(topStudioMetaForm.elements.category?.value || "").trim().toLowerCase();
+  if (!title) return null;
+  try {
+    if (isGameCategory(category)) {
+      const results = await searchIgdbGames(title);
+      const best = (results || []).find((entry) => String(entry.title || "").trim().toLowerCase() === title.toLowerCase()) || results[0];
+      if (!best?.id) return null;
+      row.querySelector(".top-tmdb-id").value = String(best.id || "");
+      row.querySelector(".top-tmdb-media-type").value = String(best.mediaType || "igdb_game");
+      return { id: String(best.id || ""), mediaType: String(best.mediaType || "igdb_game"), provider: "igdb" };
+    }
+    if (isTmdbCategory(category)) {
+      const results = await searchTmdbTitles(title, tmdbMediaTypeFromCategory(category));
+      const best = (results || []).find((entry) => String(entry.title || "").trim().toLowerCase() === title.toLowerCase()) || results[0];
+      if (!best?.id) return null;
+      row.querySelector(".top-tmdb-id").value = String(best.id || "");
+      row.querySelector(".top-tmdb-media-type").value = String(best.mediaType || tmdbMediaTypeFromCategory(category));
+      return { id: String(best.id || ""), mediaType: String(best.mediaType || tmdbMediaTypeFromCategory(category)), provider: "tmdb" };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function updateTopItemScoreDisplay(row) {
+  if (!row) return;
+  const noteInput = row.querySelector(".top-note");
+  const scoreDisplay = row.querySelector(".top-score-display");
+  if (!noteInput || !scoreDisplay) return;
+  const raw = String(noteInput.value || "").trim();
+  if (raw === "") {
+    scoreDisplay.textContent = "";
+    return;
+  }
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    scoreDisplay.textContent = "";
+    return;
+  }
+  scoreDisplay.textContent = `${scoreToStars(value)} (${formatScoreValue(value)}/10)`;
+}
+
 function topFormItemMeta(item) {
   const bits = [];
   if (item.releaseYear) bits.push(item.releaseYear);
@@ -338,7 +525,7 @@ function topFormItemMeta(item) {
 function refreshTopItemIndex() {
   if (!topStudioItemsList) return;
   [...topStudioItemsList.querySelectorAll(".top-form-item")].forEach((row, idx) => {
-    const rank = row.querySelector(".top-poster-rank");
+    const rank = row.querySelector(".top-poster-rank") || row.querySelector(".top-item-rank");
     if (rank) rank.textContent = String(idx + 1);
   });
 }
@@ -450,7 +637,9 @@ async function addTopItemFromQuery() {
       cover: linkedReview.cover || "",
       releaseYear: linkedReview.releaseYear || extractYear(linkedReview.date),
       director: String(linkedReview.director || linkedReview.studio || linkedReview.author || "").trim(),
-      note: Number.isFinite(Number(linkedReview.score)) ? Number(linkedReview.score) : null
+      note: Number.isFinite(Number(linkedReview.score)) ? Number(linkedReview.score) : null,
+      tmdbId: String(linkedReview.tmdbId || "").trim(),
+      tmdbMediaType: String(linkedReview.tmdbMediaType || "").trim()
     });
   } else {
     const apiItem = await fetchApiItemFromQuery(rawTitle);
@@ -466,30 +655,50 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
   const normalized = normalizeTopFormItem(item);
   const meta = topFormItemMeta(normalized);
   const scoreText = Number.isFinite(Number(normalized.note))
-    ? `${scoreToStars(Number(normalized.note))} (${Number(normalized.note).toFixed(1)}/10)`
+    ? `${scoreToStars(Number(normalized.note))} (${formatScoreValue(Number(normalized.note))}/10)`
     : "";
   const row = document.createElement("div");
-  row.className = "top-form-item top-item top-item-poster";
+  row.className = "top-form-item top-item top-item-detail";
   row.innerHTML = `
-    <div class="top-poster-card top-poster-card-static">
-      <span class="top-poster-rank">1</span>
-      <img class="top-poster-image" src="${escapeHtml(normalized.poster || DEFAULT_POSTER)}" alt="${escapeHtml(normalized.title || "Item")}" />
-      <div class="top-poster-content">
-        <h3>${escapeHtml(normalized.title || "Sans titre")}</h3>
-        ${meta ? `<p class="top-poster-meta">${escapeHtml(meta)}</p>` : ""}
-        ${normalized.comment ? `<p class="top-poster-comment">${escapeHtml(normalized.comment)}</p>` : ""}
-        ${scoreText ? `<p class="score">${escapeHtml(scoreText)}</p>` : ""}
-      </div>
-      <div class="top-form-item-actions row-actions">
-        <button type="button" class="action-btn danger top-delete top-delete-icon" aria-label="Supprimer l'item" title="Supprimer l'item">&times;</button>
+    <div class="top-item-head">
+      <span class="top-item-rank">1</span>
+      <img class="top-item-poster-img" src="${escapeHtml(normalized.poster || DEFAULT_POSTER)}" alt="${escapeHtml(normalized.title || "Item")}" />
+      <div class="top-item-main">
+        <div class="top-item-title-row">
+          <h3>${escapeHtml(normalized.title || "Sans titre")}</h3>
+          <div class="top-form-item-actions row-actions">
+            <button type="button" class="action-btn danger top-delete top-delete-icon" aria-label="Supprimer l'item" title="Supprimer l'item">&times;</button>
+          </div>
+        </div>
+        <p class="top-item-meta">${escapeHtml(meta)}</p>
+        <div class="top-item-fields">
+          <div class="top-item-note">
+            <label class="studio-meta-chip">
+              <span>Note</span>
+              <input class="top-note" type="number" min="0" max="10" step="0.1" placeholder="/10" value="${Number.isFinite(Number(normalized.note)) ? String(Number(normalized.note)) : ""}" />
+            </label>
+          </div>
+          <p class="score top-score-display top-item-score">${escapeHtml(scoreText)}</p>
+          <div class="top-item-asset top-item-asset-poster">
+            <button type="button" class="action-btn secondary top-item-poster-picker">Affiche via TMDB</button>
+            <label class="studio-meta-chip">
+              <span>Affiche URL</span>
+              <input class="top-poster" type="url" placeholder="https://..." value="${escapeHtml(normalized.poster)}" />
+            </label>
+          </div>
+          <div class="top-item-asset top-item-asset-cover">
+            <button type="button" class="action-btn secondary top-item-cover-picker">Couverture via TMDB</button>
+            <label class="studio-meta-chip">
+              <span>Couverture URL</span>
+              <input class="top-cover" type="url" placeholder="https://..." value="${escapeHtml(normalized.cover)}" />
+            </label>
+          </div>
+        </div>
       </div>
     </div>
     <input class="top-review-id" type="hidden" value="${escapeHtml(normalized.reviewId)}" />
     <input class="top-title" type="hidden" value="${escapeHtml(normalized.title)}" />
     <input class="top-comment" type="hidden" value="${escapeHtml(normalized.comment)}" />
-    <input class="top-note" type="hidden" value="${Number.isFinite(Number(normalized.note)) ? String(Number(normalized.note)) : ""}" />
-    <input class="top-poster" type="hidden" value="${escapeHtml(normalized.poster)}" />
-    <input class="top-cover" type="hidden" value="${escapeHtml(normalized.cover)}" />
     <input class="top-release-year" type="hidden" value="${escapeHtml(normalized.releaseYear)}" />
     <input class="top-director" type="hidden" value="${escapeHtml(normalized.director)}" />
     <input class="top-tmdb-id" type="hidden" value="${escapeHtml(normalized.tmdbId)}" />
@@ -502,6 +711,95 @@ function createTopItemRow(item = { title: "", comment: "", note: null, reviewId:
     refreshHeroPreview();
     markTopFormDirty();
   });
+  const noteInput = row.querySelector(".top-note");
+  const posterInput = row.querySelector(".top-poster");
+  const coverInput = row.querySelector(".top-cover");
+  const posterImage = row.querySelector(".top-item-poster-img");
+  const posterPickerBtn = row.querySelector(".top-item-poster-picker");
+  const coverPickerBtn = row.querySelector(".top-item-cover-picker");
+
+  if (noteInput) {
+    noteInput.addEventListener("input", () => {
+      updateTopItemScoreDisplay(row);
+      markTopFormDirty();
+    });
+  }
+
+  if (posterInput) {
+    posterInput.addEventListener("input", () => {
+      if (posterImage) posterImage.src = posterInput.value.trim() || DEFAULT_POSTER;
+      updateTopItemAssetButtons(row);
+      refreshHeroPreview();
+      markTopFormDirty();
+    });
+  }
+
+  if (coverInput) {
+    coverInput.addEventListener("input", () => {
+      updateTopItemAssetButtons(row);
+      refreshHeroPreview();
+      markTopFormDirty();
+    });
+  }
+
+  if (posterPickerBtn && posterInput) {
+    posterPickerBtn.addEventListener("click", async () => {
+      const linked = await ensureTopItemLinkedMedia(row);
+      if (!linked?.id) {
+        window.alert("Aucune source TMDB/IGDB trouv\u00E9e pour cet item.");
+        return;
+      }
+      try {
+        const useIgdb = linked.provider === "igdb" || isIgdbMediaType(linked.mediaType);
+        const images = useIgdb
+          ? await getIgdbImageChoices(linked.id)
+          : await getTmdbImageChoices(linked.id, linked.mediaType);
+        if (!Array.isArray(images.posters) || !images.posters.length) {
+          window.alert("Aucune affiche disponible.");
+          return;
+        }
+        const selected = await openTopImagePicker(images.posters || [], "une affiche", "poster");
+        if (!selected) return;
+        posterInput.value = selected;
+        if (posterImage) posterImage.src = selected;
+        updateTopItemAssetButtons(row);
+        refreshHeroPreview();
+        markTopFormDirty();
+      } catch {
+        window.alert("Impossible de charger les affiches.");
+      }
+    });
+  }
+
+  if (coverPickerBtn && coverInput) {
+    coverPickerBtn.addEventListener("click", async () => {
+      const linked = await ensureTopItemLinkedMedia(row);
+      if (!linked?.id) {
+        window.alert("Aucune source TMDB/IGDB trouv\u00E9e pour cet item.");
+        return;
+      }
+      try {
+        const useIgdb = linked.provider === "igdb" || isIgdbMediaType(linked.mediaType);
+        const images = useIgdb
+          ? await getIgdbImageChoices(linked.id)
+          : await getTmdbImageChoices(linked.id, linked.mediaType);
+        if (!Array.isArray(images.backdrops) || !images.backdrops.length) {
+          window.alert("Aucune couverture disponible.");
+          return;
+        }
+        const selected = await openTopImagePicker(images.backdrops || [], "une couverture", "backdrop");
+        if (!selected) return;
+        coverInput.value = selected;
+        updateTopItemAssetButtons(row);
+        refreshHeroPreview();
+        markTopFormDirty();
+      } catch {
+        window.alert("Impossible de charger les couvertures.");
+      }
+    });
+  }
+
+  updateTopItemAssetButtons(row);
   attachTopItemDragAndDrop(row);
 
   return row;
@@ -666,10 +964,12 @@ if (topStudioMetaForm) {
   topStudioMetaForm.addEventListener("input", () => {
     markTopFormDirty();
     refreshHeroPreview();
+    updateAllTopItemAssetButtons();
   });
   topStudioMetaForm.addEventListener("change", () => {
     markTopFormDirty();
     refreshHeroPreview();
+    updateAllTopItemAssetButtons();
   });
 }
 
