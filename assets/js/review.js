@@ -347,6 +347,16 @@ function renderBlock(block) {
   const wrapper = document.createElement("div");
   wrapper.className = "media-item";
 
+  if (block.type === "separator") {
+    wrapper.className = "review-separator-block";
+    const style = block.separatorStyle === "line" ? "line" : "space";
+    wrapper.innerHTML =
+      style === "line"
+        ? '<hr class="review-separator-line" aria-hidden="true" />'
+        : '<div class="review-separator-space" aria-hidden="true"></div>';
+    return wrapper;
+  }
+
   if (block.type === "text") {
     wrapper.className = "review-text-block";
     const p = document.createElement("p");

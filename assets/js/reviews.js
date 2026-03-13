@@ -121,6 +121,7 @@ window.ReviewsStore = (() => {
     };
     if ("url2" in raw) normalized.url2 = raw.url2 || "";
     if ("caption2" in raw) normalized.caption2 = raw.caption2 || "";
+    if ("separatorStyle" in raw) normalized.separatorStyle = raw.separatorStyle || "space";
     return normalized;
   }
 

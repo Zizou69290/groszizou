@@ -1334,6 +1334,18 @@ function getStudioBlockFieldsHtml(type, block = {}) {
   if (type === "gallery") {
     return `<textarea class="block-gallery-urls" rows="6" placeholder="Une URL d'image par ligne...">${escapeHtml(block.content || "")}</textarea>`;
   }
+  if (type === "separator") {
+    const style = block.separatorStyle === "line" ? "line" : "space";
+    return `
+      <label class="block-separator-field">
+        <span>Type de séparateur</span>
+        <select class="block-separator-style">
+          <option value="space" ${style === "space" ? "selected" : ""}>Espace vide</option>
+          <option value="line" ${style === "line" ? "selected" : ""}>Ligne séparatrice</option>
+        </select>
+      </label>
+    `;
+  }
   return `
     <div class="block-media-pair">
       <input class="block-url" type="url" placeholder="URL" value="${escapeHtml(block.url || "")}" />
@@ -1344,6 +1356,8 @@ function getStudioBlockFieldsHtml(type, block = {}) {
 function createStudioBlockRow(block = { type: "text", content: "", url: "", caption: "" }) {
   const row = document.createElement("div");
   row.className = "block-item";
+  block.type = block.type || "text";
+  block.separatorStyle = block.separatorStyle || "space";
   row.innerHTML = `
     <div class="block-head">
       <strong class="block-index">Bloc</strong>
@@ -1355,6 +1369,7 @@ function createStudioBlockRow(block = { type: "text", content: "", url: "", capt
           <option value="image-text-right">Texte gauche + Image droite</option>
           <option value="two-images">2 images côte à côte</option>
           <option value="gallery">Galerie screenshots</option>
+          <option value="separator">Séparateur</option>
           <option value="video">Vidéo</option>
           <option value="video-embed">Vidéo embed</option>
           <option value="audio">Audio</option>
@@ -1390,6 +1405,12 @@ function createStudioBlockRow(block = { type: "text", content: "", url: "", capt
         remember();
       }
     });
+    const styleSelect = fields.querySelector(".block-separator-style");
+    if (styleSelect) {
+      styleSelect.addEventListener("change", () => {
+        block.separatorStyle = styleSelect.value === "line" ? "line" : "space";
+      });
+    }
   };
 
   typeSelect.value = block.type || "text";
@@ -1454,6 +1475,17 @@ function readStudioBlocks() {
         const url = row.querySelector(".block-url")?.value.trim() || "";
         const url2 = row.querySelector(".block-url-2")?.value.trim() || "";
         return url || url2 ? { type, content: "", url, caption: "", url2, caption2: "" } : null;
+      }
+      if (type === "separator") {
+        const style = row.querySelector(".block-separator-style")?.value;
+        const normalizedStyle = style === "line" ? "line" : "space";
+        return {
+          type,
+          content: "",
+          url: "",
+          caption: "",
+          separatorStyle: normalizedStyle
+        };
       }
       if (type === "gallery") {
         const content = row.querySelector(".block-gallery-urls")?.value.trim() || "";
