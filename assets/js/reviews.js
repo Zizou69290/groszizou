@@ -60,6 +60,20 @@ window.ReviewsStore = (() => {
     return String(value || "").trim().toLowerCase() === STATUS_DRAFT ? STATUS_DRAFT : STATUS_PUBLISHED;
   }
 
+  function resolveReviewPublicationTimestamp(source) {
+    if (!source) return Date.now();
+    const dateValue = String(source.date || "").trim();
+    if (dateValue) {
+      const parsed = Date.parse(dateValue);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    const forced = Number(source.publishedAt);
+    if (Number.isFinite(forced) && forced > 0) return forced;
+    const updated = Number(source.updatedAt);
+    if (Number.isFinite(updated) && updated > 0) return updated;
+    return Date.now();
+  }
+
   function usernameToEmail(username) {
     return `${username}@groszizou.local`;
   }
@@ -137,6 +151,7 @@ window.ReviewsStore = (() => {
         }))
         .filter((entry) => entry.label && entry.url)
       : [];
+    const publicationTimestamp = resolveReviewPublicationTimestamp(review);
 
     return {
       id: review.id || slugify(review.title),
@@ -164,6 +179,7 @@ window.ReviewsStore = (() => {
       bodyHtml: review.bodyHtml || "",
       externalLinks,
       blocks,
+      publishedAt: publicationTimestamp,
       updatedAt: typeof review.updatedAt === "number" ? review.updatedAt : Date.now()
     };
   }
@@ -360,7 +376,7 @@ window.ReviewsStore = (() => {
     const snap = await query.get();
     const normalized = snap.docs
       .map((doc) => normalizeReview({ id: doc.id, ...doc.data() }))
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
     const expectedStatus = options.status ? normalizeStatus(options.status) : "";
     if (expectedStatus) {
       return normalized.filter((item) => normalizeStatus(item.status) === expectedStatus);

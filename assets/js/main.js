@@ -1726,10 +1726,12 @@ function readTopItems() {
 }
 
 function getReviewPublicationTimestamp(item) {
-  const updated = Number(item?.updatedAt);
-  if (Number.isFinite(updated) && updated > 0) return updated;
+  const published = Number(item?.publishedAt);
+  if (Number.isFinite(published) && published > 0) return published;
   const parsed = Date.parse(String(item?.date || ""));
-  return Number.isFinite(parsed) ? parsed : 0;
+  if (Number.isFinite(parsed)) return parsed;
+  const updated = Number(item?.updatedAt);
+  return Number.isFinite(updated) && updated > 0 ? updated : 0;
 }
 
 function getReviewSortScore(item) {
