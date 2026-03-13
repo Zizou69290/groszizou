@@ -1315,9 +1315,6 @@ body.image-viewer-open {
     grid-template-columns: 1fr;
   }
 
-  .media-gallery {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
 }
 
 @media (max-width: 700px) {
@@ -3218,6 +3215,20 @@ a:focus-visible {
 
 .review-page .review-details {
   margin-top: 0;
+}
+
+.review-page #review-content a {
+  color: #ffd066;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgba(255, 208, 102, 0.6);
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.review-page #review-content a:hover,
+.review-page #review-content a:focus-visible {
+  color: #ffffff;
+  text-decoration-color: rgba(255, 255, 255, 0.8);
 }
 
 .top-page .article-hero-inner > * {
