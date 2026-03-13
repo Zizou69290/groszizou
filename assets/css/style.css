@@ -1142,12 +1142,18 @@ textarea {
 }
 
 .media-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(calc(100% / var(--gallery-cols, 1)), 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 0.8rem;
 }
 
-.media-gallery figure {
+.media-gallery-row {
+  display: grid;
+  grid-template-columns: repeat(var(--gallery-row-cols, 1), minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.media-gallery-row figure {
   margin: 0;
 }
 
@@ -1329,7 +1335,7 @@ body.image-viewer-open {
     position: relative;
   }
 
-  .media-gallery {
+  .media-gallery-row {
     grid-template-columns: 1fr;
   }
 

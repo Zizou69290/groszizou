@@ -392,8 +392,19 @@ function renderBlock(block) {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter((line) => /^https?:\/\//i.test(line));
-    wrapper.style.setProperty("--gallery-cols", String(Math.max(1, Math.min(4, urls.length || 1))));
-    wrapper.innerHTML = urls.map((url) => `<figure><img src="${escapeHtml(url)}" alt="screenshot" /></figure>`).join("");
+    const rows = [];
+    for (let i = 0; i < urls.length; i += 4) {
+      rows.push(urls.slice(i, i + 4));
+    }
+    wrapper.innerHTML = rows
+      .map((row) => {
+        const cols = Math.max(1, Math.min(4, row.length));
+        const images = row
+          .map((url) => `<figure><img src="${escapeHtml(url)}" alt="screenshot" /></figure>`)
+          .join("");
+        return `<div class="media-gallery-row" style="--gallery-row-cols:${cols}">${images}</div>`;
+      })
+      .join("");
     return wrapper.innerHTML ? wrapper : null;
   }
   if (block.type === "video") {
