@@ -3,44 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Top - GROSZIZOU</title>
-  <meta name="description" content="Détail d'un top GROSZIZOU." />
+  <title>SuperSite - Top</title>
+  <meta name="description" content="Détail d'un top SuperSite." />
+  <link rel="icon" type="image/png" href="pouce.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
-<body>
+<body class="top-page">
   <div class="noise"></div>
 
   <header class="hero">
     <nav class="topbar container">
-      <a class="brand" href="index.html">GROSZIZOU</a>
+      <a class="brand" href="index.html"><img src="pouce.png" alt="" class="brand-icon" aria-hidden="true" /><span>SUPERSITE</span></a>
       <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
       <ul id="menu" class="menu">
         <li><a href="index.html">Reviews</a></li>
         <li><a href="tops.html">Tops</a></li>
+        <li class="menu-item-has-submenu">
+          <a href="watch-parter-watchlist.html">Watch Parter</a>
+          <ul class="submenu" aria-label="Sous-menu Watch Parter">
+            <li><a href="watch-parter-watchlist.html">Watchlist</a></li>
+            <li><a href="watch-parter-courter.html">Watchlist Courts</a></li>
+            <li><a href="watch-parter-duel.html">Duel de films</a></li>
+            <li><a href="watch-parter-bingo.html">Bingo</a></li>
+          </ul>
+        </li>
         <li class="menu-sep" aria-hidden="true">|</li>
-        <li><a href="modifier.html">Admin</a></li>
+        <li id="auth-menu-slot" class="auth-menu-slot"></li>
       </ul>
     </nav>
   </header>
 
-  <header class="article-hero">
-    <div class="container">
-      <a class="back-link" href="tops.html">Retour aux tops</a>
+  <header class="article-hero article-hero-covered">
+    <img id="top-cover-bg" class="article-hero-bg" alt="" aria-hidden="true" />
+    <div class="container article-hero-inner">
+      <div class="hero-links">
+        <div class="hero-links-left">
+          <a class="back-link" href="tops.html">Retour</a>
+          <a id="top-edit-link" class="back-link hidden" href="#" title="Modifier">Modifier</a>
+        </div>
+        <span id="top-date"></span>
+      </div>
       <p class="eyebrow" id="top-category"></p>
       <h1 id="top-title"></h1>
       <p class="lede" id="top-subtitle"></p>
-      <div class="article-meta">
-        <span id="top-year"></span>
+      <div class="top-details-row">
+        <div id="top-details" class="review-details hidden"></div>
+        <div class="top-items-toolbar">
+          <div class="listing-selects" role="group" aria-label="Mode d'affichage des items">
+            <button id="top-view-details" class="action-btn secondary tiny top-view-btn" type="button" aria-pressed="true" aria-label="Affichage par détails" title="Affichage par détails">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="4" y="4" width="16" height="2" rx="1"></rect>
+                <rect x="4" y="11" width="16" height="2" rx="1"></rect>
+                <rect x="4" y="18" width="16" height="2" rx="1"></rect>
+              </svg>
+            </button>
+            <button id="top-view-poster" class="action-btn secondary tiny top-view-btn" type="button" aria-pressed="false" aria-label="Affichage par affiches" title="Affichage par affiches">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+                <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+                <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+                <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 
   <main class="container reviews-section">
-    <img id="top-cover" class="article-cover" alt="Cover top" />
     <ol id="top-items" class="top-items"></ol>
+    <div class="share-footer">
+      <button id="top-discord-share" class="action-btn secondary" type="button">Partager sur Discord</button>
+    </div>
   </main>
 
   <script src="assets/js/firebase-config.js"></script>
@@ -48,8 +86,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="assets/js/reviews.js"></script>
+  <script src="assets/js/auth-ui.js"></script>
   <script src="assets/js/top.js"></script>
 </body>
 </html>
-
 

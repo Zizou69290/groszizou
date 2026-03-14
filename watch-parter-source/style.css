@@ -1,0 +1,2608 @@
+/* Positionnement de la croix de suppression sur mobile */
+@media (max-width: 700px) {
+    #filmList li button {
+        top: 4px;
+        right: 4px;
+        font-size: 1em;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+    }
+    #filmList li button.change-poster-btn {
+        top: 26px;
+        right: 4px;
+        font-size: 1em;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+    }
+}
+
+/* Icône de l'utilisateur ayant ajouté le film */
+#filmList li .added-by-user-icon {
+    /* kept for backward compatibility when not using wrapper; default small */
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #f25f29;
+    object-fit: cover;
+    z-index: 3;
+    display: block;
+}
+/* Effet grisé sur film non sélectionné lors du vote */
+.grayed-out {
+    filter: grayscale(0.85) brightness(0.7) blur(1px);
+    opacity: 0.7;
+    transition: filter 0.2s, opacity 0.2s;
+    pointer-events: none;
+}
+/* Zone cliquable pour vote duel */
+.film-poster-clickable {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.film-poster-clickable img {
+    border-radius: 10px;
+    box-shadow: 0 2px 12px #0006;
+    transition: box-shadow 0.2s, filter 0.2s;
+}
+
+/* Bouton modifier affiche (discret, style croix) */
+#filmList li button.change-poster-btn {
+    position: absolute;
+    top: 32px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: none;
+    color: #888;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1em;
+    line-height: 20px;
+    transition: color 0.2s, opacity 0.2s, background 0.2s;
+    opacity: 0.7;
+    z-index: 2;
+}
+#filmList li button.change-poster-btn:hover {
+    color: #f25f29;
+    opacity: 1;
+    background: none;
+}
+/* Harmonisation des espaces entre recherche, boutons et T KI ? */
+#mainTopContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+        gap: 2px;
+}
+
+#filmListSearchBarContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2px;
+    margin-top: 0;
+}
+
+.duel-collection-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+        gap: 10px;
+    width: 100%;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+#topFormRow {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+        gap: 10px;
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+/* Style global */
+html {
+    overflow-x: hidden;
+}
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #16181a;
+    color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Importation de la police personnalisée */
+@font-face {
+    font-family: 'CustomFont';
+    src: url('wg.otf') format('opentype');
+}
+
+/* Header */
+h1 {
+    margin: 18px 0 8px 0;
+    font-size: 2.8em;
+    color: #f25f29;
+    text-align: center;
+    font-family: 'CustomFont', 'Roboto', Arial, sans-serif;
+    letter-spacing: 1.5px;
+    text-shadow: none;
+}
+
+/* Description */
+.description {
+    text-align: center;
+    margin: 0 0 10px 0;
+    font-size: 1.05em;
+    color: #b0b0b0;
+}
+
+/* Section principale */
+#mainTopContainer {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto 0 auto;
+    padding: 0 8px;
+}
+
+/* Nouvelle disposition horizontale pour le bloc T KI ? et le champ d'ajout */
+#topFormRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.watchparter-hidden-controls {
+    display: none !important;
+}
+
+.watch-parter-native-page #topFormRow {
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.35rem;
+}
+
+.watch-parter-native-page #filmForm {
+    margin: 0;
+    gap: 0.5rem;
+}
+
+.watch-parter-native-page #filmInput {
+    min-width: min(48vw, 290px);
+    border: 1px solid #355163;
+    border-radius: 0.5rem;
+    background: #1a2b36;
+    color: #f2f2ee;
+    padding: 0.62rem 0.7rem;
+    font-size: 0.95rem;
+}
+
+.watch-parter-native-page #filmInput:focus {
+    border-color: #4f6f82;
+    outline: 2px solid rgba(242, 95, 41, 0.35);
+    outline-offset: 1px;
+}
+
+.watch-parter-native-page #filmForm button {
+    border: 0;
+    border-radius: 0.5rem;
+    padding: 0.62rem 0.9rem;
+    background: linear-gradient(120deg, #f25f29, #f7b538);
+    color: #121212;
+    font-size: 0.94rem;
+    font-weight: 700;
+}
+
+.watchparter-searchbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0.1rem 0 0.55rem;
+}
+
+.watchparter-search-input {
+    width: min(92vw, 280px);
+    border: 1px solid #355163;
+    border-radius: 0.5rem;
+    background: #1a2b36;
+    color: #f2f2ee;
+    padding: 0.56rem 0.68rem;
+    font-size: 0.92rem;
+}
+
+.watchparter-search-input:focus {
+    border-color: #4f6f82;
+    outline: 2px solid rgba(242, 95, 41, 0.35);
+    outline-offset: 1px;
+}
+
+#userSelector {
+    width: auto;
+    background: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+}
+
+.user-selector-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+#userImage {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid #f25f29;
+    display: none;
+    object-fit: cover;
+    margin-left: 0;
+}
+
+#userSelector label {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #e0e0e0;
+    margin: 0 4px 0 0;
+}
+
+#pseudoSelect {
+    padding: 6px 10px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1.5px solid #f25f29;
+    background: #23272b;
+    color: #e0e0e0;
+    outline: none;
+    min-width: 80px;
+}
+
+/* Formulaire d'ajout de film */
+#filmForm {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin: 0;
+    position: relative;
+}
+
+#filmInput {
+    padding: 7px 10px;
+    width: 180px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1.5px solid #f25f29;
+    background: #23272b;
+    color: #e0e0e0;
+    outline: none;
+}
+
+#filmForm button {
+    padding: 7px 16px;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    background-color: #f25f29;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#filmForm button:hover {
+    background: #d94f22;
+}
+
+/* Liste déroulante de suggestions de films */
+.film-suggestion-box {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%; /* Affiche la liste sous le champ de recherche */
+    z-index: 100;
+    background: #23272b;
+    border: 1.5px solid #f25f29;
+    border-radius: 0 0 7px 7px;
+    margin-top: 2px;
+    list-style: none;
+    padding: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(40,167,69,0.10);
+}
+
+.film-suggestion-box li {
+    padding: 7px 12px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 1em;
+    border-bottom: 1px solid #222;
+    transition: background 0.15s;
+}
+
+.film-suggestion-box li:last-child {
+    border-bottom: none;
+}
+
+.film-suggestion-box li:hover {
+    background: rgba(242,95,41,0.2);
+    color: #f25f29;
+}
+
+/* Liste des films */
+#filmList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    column-gap: 10px;
+    row-gap: 14px;
+    justify-content: center;
+    margin: 50px auto 0 auto;
+    padding: 0 12px;
+    width: 100%;
+    max-width: 95vw;
+}
+
+/* Style de chaque film (carte) */
+#filmList li {
+    position: relative;
+    list-style: none;
+    text-align: center;
+    min-width: 0;
+}
+
+
+
+/* Image du film */
+#filmList li img {
+    width: 100%;
+    max-width: 120px;
+    height: auto;
+    border-radius: 7px; /* Added border-radius */
+    margin-bottom: 0;
+    background: #181818;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Poster wrapper: ensures overlays (delete, user icon) sit on top of the poster */
+#filmList li .poster-wrapper {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 120px;
+    margin: 0 auto;
+}
+
+#filmList li .poster-wrapper img:not(.added-by-user-icon) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 7px;
+    background: #181818;
+}
+
+#filmList li .poster-wrapper .added-by-user-icon {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #1e1e1e;
+    object-fit: cover;
+    z-index: 3;
+    background: #181818;
+}
+
+#filmList li .poster-wrapper .delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    background: none;
+    color: #888;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1em;
+    line-height: 24px;
+    transition: color 0.2s, opacity 0.2s;
+    opacity: 0.9;
+    z-index: 4;
+}
+#filmList li .poster-wrapper .delete-btn:hover {
+    color: #ff6347;
+    opacity: 1;
+}
+
+#filmList li img:hover {
+    transform: scale(1.05);
+}
+
+/* Nom du film */
+#filmList li span {
+    display: none;
+}
+
+/* Détails du film */
+#filmList li .details {
+    display: none;
+}
+
+/* Liens associés */
+#filmList li .links {
+    display: none;
+}
+
+#filmList li a {
+    text-decoration: none;
+    font-size: 0.95em;
+    color: #f25f29;
+    transition: color 0.2s;
+}
+
+#filmList li a.trailer-link {
+    color: #ff6347;
+}
+
+#filmList li a:hover {
+    text-decoration: underline;
+}
+
+/* Boutons de suppression */
+#filmList li button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: none;
+    color: #888;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1em;
+    line-height: 20px;
+    transition: color 0.2s;
+    opacity: 0.7;
+}
+
+#filmList li button:hover {
+    color: #ff6347;
+    opacity: 1;
+    background: none;
+}
+
+#randomFilmDisplay {
+    display: none;
+}
+
+/* Boutons de choix et Joker */
+.duel-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.duel-action {
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(120deg, #f25f29, #f7b538);
+    color: #111;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.65rem 1.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.duel-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 25px rgba(242, 95, 41, 0.4);
+}
+
+/* Styles pour le Duel de films */
+#bottomDuelWrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 24px;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+#duelContainer {
+    border-radius: 12px;
+    padding: 10px 10px 8px 10px;
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    background: rgba(35, 39, 43, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+#duelHeader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+    #duelHeader {
+        padding: 0;
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: calc((100vw - (45vw * 2 + 4px)) / 2);
+    }
+}
+
+#duelHeader #duelTitle {
+    display: none;
+}
+
+#duelHeader #duelRound {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #f25f29;
+}
+
+.films-row {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: 4px;
+    align-items: stretch;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+    .films-row {
+        gap: 8px;
+        justify-content: center;
+    }
+}
+
+#duelContainer .film {
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 0;
+        border-radius: 8px;
+        padding: 4px;
+        transition: box-shadow 0.18s, border 0.18s, background 0.18s;
+        cursor: pointer;
+        position: relative;
+}
+
+@media (max-width: 700px) {
+    #duelContainer .film {
+        padding: 1px;
+        flex: 0 1 40vw;
+        max-width: 40vw;
+        margin: 0;
+    }
+}
+
+
+
+
+
+#duelContainer .film img {
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    border-radius: 6px;
+    margin-bottom: 2px;
+}
+
+@media (max-width: 700px) {
+    #duelContainer .film img {
+        max-width: 100%;
+    }
+}
+
+#duelContainer .film div[id$="Title"] {
+    margin: 4px 0;
+    font-weight: 600;
+    color: #e0e0e0;
+    font-size: 1em;
+    min-height: 1.2em;
+    text-align: center;
+    word-break: break-word;
+    width: 100%;
+}
+
+@media (max-width: 700px) {
+    #duelContainer .film div[id$="Title"] {
+        font-size: 0.9em;
+    }
+    #duelContainer .duel-title {
+        font-size: 0.9em;
+    }
+    #duelContainer .duel-details {
+        font-size: 0.8em;
+    }
+}
+
+#duelContainer .duel-title {
+    font-weight: 600;
+    color: #e0e0e0;
+    font-size: 1em;
+    margin-bottom: 2px;
+    word-break: break-word;
+}
+
+#duelContainer .links {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+#duelContainer .links a {
+    text-decoration: none;
+    font-size: 0.95em;
+    color: #f25f29;
+    transition: color 0.2s;
+}
+
+#duelContainer .links a.trailer-link {
+    color: #ff6347;
+}
+
+#duelContainer .links a:hover {
+    text-decoration: underline;
+}
+
+#duelContainer .duel-date {
+    color: #b0b0b0;
+    font-weight: 400;
+    font-size: 0.95em;
+    margin-left: 4px;
+}
+
+#duelContainer .duel-details {
+    color: #b0b0b0;
+    font-size: 0.85em;
+    margin-bottom: 4px;
+    min-height: 1.1em;
+    font-weight: 400;
+}
+
+#duelContainer .duel-vote-btn {
+    padding: 7px 0;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    background-color: #f25f29;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: auto;
+    width: 90%;
+    min-height: 36px;
+    font-weight: 500;
+}
+
+#duelContainer .duel-vote-btn:hover {
+    background: #d94f22;
+}
+
+/* Gagnant du duel, à droite à la place du bloc duel */
+#duelWinnerSimple {
+    position: static !important;
+    margin-top: 12px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: min(100%, 680px);
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 12px;
+    min-height: 320px;
+}
+
+#duelWinnerSimple img {
+    width: 220px; /* Augmenté depuis 160px */
+    height: auto;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+#duelWinnerSimple #winnerTitleSimple {
+    color: #f25f29;
+    font-weight: 700;
+    font-size: 1.35em;
+    text-align: center;
+    text-shadow: 0 2px 8px #23272b44;
+    background: none;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+/* Bouton de partage Discord sous les gagnants */
+#shareWinnersBtn {
+    align-self: center;
+    padding: 8px 18px;
+    font-size: 0.98em;
+}
+
+@keyframes winner-pop {
+    0% { transform: scale(0.7) translateY(40px); opacity: 0; }
+    70% { transform: scale(1.08) translateY(-8px); opacity: 1; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Styles pour les notifications */
+.notification {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background-color: #f25f29;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.4s, transform 0.4s;
+    font-size: 1em;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notification.hide {
+    opacity: 0;
+    transform: translateY(-16px);
+}
+
+/* Champ de recherche au-dessus de la liste des films */
+#filmListSearchBar {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    justify-content: center;
+    width: auto;
+}
+#filmListSearchInput {
+    padding: 7px 10px;
+    width: 180px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1.5px solid #f25f29;
+    background: #23272b;
+    color: #e0e0e0;
+    outline: none;
+    margin: 0;
+}
+@media (max-width: 700px) {
+    #filmListSearchBar {
+        max-width: 99vw;
+        padding: 0 1vw;
+    }
+    #filmListSearchInput {
+        width: 98vw;
+        max-width: 98vw;
+    }
+}
+
+/* Styles responsives */
+
+@media (min-width: 701px) and (max-width: 999px) {
+    #duelContainer {
+        max-width: 600px;
+    }
+    #duelContainer .film img {
+        max-width: 180px;
+    }
+    #duelWinnerSimple {
+        width: 100%;
+        max-width: 600px;
+    }
+    #duelWinnerSimple img:not(#duelWinnerSimple #duelTop5 img) {
+        width: 250px;
+    }
+}
+
+@media (max-width: 700px) {
+    #mainTopContainer, #filmList {
+        max-width: 99vw;
+        padding: 0 1vw;
+    }
+
+    #duelContainer {
+        max-width: 100vw;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 0;
+        margin: 0;
+    }
+    #duelWinnerSimple {
+        width: 97vw;
+        min-width: 0;
+        padding: 10px 0 8px 0;
+    }
+
+    #duelWinnerSimple img {
+        width: 50vw; /* Augmenté depuis 38vw */
+        min-width: 90px;
+        max-width: 220px; /* Augmenté depuis 180px */
+    }
+
+    .film-modal-content {
+        width: 85vw;
+        max-width: 85vw;
+        min-width: 0;
+        max-height: 85vh;
+        overflow-y: visible;
+        padding: 12px 8px;
+        border-radius: 10px;
+        box-sizing: border-box;
+    }
+    .film-modal-poster {
+        width: 45vw;
+        max-width: 45vw;
+        min-width: 0;
+    }
+    .film-modal-screenshots-list {
+        gap: 6px;
+        max-height: 55vh;
+        overflow-y: auto !important;
+    }
+    .film-modal-screenshots-list img {
+        width: 38vw;
+        max-width: 38vw;
+    }
+    .poster-option img {
+        width: 28vw !important;
+        max-width: 28vw !important;
+        height: auto !important;
+    }
+    .film-modal-trailer-title, .film-modal-screenshots-title {
+        font-size: 1.05em;
+    }
+    .film-modal-trailer-iframe {
+        min-width: 0;
+        width: 88vw !important;
+        max-width: 88vw !important;
+        height: 50vw !important;
+        min-height: 180px;
+        max-height: 280px;
+        border-radius: 8px;
+    }
+    .film-modal-close {
+        top: 8px;
+        right: 8px;
+    }
+}
+@media (max-width: 500px) {
+    .film-modal-overlay {
+        padding: 20px 0 !important;
+    }
+    .film-modal-content {
+        width: 90vw !important;
+        max-width: 90vw !important;
+        max-height: 90vh !important;
+        overflow-y: visible !important;
+        padding: 8px 4px !important;
+    }
+    .film-modal-content.two-columns {
+        width: 90vw !important;
+        max-width: 90vw !important;
+        max-height: 85vh !important;
+        padding: 8px 4px !important;
+    }
+    .film-modal-main-content {
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+    .film-modal-poster {
+        width: 25vw !important;
+        max-width: 25vw !important;
+    }
+    .film-modal-infos h2 {
+        font-size: 1.1em;
+        margin: 0 0 4px 0;
+    }
+    .film-modal-details {
+        font-size: 0.9em;
+        margin-bottom: 6px;
+    }
+    .film-modal-synopsis {
+        font-size: 0.9em;
+        margin-bottom: 6px;
+    }
+    .film-modal-screenshots-list {
+        max-height: 60vh !important;
+        overflow-y: auto !important;
+        gap: 4px;
+    }
+    .film-modal-screenshots-list img {
+        width: 32vw;
+        max-width: 32vw;
+    }
+    .poster-option img {
+        width: 22vw !important;
+        max-width: 22vw !important;
+        height: auto !important;
+    }
+    .film-modal-trailer-iframe {
+        width: 92vw !important;
+        max-width: 92vw !important;
+        height: 52vw !important;
+        min-height: 160px;
+        max-height: 240px;
+    }
+    .film-modal-links {
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .film-modal-links a {
+        font-size: 0.9em;
+        padding: 6px 12px;
+    }
+}
+.film-modal-trailer-title {
+    text-align: center;
+    width: 100%;
+}
+
+/* Ajout : 6 colonnes max sur PC */
+@media (min-width: 1000px) {
+    #filmList {
+        grid-template-columns: repeat(6, 1fr);
+        column-gap: 10px;
+        row-gap: 14px;
+        max-width: 1100px;
+    }
+    #filmList li img {
+        max-width: 170px;
+        width: 100%;
+    }
+    #filmList li .poster-wrapper {
+        max-width: 170px;
+    }
+    #duelContainer {
+        max-width: 700px;
+        min-width: 600px;
+        padding: 32px 32px 24px 32px;
+        font-size: 1.15em;
+    }
+    .films-row {
+        gap: 16px; /* New value */
+    }
+    #duelContainer .film img {
+        max-width: 200px; /* Augmenté depuis 160px */
+    }
+    #duelContainer .film {
+        padding: 18px 8px 18px 8px;
+    }
+
+    /* Modal agrandie pour PC */
+    .film-modal-content {
+        width: 70vw;
+        max-width: 900px;
+        max-height: 90vh;
+        padding: 16px 12px;
+    }
+    .film-modal-content.two-columns {
+        width: 70vw;
+        max-width: 900px;
+        max-height: 90vh;
+    }
+    .film-modal-main-content {
+        gap: 20px;
+    }
+    .film-modal-poster {
+        width: 200px;
+        max-width: 200px;
+    }
+    .film-modal-screenshots-list {
+        max-height: 80vh;
+        gap: 8px;
+    }
+    .film-modal-screenshots-list img {
+        width: 45vw;
+        max-width: 45vw;
+        height: auto;
+    }
+    .poster-option img {
+        width: 200px !important;
+        max-width: 200px !important;
+        height: auto !important;
+    }
+}
+
+
+/* Centrage de la barre de recherche et du bouton Duel de Films */
+.go-to-duel {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center !important;
+    gap: 4px;
+    width: 100%;
+}
+
+/* Top 5 gagnants : uniquement affiches, taille réduite, wrap, pas de titre */
+#duelWinnerSimple #duelTop5 {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+    padding-bottom: 2px;
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    row-gap: 6px;
+    background: none;
+}
+#duelWinnerSimple #duelTop5 > div {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    max-width: 200px;
+}
+#duelWinnerSimple #duelTop5 img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3; /* Conserve aspect ratio, important with object-fit */
+    object-fit: cover;
+    border-radius: 6px;
+    margin: 0 !important;
+    border: none;
+    box-shadow: 0 2px 12px #0006;
+}
+
+/* Classe pour les images du top 5 */
+.duel-top5-img {
+    width: clamp(92px, 11vw, 132px);
+    height: auto;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(242,95,41,0.2);
+    background: #181818;
+    display: block;
+}
+#duelWinnerSimple #duelTop5 span {
+    display: none !important;
+}
+
+/* Agrandir les affiches des 2e 3e 4e 5e pour tablettes */
+@media (min-width: 701px) and (max-width: 999px) {
+    #duelWinnerSimple #duelTop5 {
+        gap: 4px;
+    }
+    #duelWinnerSimple #duelTop5 > div {
+        flex: 0 0 auto;
+        max-width: none;
+        min-width: 0;
+    }
+    #duelWinnerSimple #duelTop5 > div:last-child {
+        margin-right: 0;
+    }
+    .duel-top5-img {
+        width: clamp(96px, 13vw, 118px) !important;
+        height: auto !important;
+    }
+}
+
+/* Agrandir les affiches des 2e 3e 4e 5e pour PC */
+@media (min-width: 1000px) {
+    #duelWinnerSimple {
+        max-width: 100%;
+    }
+    #duelWinnerSimple #duelTop5 {
+        gap: 6px;
+    }
+    #duelWinnerSimple #duelTop5 > div {
+        flex: 0 0 auto;
+        max-width: none;
+        min-width: 0;
+    }
+    #duelWinnerSimple #duelTop5 > div:last-child {
+        margin-right: 0;
+    }
+    .duel-top5-img {
+        width: clamp(106px, 9.2vw, 132px) !important;
+        height: auto !important;
+    }
+}
+
+/* Classe pour les liens verts */
+.green-link {
+    color: #f25f29 !important;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.green-link:hover {
+    color: #d94f22 !important;
+}
+
+/* Style pour le texte 'Aller au Duel' */
+.go-to-duel {
+    text-align: center;
+    margin: 0 0 8px 0;
+    font-size: 1.05em;
+}
+
+/* Style pour le bouton vert 'Duel de Films' */
+.duel-btn-green {
+    background: #f25f29;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 8px 22px;
+    font-size: 1.08em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(40,167,69,0.10);
+    margin-bottom: 10px;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.duel-btn-green:hover {
+    background: #d94f22;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(40,167,69,0.13);
+}
+
+/* Styles pour la modale d'affichage grand format d'un film */
+.film-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20,24,22,0.92);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    animation: modal-fade-in 0.25s;
+    overflow-y: auto;
+}
+@keyframes modal-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.film-modal-content {
+    background: #23272b;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px #000a;
+    padding: 16px 12px;
+    max-width: 85vw;
+    width: 85vw;
+    max-height: 150vh;
+    overflow-y: auto;
+    min-width: 0;
+    position: relative;
+    text-align: center;
+    color: #e0e0e0;
+    animation: modal-pop 0.3s cubic-bezier(.23,1.12,.62,1.01);
+    box-sizing: border-box;
+}
+.film-modal-content.two-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 85vw;
+    width: 85vw;
+    max-height: 150vh;
+    overflow-y: auto;
+    min-width: 0;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 12px 2vw 10px 2vw;
+    box-sizing: border-box;
+}
+.film-modal-left {
+    flex: 2;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.film-modal-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 0;
+    width: 320px;
+    max-width: 100%;
+}
+.film-modal-trailer {
+    width: 100%;
+    min-width: 220px;
+    max-width: 350px;
+    margin-top: 0;
+}
+.film-modal-trailer-iframe {
+    width: 100%;
+    min-width: 0;
+    max-width: 900px;
+    height: 420px;
+    border-radius: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 24px #0007;
+}
+@media (min-width: 900px) {
+    .film-modal-content {
+        max-height: 92vh !important;
+    }
+    .film-modal-content.two-columns {
+        max-height: 92vh !important;
+    }
+    .film-modal-trailer-iframe {
+        width: 800px;
+        height: 450px;
+        max-width: 1100px;
+        min-width: 0;
+    }
+    .film-modal-trailer {
+        max-width: 1100px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* Modal pour écrans PC moyens (laptops) */
+@media (min-width: 900px) and (max-width: 1399px) {
+    .film-modal-content {
+        max-width: 750px !important;
+        width: 750px !important;
+        max-height: 92vh !important;
+    }
+    .film-modal-content.two-columns {
+        max-width: 750px !important;
+        width: 750px !important;
+        max-height: 92vh !important;
+    }
+}
+
+/* Modal agrandi pour grands écrans PC */
+@media (min-width: 1400px) {
+    .film-modal-content {
+        max-width: 1100px !important;
+        width: 1100px !important;
+        max-height: 95vh !important;
+        overflow-y: auto;
+    }
+    .film-modal-content.two-columns {
+        max-width: 1100px !important;
+        width: 1100px !important;
+        max-height: 95vh !important;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 32px;
+    }
+    .film-modal-left {
+        flex: 1;
+        align-items: flex-start;
+    }
+    .film-modal-right {
+        flex: 1;
+        width: auto;
+        max-width: none;
+    }
+    .film-modal-poster {
+        width: 280px;
+        max-width: 280px;
+    }
+    .film-modal-screenshots-list {
+        max-height: 80vh;
+        gap: 12px;
+    }
+    .film-modal-screenshots-list img {
+        width: 200px;
+        max-width: 200px;
+        height: auto;
+    }
+    .poster-option img {
+        width: 150px !important;
+        max-width: 150px !important;
+        height: auto !important;
+    }
+    .film-modal-trailer-iframe {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+}
+@media (max-width: 900px) {
+    .film-modal-content.two-columns {
+        flex-direction: column;
+        gap: 12px;
+        width: 88vw;
+        max-width: 88vw;
+        max-height: 78vh;
+        overflow-y: auto;
+        padding: 10px 2vw 10px 2vw;
+    }
+    .film-modal-right {
+        width: 100%;
+        max-width: 100%;
+        align-items: center;
+    }
+    .film-modal-trailer {
+        width: 100%;
+        min-width: 0;
+        max-width: 100vw;
+    }
+}
+
+/* Override pour mobiles très petits */
+@media (max-width: 500px) {
+    .film-modal-content.two-columns {
+        width: 98vw;
+        max-width: 98vw;
+        max-height: 65vh;
+        padding: 8px 4px;
+    }
+}
+@keyframes modal-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    80% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.film-modal-close {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: color 0.2s;
+    z-index: 10;
+}
+.film-modal-close:hover {
+    color: #ff6347;
+}
+.film-modal-poster {
+    width: 40vw;
+    max-width: 200px;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px #0006;
+    margin-bottom: 12px;
+    background: #181818;
+}
+.film-modal-infos h2 {
+    color: #f25f29;
+    font-size: 1.25em;
+    margin: 0 0 6px 0 !important;
+}
+.film-modal-details {
+    color: #b0b0b0;
+    font-size: 1em;
+    margin-bottom: 6px !important;
+}
+.film-modal-synopsis {
+    font-size: 1em;
+    margin-bottom: 8px !important;
+    color: #e0e0e0;
+}
+.film-modal-crew {
+    font-size: 0.98em;
+    color: #b0b0b0;
+}
+
+.film-modal-links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.film-modal-links a {
+    text-decoration: none;
+    font-size: 1em;
+    color: #f25f29;
+    padding: 8px 16px;
+    border: 1px solid #f25f29;
+    border-radius: 5px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.film-modal-links a:hover {
+    background: #f25f29;
+    color: #fff;
+}
+
+.film-modal-links a.trailer-link {
+    color: #ff6347;
+    border-color: #ff6347;
+}
+
+.film-modal-links a.trailer-link:hover {
+    background: #ff6347;
+    color: #fff;
+}
+.film-modal-trailer-title {
+    color: #f25f29;
+    font-weight: 600;
+    font-size: 1.08em;
+    margin: 10px 0 4px 0;
+}
+.film-modal-screenshots-title {
+    color: #f25f29;
+    font-weight: 600;
+    font-size: 1.08em;
+    margin: 10px 0 4px 0;
+}
+.film-modal-screenshots-list {
+    display: flex;
+    gap: 7px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+.film-modal-screenshots-list img {
+    width: 80px;
+    max-width: 40vw;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px #0006;
+    background: #181818;
+    margin-bottom: 2px;
+}
+#filmList {
+    margin-top: 2px !important;
+}
+@media (max-width: 500px) {
+    .film-modal-screenshots-list img {
+        width: 38vw;
+        max-width: 98vw;
+    }
+    .film-modal-trailer-title, .film-modal-screenshots-title {
+        font-size: 1em;
+    }
+}
+@media (max-width: 500px) {
+    .film-modal-content {
+        width: 98vw;
+        padding: 12px 2vw 10px 2vw;
+    }
+    .film-modal-poster {
+        width: 80vw;
+        max-width: 98vw;
+    }
+}
+
+/* Styles for the tab navigation within the film detail modal */
+.film-modal-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px !important;
+    gap: 10px;
+}
+
+.tab-button {
+    background-color: #23272b;
+    border: 1px solid #f25f29;
+    color: #b0b0b0;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.tab-button:hover {
+    background-color: #f25f29;
+    color: #fff;
+    border-color: #f25f29;
+}
+
+.tab-button.active {
+    background-color: #f25f29;
+    color: #fff;
+    border-color: #f25f29;
+    cursor: default;
+}
+
+.tab-content {
+    display: none;
+    padding: 10px 0; /* Add some padding for content inside tabs */
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Adjustments for modal content inside tabs */
+.film-modal-main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-height: 75vh;
+    overflow-y: auto;
+    gap: 0 !important;
+}
+
+.film-modal-infos {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Container for poster or trailer in details tab */
+.film-modal-poster-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 6px !important;
+}
+
+.film-modal-poster-container img.film-modal-poster {
+    width: 40vw;
+    max-width: 200px;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px #0008;
+    background: #181818;
+}
+
+.film-modal-poster-container iframe.film-modal-trailer-iframe {
+    width: 100%;
+    max-width: 560px;
+    height: 315px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px #0008;
+}
+
+@media (min-width: 900px) {
+    .film-modal-poster-container iframe.film-modal-trailer-iframe {
+        max-width: 700px;
+        height: 394px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .film-modal-poster-container iframe.film-modal-trailer-iframe {
+        max-width: 800px;
+        height: 450px;
+    }
+}
+
+@media (max-width: 500px) {
+    .film-modal-poster-container img.film-modal-poster {
+        width: 80vw;
+        max-width: 98vw;
+    }
+}
+
+/* Further adjustments for poster list within tab */
+.film-modal-screenshots-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px; /* Increased gap for better spacing */
+    max-height: 70vh; /* Limit height and add scroll for many posters */
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #1a1d1f; /* Slightly different background for the poster area */
+    border-radius: 8px;
+}
+
+@media (min-width: 701px) and (max-width: 999px) {
+    .film-modal-screenshots-list {
+        max-height: 65vh;
+    }
+    .film-modal-main-content {
+        max-height: 70vh;
+    }
+}
+
+.film-modal-screenshots-list img {
+    width: 100px; /* Adjusted size for alternative posters */
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px #0006;
+    background: #181818;
+    cursor: pointer;
+    transition: transform 0.2s, border 0.2s;
+    border: 2px solid transparent;
+}
+
+.film-modal-screenshots-list img:hover {
+    transform: scale(1.05);
+    border: 2px solid #f25f29;
+}
+
+/* Poster option container (in modal) showing language badge + poster */
+.poster-option {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 6px;
+}
+.poster-option img {
+    width: 120px;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px #0006;
+    background: #181818;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    border: 2px solid transparent;
+}
+
+@media (max-width: 700px) {
+    .poster-option img {
+        width: 28vw;
+        max-width: 28vw;
+    }
+}
+
+@media (min-width: 701px) and (max-width: 999px) {
+    .poster-option img {
+        width: 18vw !important;
+        max-width: 18vw !important;
+    }
+}
+
+@media (max-width: 500px) {
+    .poster-option img {
+        width: 29vw;
+        max-width: 29vw;
+    }
+}
+.poster-option img:hover { transform: scale(1.06); border-color: #f25f29; }
+.poster-lang-badge {
+    display: none;
+}
+
+/* Responsive adjustments for modal tabs */
+@media (max-width: 600px) {
+    .tab-button {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+}
+
+/* Container des gagnants du duel */
+#duelWinnerSimple {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ===== STYLES BINGO ===== */
+#bingoSection {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin: 30px auto;
+    padding: 0 12px;
+}
+
+#bingoContainer {
+    width: 100%;
+    max-width: 650px;
+    background: rgba(35, 39, 43, 0.4);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.bingo-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.bingo-control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bingo-control-group label {
+    color: #e0e0e0;
+    font-size: 0.95em;
+    font-weight: 500;
+}
+
+#bingoSizeSelect {
+    padding: 6px 10px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1.5px solid #f25f29;
+    background: #23272b;
+    color: #e0e0e0;
+    outline: none;
+    cursor: pointer;
+}
+
+.bingo-btn {
+    padding: 7px 14px;
+    font-size: 0.95em;
+    border: none;
+    border-radius: 5px;
+    background-color: #f25f29;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+}
+
+.bingo-btn:hover {
+    background: #d94f22;
+}
+
+.bingo-grid {
+    display: grid;
+    gap: 8px;
+    margin: 0 auto;
+    max-width: 100%;
+}
+
+.bingo-grid.size-3 {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 400px;
+}
+
+.bingo-grid.size-4 {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 500px;
+}
+
+.bingo-grid.size-5 {
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 600px;
+}
+
+.bingo-cell {
+    aspect-ratio: 1;
+    background: #2c3136;
+    border: 2px solid #3d4349;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85em;
+    position: relative;
+    color: #e0e0e0;
+    word-break: break-word;
+    overflow: hidden;
+}
+
+.bingo-cell:hover {
+    background: #353a40;
+    border-color: #f25f29;
+    transform: scale(1.05);
+}
+
+.bingo-cell.checked {
+    background: #f25f29;
+    border-color: #1e7e34;
+    color: white;
+}
+
+.bingo-cell.checked::after {
+    content: "✓";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: white;
+}
+
+.bingo-cell.free {
+    background: #ffc107;
+    border-color: #ff9800;
+    color: #000;
+    font-weight: bold;
+}
+
+.bingo-cell.edit-mode {
+    cursor: text;
+}
+
+.bingo-cell input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    text-align: center;
+    font-size: 0.85em;
+    outline: none;
+}
+
+/* Overlay pour l'animation BINGO gagnant */
+.bingo-win-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.bingo-win-gif {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    animation: bingoWinPop 0.3s ease;
+}
+
+@keyframes bingoWinPop {
+    0% {
+        transform: scale(0.3) rotate(-15deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1) rotate(5deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* Responsive Bingo */
+@media (max-width: 700px) {
+    #bingoContainer {
+        padding: 15px;
+    }
+    
+    .bingo-controls {
+        gap: 8px;
+    }
+    
+    .bingo-btn {
+        padding: 6px 12px;
+        font-size: 0.9em;
+    }
+    
+    .bingo-cell {
+        font-size: 0.75em;
+        padding: 6px;
+    }
+    
+    .bingo-grid.size-5 {
+        gap: 6px;
+    }
+}
+
+@media (max-width: 500px) {
+    .bingo-cell {
+        font-size: 0.65em;
+        padding: 4px;
+    }
+    
+    .bingo-grid {
+        gap: 5px;
+    }
+}
+
+
+
+/* ===== SuperSite visual alignment ===== */
+.watch-parter-native-page {
+    --wp-accent: #f25f29;
+    --wp-accent-soft: #f7b538;
+    --wp-surface: #13202a;
+    --wp-surface-2: #1a2b36;
+    --wp-border: #355163;
+    --wp-text: #f2f2ee;
+    --wp-muted: #b8c2cc;
+    background:
+        radial-gradient(circle at 10% 0%, #203847 0%, transparent 40%),
+        radial-gradient(circle at 90% 20%, #3b2622 0%, transparent 38%),
+        #0e151b !important;
+    color: var(--wp-text);
+}
+
+.watch-parter-native-page #watchparter-app-root {
+    position: relative;
+    z-index: 1;
+}
+
+.watch-parter-native-page #mainTopContainer {
+    max-width: 860px;
+}
+
+.watch-parter-native-page #topFormRow {
+    justify-content: center;
+}
+
+.watch-parter-native-page #filmForm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.watch-parter-native-page #filmInput,
+.watch-parter-native-page .watchparter-search-input {
+    border: 1px solid var(--wp-border) !important;
+    border-radius: 0.5rem;
+    background: var(--wp-surface-2) !important;
+    color: var(--wp-text) !important;
+}
+
+.watch-parter-native-page #filmInput::placeholder,
+.watch-parter-native-page .watchparter-search-input::placeholder {
+    color: #8fa1af;
+}
+
+.watch-parter-native-page #filmForm button,
+.watch-parter-native-page .duel-btn-green,
+.watch-parter-native-page #randomFilmBtn,
+.watch-parter-native-page .bingo-btn,
+.watch-parter-native-page #shareWinnersBtn {
+    border: 0 !important;
+    border-radius: 0.5rem;
+    background: linear-gradient(120deg, var(--wp-accent), var(--wp-accent-soft)) !important;
+    color: #121212 !important;
+    font-weight: 700;
+}
+
+.watch-parter-native-page #duelContainer,
+.watch-parter-native-page #bingoContainer,
+.watch-parter-native-page .film-modal-content {
+    border: 1px solid #2f4555 !important;
+    background: var(--wp-surface) !important;
+}
+
+.watch-parter-native-page #filmList li .details,
+.watch-parter-native-page #randomFilmDisplay,
+.watch-parter-native-page #duelContainer .duel-details,
+.watch-parter-native-page #duelContainer .duel-date {
+    color: var(--wp-muted) !important;
+}
+
+.watch-parter-native-page #filmList li a,
+.watch-parter-native-page #duelContainer .links a,
+.watch-parter-native-page .film-modal-link-btn {
+    color: var(--wp-accent-soft) !important;
+}
+
+.watch-parter-native-page #duelContainer #duelTitle,
+.watch-parter-native-page #duelContainer #duelRound,
+.watch-parter-native-page .bingo-control-group label {
+    color: var(--wp-accent-soft) !important;
+}
+
+.watch-parter-native-page #bingoSizeSelect {
+    border: 1px solid var(--wp-border) !important;
+    background: var(--wp-surface-2) !important;
+    color: var(--wp-text) !important;
+}
+
+.watch-parter-native-page #filmListSearchBarContainer {
+    margin-top: 0.15rem;
+}
+
+/* Duel/Bingo pages: hide add + search fields (navigation is in header) */
+.watch-parter-native-page[data-watch-parter-mode="duel"] #topFormRow,
+.watch-parter-native-page[data-watch-parter-mode="duel"] #filmListSearchBarContainer,
+.watch-parter-native-page[data-watch-parter-mode="bingo"] #topFormRow,
+.watch-parter-native-page[data-watch-parter-mode="bingo"] #filmListSearchBarContainer {
+    display: none !important;
+}
+
+/* ===== Watch Parter final alignment (SuperSite) ===== */
+.watch-parter-native-page #topFormRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    flex-wrap: nowrap;
+    margin-bottom: 0.45rem;
+}
+
+.watch-parter-native-page #filmForm {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+.watch-parter-native-page #filmInput {
+    width: clamp(210px, 26vw, 280px);
+    min-width: 0;
+    padding: 0.5rem 0.62rem;
+    font-size: 0.9rem;
+}
+
+.watch-parter-native-page #filmListSearchBarContainer {
+    width: auto;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.watch-parter-native-page .watchparter-searchbar {
+    margin: 0;
+}
+
+.watch-parter-native-page #filmListSearchInput,
+.watch-parter-native-page .watchparter-search-input {
+    width: clamp(210px, 25vw, 270px);
+    min-width: 0;
+    padding: 0.5rem 0.62rem;
+    font-size: 0.9rem;
+    border: 1px solid #355163 !important;
+    border-radius: 0.5rem;
+    background: #1a2b36 !important;
+    color: #f2f2ee !important;
+}
+
+.watch-parter-native-page #filmListSearchInput:focus,
+.watch-parter-native-page .watchparter-search-input:focus {
+    border-color: #4f6f82 !important;
+    outline: 2px solid rgba(242, 95, 41, 0.35);
+    outline-offset: 1px;
+}
+
+.watch-parter-native-page #filmList li,
+.watch-parter-native-page #duelContainer,
+.watch-parter-native-page #bingoContainer,
+.watch-parter-native-page .film-modal-content,
+.watch-parter-native-page .film-modal-screenshots-section,
+.watch-parter-native-page .poster-option {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+.watch-parter-native-page #filmList li {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.watch-parter-native-page #filmList li .poster-wrapper,
+.watch-parter-native-page #filmList li .poster-wrapper img {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.watch-parter-native-page .film-modal-tabs {
+    border-bottom-color: #355163 !important;
+}
+
+.watch-parter-native-page .tab-button {
+    color: #b8c2cc !important;
+}
+
+.watch-parter-native-page .tab-button.active {
+    color: #f2f2ee !important;
+    border-bottom-color: #f25f29 !important;
+}
+
+@media (max-width: 900px) {
+    .watch-parter-native-page #topFormRow {
+        flex-wrap: wrap;
+    }
+
+    .watch-parter-native-page #filmInput,
+    .watch-parter-native-page #filmListSearchInput,
+    .watch-parter-native-page .watchparter-search-input {
+        width: min(86vw, 420px);
+        min-width: 0;
+    }
+
+    .watch-parter-native-page #topFormRow {
+        gap: 0.5rem;
+    }
+}
+
+/* ===== Watch Parter color tuning ===== */
+.watch-parter-native-page {
+    font-family: var(--font-body), sans-serif !important;
+    color: var(--text) !important;
+}
+
+.watch-parter-native-page h1,
+.watch-parter-native-page h2,
+.watch-parter-native-page h3,
+.watch-parter-native-page #duelTitle,
+.watch-parter-native-page #duelRound {
+    font-family: var(--font-heading), sans-serif !important;
+}
+
+.watch-parter-native-page #duelHeader #duelRound {
+    color: #f25f29 !important;
+}
+
+.watch-parter-native-page .film-modal-links {
+    border-top: 1px solid #355163 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 3rem;
+    gap: 0.5rem;
+    margin-top: 0.55rem !important;
+    padding: 0.55rem 0 !important;
+}
+
+.watch-parter-native-page .film-modal-links a,
+.watch-parter-native-page #duelContainer .links a {
+    text-decoration: none;
+    border-radius: 0.45rem;
+    padding: 0.32rem 0.62rem;
+    border: 1px solid transparent;
+    font-weight: 600;
+    line-height: 1.2;
+    min-height: 2.05rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.watch-parter-native-page .film-modal-links .letterboxd-link,
+.watch-parter-native-page #duelContainer .links .letterboxd-link {
+    color: #66c08a !important;
+    border-color: rgba(102, 192, 138, 0.55) !important;
+}
+
+.watch-parter-native-page .film-modal-links .letterboxd-link:hover,
+.watch-parter-native-page #duelContainer .links .letterboxd-link:hover {
+    background: rgba(102, 192, 138, 0.18);
+    color: #8ad9ab !important;
+    text-decoration: none;
+}
+
+.watch-parter-native-page .film-modal-links .trailer-link,
+.watch-parter-native-page #duelContainer .links .trailer-link {
+    color: #ff6b6b !important;
+    border-color: rgba(255, 107, 107, 0.58) !important;
+}
+
+.watch-parter-native-page .film-modal-links .trailer-link:hover,
+.watch-parter-native-page #duelContainer .links .trailer-link:hover {
+    background: rgba(255, 107, 107, 0.17);
+    color: #ff8b8b !important;
+    text-decoration: none;
+}
+
+.watch-parter-native-page #filmList li .poster-wrapper .added-by-user-icon {
+    border: 2px solid rgba(20, 32, 43, 0.88);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(242, 95, 41, 0.24);
+}
+
+.watch-parter-native-page #duelContainer .film {
+    cursor: default !important;
+}
+
+.watch-parter-native-page #duelContainer .film-poster-clickable {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+}
+
+.watch-parter-native-page #duelContainer .film-poster-clickable img {
+    cursor: pointer;
+}
+
+/* Sur les pages watchlist/courter, le duel en bas est cache (accessible via header) */
+.watch-parter-native-page[data-watch-parter-mode="watchlist"] #bottomDuelWrapper,
+.watch-parter-native-page[data-watch-parter-mode="courter"] #bottomDuelWrapper {
+    display: none !important;
+}
+
+/* Unified text color: match Super Site white text */
+.watch-parter-native-page,
+.watch-parter-native-page p,
+.watch-parter-native-page span,
+.watch-parter-native-page label,
+.watch-parter-native-page h1,
+.watch-parter-native-page h2,
+.watch-parter-native-page h3,
+.watch-parter-native-page h4,
+.watch-parter-native-page .duel-title,
+.watch-parter-native-page .duel-date,
+.watch-parter-native-page .duel-details,
+.watch-parter-native-page #duelHeader #duelRound,
+.watch-parter-native-page #duelHeader #duelTitle,
+.watch-parter-native-page .film-modal-infos h2,
+.watch-parter-native-page .film-modal-details,
+.watch-parter-native-page .film-modal-synopsis,
+.watch-parter-native-page .film-modal-crew,
+.watch-parter-native-page .film-modal-trailer-title,
+.watch-parter-native-page .film-modal-screenshots-title,
+.watch-parter-native-page .bingo-control-group label,
+.watch-parter-native-page #randomFilmDisplay {
+    color: var(--text) !important;
+}
+
+/* ===== Watch Parter modal typography + tabs ===== */
+.watch-parter-native-page .film-modal-tabs {
+    border-bottom-color: #355163 !important;
+    padding: 0.2rem 0 0.45rem;
+    margin-bottom: 0.65rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 3rem;
+    gap: 0.42rem;
+}
+
+.watch-parter-native-page .tab-button {
+    font-family: var(--font-body), sans-serif !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    color: #d7e0e8 !important;
+    background: rgba(21, 34, 45, 0.92) !important;
+    border: 1px solid #3e5a6c !important;
+    border-radius: 0.5rem !important;
+    padding: 0.46rem 0.78rem !important;
+    min-width: 96px;
+    min-height: 2.05rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.watch-parter-native-page .tab-button:hover {
+    transform: translateY(-1px);
+    border-color: #f25f29 !important;
+    background: rgba(29, 46, 59, 0.95) !important;
+}
+
+.watch-parter-native-page .tab-button.active {
+    color: #121212 !important;
+    border-color: transparent !important;
+    border-bottom-color: transparent !important;
+    background: linear-gradient(120deg, #f25f29, #f7b538) !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+}
+
+.watch-parter-native-page .tab-link-letterboxd {
+    color: #66c08a !important;
+    border-color: rgba(102, 192, 138, 0.65) !important;
+    background: rgba(21, 34, 45, 0.92) !important;
+    text-decoration: none !important;
+}
+
+.watch-parter-native-page .tab-link-letterboxd:hover {
+    color: #8ad9ab !important;
+    border-color: rgba(138, 217, 171, 0.8) !important;
+    background: rgba(26, 44, 38, 0.88) !important;
+}
+
+.watch-parter-native-page .film-modal-links {
+    display: none !important;
+    border-top: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+}
+
+.watch-parter-native-page .film-modal-infos h2 {
+    font-family: var(--font-heading), sans-serif !important;
+    font-size: clamp(1.35rem, 1.75vw, 1.8rem) !important;
+    line-height: 1.12;
+    letter-spacing: 0.01em;
+    margin: 0.25rem 0 0.45rem !important;
+    color: var(--text) !important;
+}
+
+.watch-parter-native-page .film-modal-details {
+    font-size: clamp(0.92rem, 1.02vw, 1.01rem) !important;
+    line-height: 1.4 !important;
+    color: var(--text) !important;
+    opacity: 0.94;
+    margin-bottom: 0.35rem !important;
+}
+
+.watch-parter-native-page .film-modal-synopsis {
+    font-size: clamp(0.9rem, 0.98vw, 0.98rem) !important;
+    line-height: 1.5 !important;
+    color: var(--text) !important;
+    opacity: 0.92;
+    margin-bottom: 0.5rem !important;
+}
+
+.watch-parter-native-page .film-modal-crew {
+    font-size: 0.88rem !important;
+    line-height: 1.38 !important;
+    color: var(--text) !important;
+    opacity: 0.82;
+}
+
+@media (min-width: 901px) {
+    .watch-parter-native-page .film-modal-content {
+        max-height: calc(100vh - 70px) !important;
+        padding: 0.65rem 0.85rem 0.85rem !important;
+        overflow-y: auto !important;
+    }
+
+    .watch-parter-native-page .film-modal-main-content {
+        max-height: none !important;
+        overflow-y: visible !important;
+        gap: 0.7rem;
+    }
+
+    .watch-parter-native-page .film-modal-poster-container {
+        padding: 0.32rem !important;
+    }
+
+    .watch-parter-native-page .film-modal-poster-container iframe.film-modal-trailer-iframe {
+        height: min(36vh, 300px) !important;
+    }
+
+    .watch-parter-native-page .film-modal-poster-container img.film-modal-poster {
+        max-height: min(46vh, 360px) !important;
+    }
+
+    .watch-parter-native-page .film-modal-links {
+        margin-top: 0.55rem !important;
+        padding: 0.55rem 0 !important;
+    }
+
+    .watch-parter-native-page .film-modal-links a {
+        font-size: 0.9rem !important;
+        padding: 0.34rem 0.64rem !important;
+    }
+}
+
+/* Modal trailer: enforce stable 16:9 rendering */
+.watch-parter-native-page .film-modal-poster-container {
+    width: min(90vw, 900px);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.watch-parter-native-page .film-modal-poster-container iframe.film-modal-trailer-iframe {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 16 / 9 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    border-radius: 0.7rem;
+}
+
+/* ===== Final mobile safety overrides (Watch Parter) ===== */
+@media (max-width: 900px) {
+    html,
+    body.watch-parter-native-page {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    body.watch-parter-native-page {
+        overflow-x: hidden !important;
+        position: relative;
+    }
+
+    .watch-parter-native-page main,
+    .watch-parter-native-page .watch-parter-main,
+    .watch-parter-native-page #watchparter-app-root {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page #watchparter-app-root * {
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page img,
+    .watch-parter-native-page iframe,
+    .watch-parter-native-page video,
+    .watch-parter-native-page canvas {
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page p,
+    .watch-parter-native-page span,
+    .watch-parter-native-page h1,
+    .watch-parter-native-page h2,
+    .watch-parter-native-page h3,
+    .watch-parter-native-page h4,
+    .watch-parter-native-page h5,
+    .watch-parter-native-page h6,
+    .watch-parter-native-page button,
+    .watch-parter-native-page a,
+    .watch-parter-native-page label {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .watch-parter-native-page #mainTopContainer,
+    .watch-parter-native-page #topFormRow,
+    .watch-parter-native-page #filmList,
+    .watch-parter-native-page #bottomDuelWrapper,
+    .watch-parter-native-page #duelContainer,
+    .watch-parter-native-page #duelWinnerSimple,
+    .watch-parter-native-page #bingoSection,
+    .watch-parter-native-page #bingoContainer {
+        width: min(96vw, 760px) !important;
+        max-width: 96vw !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page #topFormRow {
+        align-items: stretch !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+    }
+
+    .watch-parter-native-page #filmForm,
+    .watch-parter-native-page #filmListSearchBarContainer {
+        width: min(96vw, 560px) !important;
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page #filmInput,
+    .watch-parter-native-page #filmListSearchInput,
+    .watch-parter-native-page .watchparter-search-input {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .watch-parter-native-page #filmList {
+        padding-left: 0.3rem !important;
+        padding-right: 0.3rem !important;
+        justify-content: center !important;
+    }
+
+    .watch-parter-native-page #filmList li {
+        width: clamp(104px, 28vw, 148px) !important;
+        max-width: clamp(104px, 28vw, 148px) !important;
+        min-width: 0 !important;
+    }
+
+    .watch-parter-native-page #filmList li .poster-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page #filmList li .poster-wrapper img:not(.added-by-user-icon) {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 2 / 3;
+        object-fit: cover;
+    }
+
+    .watch-parter-native-page #duelContainer .films-row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 0.7rem !important;
+    }
+
+    .watch-parter-native-page #duelContainer .film {
+        width: min(44vw, 220px) !important;
+        max-width: min(44vw, 220px) !important;
+        min-width: 0 !important;
+    }
+
+    .watch-parter-native-page #duelContainer .film-poster-clickable,
+    .watch-parter-native-page #duelContainer .film-poster-clickable img {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .watch-parter-native-page #duelContainer .links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem;
+    }
+
+    .watch-parter-native-page #duelContainer .links a,
+    .watch-parter-native-page .film-modal-links a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 88px;
+        padding: 0.32rem 0.58rem !important;
+        white-space: nowrap;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+        line-height: 1.1;
+    }
+
+    .watch-parter-native-page .film-modal-content {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        max-height: calc(100vh - 34px) !important;
+        overflow-y: auto !important;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 500px) {
+    .watch-parter-native-page #filmList li {
+        width: clamp(96px, 29vw, 128px) !important;
+        max-width: clamp(96px, 29vw, 128px) !important;
+    }
+
+    .watch-parter-native-page #duelContainer .film {
+        width: min(46vw, 180px) !important;
+        max-width: min(46vw, 180px) !important;
+    }
+
+    .watch-parter-native-page #bingoGrid .bingo-cell,
+    .watch-parter-native-page .bingo-grid .bingo-cell {
+        min-height: 64px !important;
+        padding: 0.35rem !important;
+    }
+}

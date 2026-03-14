@@ -1,4 +1,4 @@
-﻿window.ReviewsStore = (() => {
+window.ReviewsStore = (() => {
   const categories = {
     jeu: "Jeu-vidéo",
     film: "Film",
@@ -10,6 +10,12 @@
 
   const reviewCollection = "reviews";
   const topCollection = "tops";
+  const usersCollection = "users";
+  const ADMIN_USERNAME = "admin";
+  const USERNAME_RE = /^[a-z0-9._-]{3,24}$/;
+  const STATUS_PUBLISHED = "published";
+  const STATUS_DRAFT = "draft";
+
   let firebaseReady = false;
   let db;
   let auth;
@@ -46,32 +52,134 @@
     return result || `${Date.now()}`;
   }
 
+  function normalizeUsername(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function normalizeStatus(value) {
+    return String(value || "").trim().toLowerCase() === STATUS_DRAFT ? STATUS_DRAFT : STATUS_PUBLISHED;
+  }
+
+  function resolveReviewPublicationTimestamp(source) {
+    if (!source) return Date.now();
+    const dateValue = String(source.date || "").trim();
+    if (dateValue) {
+      const parsed = Date.parse(dateValue);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    const forced = Number(source.publishedAt);
+    if (Number.isFinite(forced) && forced > 0) return forced;
+    const updated = Number(source.updatedAt);
+    if (Number.isFinite(updated) && updated > 0) return updated;
+    return Date.now();
+  }
+
+  function usernameToEmail(username) {
+    return `${username}@groszizou.local`;
+  }
+
+  function validateCredentials(username, password) {
+    const cleanUsername = normalizeUsername(username);
+    const cleanPassword = String(password || "");
+    if (!USERNAME_RE.test(cleanUsername)) {
+      throw new Error("Nom d'utilisateur invalide (3-24 caractères: a-z, 0-9, ., _, -)");
+    }
+    if (cleanPassword.length < 4) {
+      throw new Error("Mot de passe trop court (minimum 4 caractères)");
+    }
+    return { username: cleanUsername, password: cleanPassword };
+  }
+
+  async function findProfileByUsername(username) {
+    ensureFirebase();
+    const clean = normalizeUsername(username);
+    if (!clean) return null;
+    const snap = await db.collection(usersCollection).where("lowerUsername", "==", clean).limit(1).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    const data = doc.data() || {};
+    return {
+      uid: doc.id,
+      username: String(data.username || clean).trim().toLowerCase(),
+      email: String(data.email || "")
+    };
+  }
+
+  function readUsernameFromUser(user) {
+    if (!user) return "";
+    if (user.displayName) return normalizeUsername(user.displayName);
+    const email = String(user.email || "");
+    const atIndex = email.indexOf("@");
+    if (atIndex > 0) return normalizeUsername(email.slice(0, atIndex));
+    return "";
+  }
+
+  function getCurrentUser() {
+    ensureFirebase();
+    const user = auth.currentUser;
+    if (!user) return null;
+    return {
+      uid: user.uid,
+      username: readUsernameFromUser(user),
+      email: user.email || ""
+    };
+  }
+
   function normalizeBlock(raw) {
     if (!raw || !raw.type) return null;
-    return {
+    const normalized = {
       type: raw.type,
       content: raw.content || "",
       url: raw.url || "",
       caption: raw.caption || ""
     };
+    if ("url2" in raw) normalized.url2 = raw.url2 || "";
+    if ("caption2" in raw) normalized.caption2 = raw.caption2 || "";
+    if ("separatorStyle" in raw) normalized.separatorStyle = raw.separatorStyle || "space";
+    return normalized;
   }
 
   function normalizeReview(review) {
     const blocks = Array.isArray(review.blocks)
       ? review.blocks.map(normalizeBlock).filter(Boolean)
       : [];
+    const externalLinks = Array.isArray(review.externalLinks)
+      ? review.externalLinks
+        .map((entry) => ({
+          label: String(entry?.label || "").trim(),
+          url: String(entry?.url || "").trim()
+        }))
+        .filter((entry) => entry.label && entry.url)
+      : [];
+    const publicationTimestamp = resolveReviewPublicationTimestamp(review);
 
     return {
       id: review.id || slugify(review.title),
       title: review.title || "Sans titre",
-      category: review.category || "jeu",
+      category: review.category || "film",
       date: review.date || "",
       score: Number.isFinite(Number(review.score)) ? Number(review.score) : null,
       cover: review.cover || "",
       poster: review.poster || "",
       accent: review.accent || "",
       summary: review.summary || "",
+      author: review.author || "",
+      director: review.director || "",
+      studio: review.studio || "",
+      releaseYear: review.releaseYear || "",
+      genre: review.genre || "",
+      tmdbOverview: review.tmdbOverview || "",
+      tmdbId: review.tmdbId || "",
+      tmdbMediaType: review.tmdbMediaType || "",
+      bgMusic: review.bgMusic || "",
+      status: normalizeStatus(review.status),
+      ownerId: review.ownerId || "",
+      ownerUsername: review.ownerUsername || "",
+      contentMode: review.contentMode || (review.bodyHtml ? "rich" : "blocks"),
+      bodyHtml: review.bodyHtml || "",
+      externalLinks,
       blocks,
+      publishedAt: publicationTimestamp,
       updatedAt: typeof review.updatedAt === "number" ? review.updatedAt : Date.now()
     };
   }
@@ -84,7 +192,14 @@
     return {
       title,
       comment: item.comment || "",
-      reviewId
+      note: Number.isFinite(Number(item.note)) ? Number(item.note) : null,
+      reviewId,
+      poster: item.poster || "",
+      cover: item.cover || "",
+      releaseYear: item.releaseYear || "",
+      director: item.director || "",
+      tmdbId: item.tmdbId || "",
+      tmdbMediaType: item.tmdbMediaType || ""
     };
   }
 
@@ -97,24 +212,176 @@
       id: top.id || slugify(top.title),
       title: top.title || "Sans titre",
       subtitle: top.subtitle || "",
-      category: top.category || "autre",
+      category: top.category || "film",
       year: top.year || "",
+      status: normalizeStatus(top.status),
+      ownerId: top.ownerId || "",
+      ownerUsername: top.ownerUsername || "",
       items,
       updatedAt: typeof top.updatedAt === "number" ? top.updatedAt : Date.now()
     };
   }
 
-  function requireAuth() {
+  async function getUserProfile(uid) {
     ensureFirebase();
-    if (!auth.currentUser) {
-      throw new Error("Mot de passe requis pour modifier");
-    }
+    if (!uid) return null;
+    const doc = await db.collection(usersCollection).doc(uid).get();
+    if (!doc.exists) return null;
+    const data = doc.data() || {};
+    return {
+      uid,
+      username: String(data.username || "").trim().toLowerCase()
+    };
   }
 
-  async function getAll() {
+  async function getProfilesByIds(ids) {
     ensureFirebase();
-    const snap = await db.collection(reviewCollection).orderBy("updatedAt", "desc").get();
-    return snap.docs.map((doc) => normalizeReview({ id: doc.id, ...doc.data() }));
+    const uniq = [...new Set((ids || []).filter(Boolean))];
+    if (!uniq.length) return {};
+    const out = {};
+    await Promise.all(
+      uniq.map(async (uid) => {
+        const profile = await getUserProfile(uid);
+        if (profile) out[uid] = profile;
+      })
+    );
+    return out;
+  }
+
+  async function updateCurrentUserProfile(profilePatch = {}) {
+    const current = requireAuth();
+    const patch = {};
+    if ("username" in profilePatch) {
+      patch.username = normalizeUsername(profilePatch.username);
+      if (!USERNAME_RE.test(patch.username)) {
+        throw new Error("Nom d'utilisateur invalide (3-24 caractères: a-z, 0-9, ., _, -)");
+      }
+      try {
+        const existing = await findProfileByUsername(patch.username);
+        if (existing && existing.uid !== current.uid) {
+          throw new Error("Nom d'utilisateur déjà utilisé");
+        }
+      } catch {
+        // If rules block read on users collection, skip uniqueness check.
+      }
+    }
+    if (!("username" in patch)) patch.username = current.username || "";
+    patch.lowerUsername = patch.username;
+    patch.email = current.email || auth.currentUser?.email || "";
+    patch.updatedAt = Date.now();
+    try {
+      await db.collection(usersCollection).doc(current.uid).set(patch, { merge: true });
+    } catch {
+      // Optional persistence; auth profile remains source of truth.
+    }
+    if ("username" in patch) {
+      await auth.currentUser.updateProfile({
+        displayName: patch.username || current.username || ""
+      });
+    }
+    const user = getCurrentUser();
+    return {
+      uid: current.uid,
+      username: user?.username || patch.username || ""
+    };
+  }
+
+  async function changeCurrentUsername(newUsername, currentPassword) {
+    ensureFirebase();
+    const current = requireAuth();
+    const username = normalizeUsername(newUsername);
+    const password = String(currentPassword || "");
+    if (!USERNAME_RE.test(username)) {
+      throw new Error("Nom d'utilisateur invalide (3-24 caractères: a-z, 0-9, ., _, -)");
+    }
+    if (!password) {
+      throw new Error("Mot de passe actuel requis");
+    }
+
+    const emailProvider = firebase.auth.EmailAuthProvider;
+    const currentEmail = auth.currentUser?.email || current.email || "";
+    const credential = emailProvider.credential(currentEmail, password);
+    await auth.currentUser.reauthenticateWithCredential(credential);
+
+    await auth.currentUser.updateProfile({
+      displayName: username,
+      photoURL: auth.currentUser.photoURL || ""
+    });
+
+    try {
+      const existing = await findProfileByUsername(username);
+      if (existing && existing.uid !== current.uid) {
+        throw new Error("Nom d'utilisateur déjà utilisé");
+      }
+    } catch {
+      // ignore read errors due to rules
+    }
+
+    try {
+      await db.collection(usersCollection).doc(current.uid).set(
+        {
+          username,
+          lowerUsername: username,
+          email: currentEmail,
+          updatedAt: Date.now()
+        },
+        { merge: true }
+      );
+    } catch {
+      // optional persistence
+    }
+
+    return getCurrentUser();
+  }
+
+  async function changeCurrentUserPassword(currentPassword, newPassword) {
+    ensureFirebase();
+    const current = requireAuth();
+    const oldPwd = String(currentPassword || "");
+    const nextPwd = String(newPassword || "");
+    if (!oldPwd) {
+      throw new Error("Mot de passe actuel requis");
+    }
+    if (nextPwd.length < 4) {
+      throw new Error("Nouveau mot de passe trop court (minimum 4 caractères)");
+    }
+
+    const emailProvider = firebase.auth.EmailAuthProvider;
+    const currentEmail = auth.currentUser?.email || current.email || "";
+    const credential = emailProvider.credential(currentEmail, oldPwd);
+    await auth.currentUser.reauthenticateWithCredential(credential);
+    await auth.currentUser.updatePassword(nextPwd);
+    return { ok: true };
+  }
+
+  function requireAuth() {
+    ensureFirebase();
+    const current = getCurrentUser();
+    if (!current) {
+      throw new Error("Connexion requise pour modifier");
+    }
+    return current;
+  }
+
+  function isAdminUser(user) {
+    return normalizeUsername(user?.username || "") === ADMIN_USERNAME;
+  }
+
+  async function getAll(options = {}) {
+    ensureFirebase();
+    let query = db.collection(reviewCollection);
+    if (options.ownerId) {
+      query = query.where("ownerId", "==", options.ownerId);
+    }
+    const snap = await query.get();
+    const normalized = snap.docs
+      .map((doc) => normalizeReview({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
+    const expectedStatus = options.status ? normalizeStatus(options.status) : "";
+    if (expectedStatus) {
+      return normalized.filter((item) => normalizeStatus(item.status) === expectedStatus);
+    }
+    return normalized;
   }
 
   async function getById(id) {
@@ -125,22 +392,58 @@
   }
 
   async function upsert(review) {
-    requireAuth();
+    const current = requireAuth();
+    const isAdmin = isAdminUser(current);
     const normalized = normalizeReview(review);
-    await db.collection(reviewCollection).doc(normalized.id).set(normalized, { merge: true });
+    const ref = db.collection(reviewCollection).doc(normalized.id);
+    const existing = await ref.get();
+    if (existing.exists) {
+      const data = existing.data() || {};
+      if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
+        throw new Error("Cette review appartient à un autre utilisateur");
+      }
+      if (isAdmin && data.ownerId) {
+        normalized.ownerId = data.ownerId;
+        normalized.ownerUsername = data.ownerUsername || normalized.ownerUsername;
+      }
+    }
+    if (!normalized.ownerId) {
+      normalized.ownerId = current.uid;
+      normalized.ownerUsername = current.username || "";
+    }
+    await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
 
   async function remove(id) {
-    requireAuth();
-    await db.collection(reviewCollection).doc(id).delete();
+    const current = requireAuth();
+    const isAdmin = isAdminUser(current);
+    const ref = db.collection(reviewCollection).doc(id);
+    const existing = await ref.get();
+    if (!existing.exists) return { ok: true };
+    const data = existing.data() || {};
+    if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
+      throw new Error("Suppression impossible: cette review appartient à un autre utilisateur");
+    }
+    await ref.delete();
     return { ok: true };
   }
 
-  async function getAllTops() {
+  async function getAllTops(options = {}) {
     ensureFirebase();
-    const snap = await db.collection(topCollection).orderBy("updatedAt", "desc").get();
-    return snap.docs.map((doc) => normalizeTop({ id: doc.id, ...doc.data() }));
+    let query = db.collection(topCollection);
+    if (options.ownerId) {
+      query = query.where("ownerId", "==", options.ownerId);
+    }
+    const snap = await query.get();
+    const normalized = snap.docs
+      .map((doc) => normalizeTop({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const expectedStatus = options.status ? normalizeStatus(options.status) : "";
+    if (expectedStatus) {
+      return normalized.filter((item) => normalizeStatus(item.status) === expectedStatus);
+    }
+    return normalized;
   }
 
   async function getTopById(id) {
@@ -151,15 +454,40 @@
   }
 
   async function upsertTop(top) {
-    requireAuth();
+    const current = requireAuth();
+    const isAdmin = isAdminUser(current);
     const normalized = normalizeTop(top);
-    await db.collection(topCollection).doc(normalized.id).set(normalized, { merge: true });
+    const ref = db.collection(topCollection).doc(normalized.id);
+    const existing = await ref.get();
+    if (existing.exists) {
+      const data = existing.data() || {};
+      if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
+        throw new Error("Ce top appartient à un autre utilisateur");
+      }
+      if (isAdmin && data.ownerId) {
+        normalized.ownerId = data.ownerId;
+        normalized.ownerUsername = data.ownerUsername || normalized.ownerUsername;
+      }
+    }
+    if (!normalized.ownerId) {
+      normalized.ownerId = current.uid;
+      normalized.ownerUsername = current.username || "";
+    }
+    await ref.set(normalized, { merge: true });
     return { ok: true, id: normalized.id };
   }
 
   async function removeTop(id) {
-    requireAuth();
-    await db.collection(topCollection).doc(id).delete();
+    const current = requireAuth();
+    const isAdmin = isAdminUser(current);
+    const ref = db.collection(topCollection).doc(id);
+    const existing = await ref.get();
+    if (!existing.exists) return { ok: true };
+    const data = existing.data() || {};
+    if (!isAdmin && data.ownerId && data.ownerId !== current.uid) {
+      throw new Error("Suppression impossible: ce top appartient à un autre utilisateur");
+    }
+    await ref.delete();
     return { ok: true };
   }
 
@@ -181,12 +509,49 @@
     return count;
   }
 
-  async function unlockWithPassword(password) {
+  async function registerWithCredentials(username, password) {
     ensureFirebase();
-    if (!cfg.adminEmail) {
-      throw new Error("Renseigne adminEmail dans assets/js/firebase-config.js");
+    const valid = validateCredentials(username, password);
+    try {
+      const existing = await findProfileByUsername(valid.username);
+      if (existing) {
+        throw new Error("Nom d'utilisateur déjà utilisé");
+      }
+    } catch {
+      // If rules block read on users collection, continue with auth-only creation.
     }
-    return auth.signInWithEmailAndPassword(cfg.adminEmail, password);
+    const email = usernameToEmail(valid.username);
+    const cred = await auth.createUserWithEmailAndPassword(email, valid.password);
+    if (cred.user) {
+      await cred.user.updateProfile({ displayName: valid.username });
+      try {
+        await db.collection(usersCollection).doc(cred.user.uid).set(
+          {
+            username: valid.username,
+            lowerUsername: valid.username,
+            email,
+            createdAt: Date.now()
+          },
+          { merge: true }
+        );
+      } catch {
+        // Optional persistence; auth profile remains source of truth.
+      }
+    }
+    return { ok: true };
+  }
+
+  async function loginWithCredentials(username, password) {
+    ensureFirebase();
+    const valid = validateCredentials(username, password);
+    let email = usernameToEmail(valid.username);
+    try {
+      const profile = await findProfileByUsername(valid.username);
+      email = profile?.email || email;
+    } catch {
+      // If Firestore rules block anonymous reads, fallback to deterministic email.
+    }
+    return auth.signInWithEmailAndPassword(email, valid.password);
   }
 
   async function signOut() {
@@ -212,7 +577,14 @@
     removeTop,
     exportJson,
     importJson,
-    unlockWithPassword,
+    registerWithCredentials,
+    loginWithCredentials,
+    getCurrentUser,
+    getUserProfile,
+    getProfilesByIds,
+    updateCurrentUserProfile,
+    changeCurrentUsername,
+    changeCurrentUserPassword,
     signOut,
     onAuthChanged
   };

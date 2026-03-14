@@ -1,10 +1,11 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tops - GROSZIZOU</title>
-  <meta name="description" content="Tous les tops GROSZIZOU : top 10 jeux-vidéo, films, séries..." />
+  <title>SuperSite - Tops</title>
+  <meta name="description" content="Tous les tops SuperSite : top 10 jeux-vidéo, films, séries..." />
+  <link rel="icon" type="image/png" href="pouce.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -15,13 +16,22 @@
 
   <header class="hero">
     <nav class="topbar container">
-      <a class="brand" href="index.html">GROSZIZOU</a>
+      <a class="brand" href="index.html"><img src="pouce.png" alt="" class="brand-icon" aria-hidden="true" /><span>SUPERSITE</span></a>
       <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
       <ul id="menu" class="menu">
         <li><a href="index.html">Reviews</a></li>
         <li><a href="tops.html">Tops</a></li>
+        <li class="menu-item-has-submenu">
+          <a href="watch-parter-watchlist.html">Watch Parter</a>
+          <ul class="submenu" aria-label="Sous-menu Watch Parter">
+            <li><a href="watch-parter-watchlist.html">Watchlist</a></li>
+            <li><a href="watch-parter-courter.html">Watchlist Courts</a></li>
+            <li><a href="watch-parter-duel.html">Duel de films</a></li>
+            <li><a href="watch-parter-bingo.html">Bingo</a></li>
+          </ul>
+        </li>
         <li class="menu-sep" aria-hidden="true">|</li>
-        <li><a href="modifier.html">Admin</a></li>
+        <li id="auth-menu-slot" class="auth-menu-slot"></li>
       </ul>
     </nav>
   </header>
@@ -29,7 +39,39 @@
   <main>
     <section class="container reviews-section">
       <div class="section-head">
-        <h2>Tous les tops</h2>
+        <div class="listing-controls">
+          <div id="tops-filters" class="filters" role="group" aria-label="Filtrer les tops">
+            <button class="filter-btn active" data-filter="all">Tout</button>
+          </div>
+          <div class="listing-selects">
+            <button id="tops-reset" class="action-btn secondary tiny icon-btn" type="button" aria-label="Reset des filtres" title="Reset des filtres">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M20 12a8 8 0 1 1-2.35-5.65" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M20 4v6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <label class="select-inline" for="tops-search">
+              Recherche
+              <input id="tops-search" type="search" placeholder="Titre, mots-cl&eacute;s..." />
+            </label>
+            <label class="select-inline" for="tops-sort">
+              Tri
+              <select id="tops-sort">
+                <option value="date-desc">Plus r&eacute;cent</option>
+                <option value="date-asc">Plus ancien</option>
+                <option value="score-desc">Meilleure note</option>
+                <option value="score-asc">Pire note</option>
+              </select>
+            </label>
+            <label class="select-inline" for="tops-user-filter">
+              Utilisateur
+              <select id="tops-user-filter">
+                <option value="all">Tous</option>
+              </select>
+            </label>
+            <a id="quick-create-top" class="action-btn hidden" href="top-studio.html" title="Nouveau top">+</a>
+          </div>
+        </div>
       </div>
       <div id="tops-grid" class="reviews-grid"></div>
     </section>
@@ -40,8 +82,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="assets/js/reviews.js"></script>
+  <script src="assets/js/auth-ui.js"></script>
   <script src="assets/js/tops.js"></script>
 </body>
 </html>
+
 
 

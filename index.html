@@ -1,9 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GROSZIZOU Reviews</title>
+  <title>SuperSite - Reviews</title>
+  <link rel="icon" type="image/png" href="pouce.png" />
   <meta name="description" content="Reviews de jeux, films, séries, musiques et livres." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,13 +16,22 @@
 
   <header class="hero">
     <nav class="topbar container">
-      <a class="brand" href="index.html">GROSZIZOU</a>
+      <a class="brand" href="index.html"><img src="pouce.png" alt="" class="brand-icon" aria-hidden="true" /><span>SUPERSITE</span></a>
       <button id="menu-toggle" class="menu-toggle" aria-label="Ouvrir le menu">Menu</button>
       <ul id="menu" class="menu">
         <li><a href="index.html">Reviews</a></li>
         <li><a href="tops.html">Tops</a></li>
+        <li class="menu-item-has-submenu">
+          <a href="watch-parter-watchlist.html">Watch Parter</a>
+          <ul class="submenu" aria-label="Sous-menu Watch Parter">
+            <li><a href="watch-parter-watchlist.html">Watchlist</a></li>
+            <li><a href="watch-parter-courter.html">Watchlist Courts</a></li>
+            <li><a href="watch-parter-duel.html">Duel de films</a></li>
+            <li><a href="watch-parter-bingo.html">Bingo</a></li>
+          </ul>
+        </li>
         <li class="menu-sep" aria-hidden="true">|</li>
-        <li><a href="modifier.html">Admin</a></li>
+        <li id="auth-menu-slot" class="auth-menu-slot"></li>
       </ul>
     </nav>
   </header>
@@ -29,11 +39,40 @@
   <main>
     <section id="reviews" class="container reviews-section">
       <div class="section-head">
-        <div class="filters" role="group" aria-label="Filtrer les reviews">
-          <button class="filter-btn active" data-filter="all">Tout</button>
+        <div class="listing-controls">
+          <div class="filters" role="group" aria-label="Filtrer les reviews">
+            <button class="filter-btn active" data-filter="all">Tout</button>
+          </div>
+          <div class="listing-selects">
+            <button id="reviews-reset" class="action-btn secondary tiny icon-btn" type="button" aria-label="Reset des filtres" title="Reset des filtres">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M20 12a8 8 0 1 1-2.35-5.65" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M20 4v6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <label class="select-inline" for="reviews-search">
+              Recherche
+              <input id="reviews-search" type="search" placeholder="Titre, mots-cl&eacute;s..." />
+            </label>
+            <label class="select-inline" for="reviews-sort">
+              Tri
+              <select id="reviews-sort">
+                <option value="date-desc">Plus r&eacute;cent</option>
+                <option value="date-asc">Plus ancien</option>
+                <option value="score-desc">Meilleure note</option>
+                <option value="score-asc">Pire note</option>
+              </select>
+            </label>
+            <label class="select-inline" for="reviews-user-filter">
+              Utilisateur
+              <select id="reviews-user-filter">
+                <option value="all">Tous</option>
+              </select>
+            </label>
+            <a id="quick-create-review" class="action-btn hidden" href="review-studio.html" title="Nouvelle review">+</a>
+          </div>
         </div>
       </div>
-
       <div class="reviews-grid" id="reviews-grid"></div>
     </section>
   </main>
@@ -43,6 +82,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="assets/js/reviews.js"></script>
+  <script src="assets/js/auth-ui.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
 </html>
+
