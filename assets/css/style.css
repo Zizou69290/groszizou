@@ -1062,6 +1062,10 @@ textarea {
 
 .media-render.rich-content {
   display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .media-item {
@@ -3235,6 +3239,17 @@ a:focus-visible {
 .review-page #review-content a:focus-visible {
   color: #ffffff;
   text-decoration-color: rgba(255, 255, 255, 0.8);
+}
+
+.review-page #review-content {
+  width: 100%;
+  max-width: 100%;
+}
+
+.review-page #review-content,
+.review-page #review-content * {
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .top-page .article-hero-inner > * {
