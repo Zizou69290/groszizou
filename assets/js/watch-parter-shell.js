@@ -36,7 +36,9 @@ function buildWatchParterAppMarkup() {
             <div id="film2Title"></div>
           </div>
         </div>
-        <button id="randomFilmBtn">Film au hasard</button>
+        <div class="duel-actions">
+          <button id="duelJokerBtn" type="button" class="duel-action">Joker</button>
+        </div>
         <div id="randomFilmDisplay"></div>
       </div>
       <div id="duelWinnerSimple" style="display:none;">

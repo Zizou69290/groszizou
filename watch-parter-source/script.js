@@ -392,6 +392,21 @@ let totalRounds = 0;
 let currentRound = 0;
 let duelVotes = [];
 
+function insertFilmRandom(film) {
+    if (!film) return;
+    const insertIndex = Math.floor(Math.random() * (filmsDuel.length + 1));
+    filmsDuel.splice(insertIndex, 0, film);
+}
+
+function drawRandomPair() {
+    if (filmsDuel.length < 2) return null;
+    const firstIndex = Math.floor(Math.random() * filmsDuel.length);
+    const first = filmsDuel.splice(firstIndex, 1)[0];
+    const secondIndex = Math.floor(Math.random() * filmsDuel.length);
+    const second = filmsDuel.splice(secondIndex, 1)[0];
+    return [first, second];
+}
+
 async function loadFilmsForDuel() {
     const activeCollection = getActiveCollection();
     const duelTitle = document.getElementById("duelTitle");
@@ -433,15 +448,20 @@ function startDuel() {
             if (winnerPosterSimple) winnerPosterSimple.src = "";
             if (winnerTitleSimple) winnerTitleSimple.textContent = "Aucun film";
         }
-        // Affichage du top 5 discret
         showTop5DuelWinners();
         return;
     }
+
+    const nextPair = drawRandomPair();
+    if (!nextPair) {
+        showTop5DuelWinners();
+        return;
+    }
+
+    currentPair = nextPair;
     duelContainer.style.display = "flex";
     if (duelWinner) duelWinner.style.display = "none";
     if (duelWinnerSimple) duelWinnerSimple.style.display = "none";
-    currentPair = [filmsDuel.pop(), filmsDuel.pop()];
-    // Affiche le round actuel
     const duelRound = document.getElementById("duelRound");
     if (duelRound) {
         duelRound.textContent = `Round ${currentRound} / ${totalRounds}`;
@@ -450,6 +470,7 @@ function startDuel() {
 }
 
 function displayDuelFilms() {
+    if (!currentPair || currentPair.length < 2) return;
     const [film1, film2] = currentPair;
     // Affiches
     document.getElementById("film1Poster").src = film1.affiche || "https://via.placeholder.com/500x750?text=Pas+d'affiche";
@@ -501,9 +522,11 @@ function displayDuelFilms() {
         setTimeout(() => {
             film1Div.classList.remove("selected");
             film2Div.classList.remove("grayed-out");
-            updateDuelVotes(currentPair[0].id);
-            filmsDuel.unshift(currentPair[0]);
+            const selectedFilm = currentPair[0];
+            updateDuelVotes(selectedFilm.id);
+            insertFilmRandom(selectedFilm);
             currentRound++;
+            currentPair = [];
             startDuel();
         }, 500);
     };
@@ -514,12 +537,25 @@ function displayDuelFilms() {
         setTimeout(() => {
             film2Div.classList.remove("selected");
             film1Div.classList.remove("grayed-out");
-            updateDuelVotes(currentPair[1].id);
-            filmsDuel.unshift(currentPair[1]);
+            const selectedFilm = currentPair[1];
+            updateDuelVotes(selectedFilm.id);
+            insertFilmRandom(selectedFilm);
             currentRound++;
+            currentPair = [];
             startDuel();
         }, 500);
     };
+}
+
+function useDuelJoker() {
+    if (!currentPair || currentPair.length < 2) {
+        showNotification("Aucun duel actif pour utiliser le Joker.");
+        return;
+    }
+    currentPair.forEach(insertFilmRandom);
+    currentPair = [];
+    showNotification("Joker utilisé : les deux films restent en lice.");
+    startDuel();
 }
 
 function showTop5DuelWinners() {
@@ -916,6 +952,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const filmForm = document.getElementById("filmForm");
     const randomFilmBtn = document.getElementById("randomFilmBtn");
+    const duelJokerBtn = document.getElementById("duelJokerBtn");
     const toggleWatchCourterBtn = document.getElementById("toggleWatchCourterBtn");
 
     // Restaurer le mode (liste principale ou Watch Courter)
@@ -948,9 +985,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // 📌 Gestion du bouton pour choisir un film au hasard
-    randomFilmBtn.addEventListener("click", choisirFilmAleatoire);
-
-    const randomFilmDisplay = document.getElementById("randomFilmDisplay");
+    if (duelJokerBtn) {
+        duelJokerBtn.addEventListener("click", useDuelJoker);
+    }
 
     // Ajout du champ de recherche au-dessus de la liste des films
     function addFilmListSearchBar() {

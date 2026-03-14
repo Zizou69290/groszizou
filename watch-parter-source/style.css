@@ -496,17 +496,36 @@ h1 {
     background: none;
 }
 
-/* Bouton "Choisir un film au hasard" */
-#randomFilmBtn {
-    display: none;
-}
-
-#randomFilmBtn:hover {
-    background: #d94f22;
-}
-
 #randomFilmDisplay {
     display: none;
+}
+
+/* Boutons de choix et Joker */
+.duel-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.duel-action {
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(120deg, #f25f29, #f7b538);
+    color: #111;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.65rem 1.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.duel-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 25px rgba(242, 95, 41, 0.4);
 }
 
 /* Styles pour le Duel de films */
